@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
+import { ProductImage } from "@/components/ProductImage";
 import { formatPrice } from "@/lib/format";
 import { useProducts, useDeleteProduct, useUpdateProduct } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
@@ -67,7 +68,7 @@ function AdminProducts() {
                 return (
                   <tr key={p.id} className="border-b border-border last:border-0">
                     <td className="p-3">
-                      <img src={p.images[0]} alt="" loading="lazy" className="h-12 w-12 border border-border bg-white object-contain p-1" />
+                      <ProductImage src={p.images[0]} alt="" className="h-12 w-12 border border-border bg-white object-contain p-1" />
                     </td>
                     <td className="p-3">
                       <div className="font-medium">{p.name}</div>

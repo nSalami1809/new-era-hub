@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { SiteLayout } from "@/components/site";
+import { ProductImage } from "@/components/ProductImage";
 import { formatPrice } from "@/lib/format";
 import { cartTotals, removeFromCart, setCartQuantity, useCart } from "@/lib/cart";
 import { useProducts } from "@/lib/api/products";
@@ -59,12 +60,7 @@ function CartPage() {
               return (
                 <div key={p.id} className="flex gap-4 py-4">
                   <Link to="/produit/$id" params={{ id: p.id }} className="h-24 w-24 shrink-0 border border-border bg-white">
-                    <img
-                      src={p.images[0]}
-                      alt={`${p.brand} ${p.name}`}
-                      loading="lazy"
-                      className="h-full w-full object-contain p-1.5"
-                    />
+                    <ProductImage src={p.images[0]} alt={`${p.brand} ${p.name}`} className="h-full w-full object-contain p-1.5" />
                   </Link>
                   <div className="flex flex-1 flex-col gap-1">
                     <span className="text-xs font-semibold uppercase text-muted-foreground">{p.brand}</span>

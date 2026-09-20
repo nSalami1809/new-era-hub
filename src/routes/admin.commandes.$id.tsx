@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ProductImage } from "@/components/ProductImage";
 import { formatDate, formatPrice } from "@/lib/format";
 import { useAdminOrder, useUpdateOrderStatus } from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
@@ -99,10 +100,9 @@ function AdminOrderDetail() {
               <tr key={item.productId ?? `${item.sku}-${i}`} className="border-b border-border">
                 <td className="py-3">
                   <div className="flex items-center gap-3">
-                    <img
+                    <ProductImage
                       src={item.image}
                       alt={`${item.brand} ${item.name}`}
-                      loading="lazy"
                       className="h-14 w-14 shrink-0 border border-border bg-white object-contain p-1"
                     />
                     <div>

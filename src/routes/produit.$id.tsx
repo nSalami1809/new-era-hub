@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { SiteLayout } from "@/components/site";
 import { PriceTag, StockBadge } from "@/components/ProductCard";
+import { ProductImage } from "@/components/ProductImage";
 import { addToCart } from "@/lib/cart";
 import { useProduct } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
@@ -68,12 +69,11 @@ function ProductPage() {
         <div className="grid gap-8 lg:grid-cols-2">
           <div>
             <div className="aspect-square overflow-hidden border border-border bg-white">
-              <img
+              <ProductImage
                 src={product.images[imageIndex] ?? product.images[0]}
                 alt={`${product.brand} ${product.name}`}
-                width={816}
-                height={816}
                 className="h-full w-full object-contain p-8"
+                iconSize={40}
               />
             </div>
             {product.images.length > 1 && (
@@ -88,7 +88,7 @@ function ProductPage() {
                       i === imageIndex ? "border-foreground" : "border-border"
                     }`}
                   >
-                    <img src={img} alt="" loading="lazy" className="h-full w-full object-contain p-1.5" />
+                    <ProductImage src={img} alt="" className="h-full w-full object-contain p-1.5" />
                   </button>
                 ))}
               </div>

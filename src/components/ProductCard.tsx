@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { formatPrice } from "@/lib/format";
 import { addToCart } from "@/lib/cart";
+import { ProductImage } from "@/components/ProductImage";
 import { discountPercent, effectivePrice, stockStatus, type Product } from "@/lib/types";
 
 export function StockBadge({ product }: { product: Product }) {
@@ -46,12 +47,9 @@ export function ProductCard({ product, currency }: { product: Product; currency:
         params={{ id: product.id }}
         className="relative block aspect-square overflow-hidden bg-white"
       >
-        <img
+        <ProductImage
           src={product.images[0]}
           alt={`${product.brand} ${product.name}`}
-          loading="lazy"
-          width={816}
-          height={816}
           className="h-full w-full object-contain p-4 transition-transform duration-200 hover:scale-[1.04] sm:p-6"
         />
         {out && (
