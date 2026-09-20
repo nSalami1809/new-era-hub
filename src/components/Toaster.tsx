@@ -12,7 +12,7 @@ export function Toaster() {
       {toasts.map((t) => (
         <div
           key={t.id}
-          className={`pointer-events-auto max-w-sm rounded border px-4 py-2.5 text-sm font-medium shadow-sm ${
+          className={`pointer-events-auto max-w-sm border px-4 py-2.5 text-sm font-medium shadow-sm ${
             t.tone === "error"
               ? "border-destructive bg-destructive text-destructive-foreground"
               : "border-foreground bg-foreground text-background"

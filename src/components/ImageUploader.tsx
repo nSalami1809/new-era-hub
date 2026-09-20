@@ -21,7 +21,9 @@ async function uploadOne(file: File): Promise<string | null> {
   const compressed = await compressImage(file);
   const ext = compressed.name.split(".").pop() ?? "jpg";
   const path = `${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(BUCKET).upload(path, compressed, { cacheControl: "31536000" });
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, compressed, { cacheControl: "31536000" });
   if (error) {
     toast(`Échec de l'envoi de ${file.name} : ${error.message}`, "error");
     return null;
@@ -77,14 +79,14 @@ export function ImageUploader({
           <div key={src + i} className="group relative h-24 w-24 border border-border bg-white">
             <ProductImage src={src} alt="" className="h-full w-full object-contain p-1" />
             {i === 0 ? (
-              <span className="absolute left-1 top-1 rounded-sm bg-foreground px-1.5 py-0.5 text-[10px] font-semibold text-background">
+              <span className="absolute left-1 top-1 bg-foreground px-1.5 py-0.5 text-[10px] font-semibold text-background">
                 Principale
               </span>
             ) : (
               <button
                 type="button"
                 onClick={() => makeMain(i)}
-                className="absolute left-1 top-1 hidden rounded-sm bg-background/90 p-1 text-muted-foreground hover:text-foreground group-hover:block"
+                className="absolute left-1 top-1 hidden bg-background/90 p-1 text-muted-foreground hover:text-foreground group-hover:block"
                 aria-label="Définir comme image principale"
                 title="Définir comme image principale"
               >
@@ -94,7 +96,7 @@ export function ImageUploader({
             <button
               type="button"
               onClick={() => remove(i)}
-              className="absolute right-1 top-1 rounded-sm bg-background/90 p-1 text-muted-foreground hover:text-destructive"
+              className="absolute right-1 top-1 bg-background/90 p-1 text-muted-foreground hover:text-destructive"
               aria-label="Supprimer cette image"
             >
               <X size={13} />

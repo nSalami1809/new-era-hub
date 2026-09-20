@@ -1,10 +1,25 @@
+export const PRODUCT_CATEGORIES = ["Casquettes", "Vêtements", "Chaussures", "Accessoires"] as const;
+
+export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
+
+export type ProductVariant = {
+  id: string;
+  size: string;
+  stock: number;
+};
+
 export type Product = {
   id: string;
   name: string;
   brand: string;
+  category: ProductCategory;
   description: string;
   price: number;
   promotionalPrice: number | null;
+  costPrice: number;
+  bundleQuantity: number | null;
+  bundlePrice: number | null;
+  bundleActive: boolean;
   stock: number;
   lowStockThreshold: number;
   sold: number;
@@ -12,11 +27,13 @@ export type Product = {
   images: string[];
   isActive: boolean;
   isFeatured: boolean;
+  /** Optional per-size stock. Empty = this product doesn't use sizes. */
+  variants: ProductVariant[];
   createdAt: string;
   updatedAt: string;
 };
 
-export type CartItem = { productId: string; quantity: number };
+export type CartItem = { productId: string; variantId: string | null; quantity: number };
 
 export type Customer = {
   firstName: string;
@@ -35,6 +52,8 @@ export type OrderItem = {
   image: string;
   unitPrice: number;
   basePrice: number;
+  costPrice: number;
+  variantSize: string | null;
   quantity: number;
 };
 
@@ -59,6 +78,7 @@ export type Order = {
   subtotal: number;
   discount: number;
   total: number;
+  promoCode: string | null;
   status: OrderStatus;
   history: { status: OrderStatus; at: string }[];
   createdAt: string;
@@ -97,6 +117,39 @@ export function effectivePrice(p: Product): number {
 export function discountPercent(p: Product): number | null {
   if (!p.promotionalPrice || p.promotionalPrice >= p.price) return null;
   return Math.round(((p.price - p.promotionalPrice) / p.price) * 100);
+}
+
+/** Profit per unit at the current selling price (promo included), before any purchase. */
+export function unitProfit(p: Product): number {
+  return effectivePrice(p) - p.costPrice;
+}
+
+/** Profit margin (%) at the current selling price, or null if there's no price to divide by. */
+export function profitMargin(p: Product): number | null {
+  const price = effectivePrice(p);
+  if (price <= 0) return null;
+  return Math.round((unitProfit(p) / price) * 100);
+}
+
+export type ProductBundle = { quantity: number; price: number };
+
+/** The active "buy N for a fixed price" promotion, or null if none is set/active. */
+export function activeBundle(p: Product): ProductBundle | null {
+  if (!p.bundleActive || !p.bundleQuantity || !p.bundlePrice) return null;
+  return { quantity: p.bundleQuantity, price: p.bundlePrice };
+}
+
+/**
+ * Total price for buying `qty` units of a product: full bundles are charged
+ * at the bundle price, any remainder at the normal (or promotional) unit
+ * price. Mirrors the pricing computed server-side in `create_order`.
+ */
+export function quantityTotal(p: Product, qty: number): number {
+  const bundle = activeBundle(p);
+  if (!bundle || qty < bundle.quantity) return effectivePrice(p) * qty;
+  const bundles = Math.floor(qty / bundle.quantity);
+  const remainder = qty % bundle.quantity;
+  return bundles * bundle.price + remainder * effectivePrice(p);
 }
 
 export function stockStatus(p: Product): "in" | "low" | "out" {

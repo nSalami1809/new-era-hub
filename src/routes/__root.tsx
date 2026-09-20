@@ -15,7 +15,9 @@ function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">New Era Hub 241</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          New Era Hub 241
+        </p>
         <h1 className="mt-3 text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">Page introuvable</h2>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -38,8 +40,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">New Era Hub 241</p>
-        <h1 className="mt-3 text-xl font-semibold tracking-tight text-foreground">Cette page n'a pas pu se charger</h1>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          New Era Hub 241
+        </p>
+        <h1 className="mt-3 text-xl font-semibold tracking-tight text-foreground">
+          Cette page n'a pas pu se charger
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Une erreur est survenue de notre côté. Réessayez ou retournez à l'accueil.
         </p>
@@ -67,16 +73,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "New Era Hub 241 — Casquettes originales" },
+      { title: "New Era Hub 241" },
       {
         name: "description",
-        content: "New Era Hub 241 : boutique de casquettes originales. Commande en ligne, paiement finalisé sur WhatsApp.",
+        content:
+          "New Era Hub 241 : boutique en ligne — casquettes, vêtements, chaussures, accessoires. Commande en ligne, paiement finalisé sur WhatsApp.",
       },
       { name: "author", content: "New Era Hub 241" },
       { property: "og:title", content: "New Era Hub 241" },
       {
         property: "og:description",
-        content: "Boutique de casquettes originales. Commande en ligne, paiement finalisé sur WhatsApp.",
+        content:
+          "Boutique en ligne — casquettes, vêtements, chaussures, accessoires. Commande en ligne, paiement finalisé sur WhatsApp.",
       },
       { property: "og:type", content: "website" },
       { property: "og:image", content: "/brand/logo.jpg" },

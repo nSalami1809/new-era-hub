@@ -6,14 +6,14 @@ import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { devtools } from "@tanstack/devtools-vite";
 
-// Plain, fully-owned Vite config — previously this project depended on
-// @lovable.dev/vite-tanstack-config, a third-party npm package that silently
-// wired up every plugin below (plus Lovable-sandbox-only behavior we never
-// use, like their preview asset proxy and build diagnostics). That meant the
-// actual build configuration lived outside this repo and outside our
+// Plain, fully-owned Vite config. This project used to depend on a
+// third-party npm package that silently wired up every plugin below (plus
+// editor-preview-only behavior this deployment never uses, like an asset
+// proxy and build diagnostics for an embedded preview surface). That meant
+// the actual build configuration lived outside this repo and outside our
 // control. This file reproduces the same plugin pipeline explicitly, minus
-// the Lovable-sandbox-only pieces, so every option here is visible and
-// editable directly.
+// the preview-only pieces, so every option here is visible and editable
+// directly.
 export default defineConfig(({ command, mode }) => {
   const isDevBuild = command === "build" && mode === "development";
 
@@ -40,7 +40,13 @@ export default defineConfig(({ command, mode }) => {
       ],
     },
     optimizeDeps: {
-      include: ["react", "react-dom", "react-dom/client", "react/jsx-runtime", "react/jsx-dev-runtime"],
+      include: [
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+      ],
       ignoreOutdatedRequests: true,
     },
     server: {
@@ -86,7 +92,9 @@ export default defineConfig(({ command, mode }) => {
   };
 
   if (isDevBuild) {
-    config.environments = { client: { define: { "process.env.NODE_ENV": JSON.stringify("development") } } };
+    config.environments = {
+      client: { define: { "process.env.NODE_ENV": JSON.stringify("development") } },
+    };
   }
 
   return config;

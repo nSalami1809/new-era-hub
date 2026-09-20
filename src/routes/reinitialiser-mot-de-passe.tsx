@@ -55,7 +55,7 @@ function ResetPasswordPage() {
       return;
     }
     toast("Mot de passe mis à jour.");
-    navigate({ to: "/admin" });
+    navigate({ to: "/nehub-53ff1f11" });
   }
 
   if (!ready) {
@@ -75,7 +75,9 @@ function ResetPasswordPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <form className="w-full max-w-sm border border-border p-6" onSubmit={submit}>
         <h1 className="text-xl">Nouveau mot de passe</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Choisis un nouveau mot de passe pour ton compte admin.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Choisis un nouveau mot de passe pour ton compte admin.
+        </p>
 
         <label htmlFor="new-password" className="mt-5 mb-1 block text-sm font-medium">
           Nouveau mot de passe

@@ -7,14 +7,21 @@ import { toast } from "@/lib/toast";
 import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
 import { useCreateOrder } from "@/lib/api/orders";
+import { usePreviewPromoCode, type PromoPreview } from "@/lib/api/promo-codes";
 
 export const Route = createFileRoute("/commande")({
   head: () => ({
     meta: [
       { title: "Finaliser la commande | New Era Hub 241" },
-      { name: "description", content: "Renseignez vos informations de livraison pour générer votre facture." },
+      {
+        name: "description",
+        content: "Renseignez vos informations de livraison pour générer votre facture.",
+      },
       { property: "og:title", content: "Finaliser la commande | New Era Hub 241" },
-      { property: "og:description", content: "Vos informations de livraison, puis paiement sur WhatsApp." },
+      {
+        property: "og:description",
+        content: "Vos informations de livraison, puis paiement sur WhatsApp.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -29,6 +36,7 @@ function CheckoutPage() {
   const { data: products = [] } = useProducts();
   const { data: settings } = useSettings();
   const createOrder = useCreateOrder();
+  const previewPromo = usePreviewPromoCode();
   const navigate = useNavigate();
   const totals = cartTotals(cart, products);
   const [form, setForm] = useState({
@@ -40,6 +48,20 @@ function CheckoutPage() {
     note: "",
   });
   const [errors, setErrors] = useState<Errors>({});
+  const [promoInput, setPromoInput] = useState("");
+  const [promo, setPromo] = useState<PromoPreview | null>(null);
+
+  const promoDiscount = promo?.valid ? promo.discount : 0;
+  const finalTotal = Math.max(0, totals.total - promoDiscount);
+
+  async function applyPromo() {
+    if (!promoInput.trim()) return;
+    const result = await previewPromo.mutateAsync({
+      code: promoInput.trim(),
+      subtotal: totals.total,
+    });
+    setPromo(result);
+  }
 
   if (cart.length === 0) {
     return (
@@ -63,7 +85,8 @@ function CheckoutPage() {
     if (form.firstName.trim().length < 2) e.firstName = "Veuillez indiquer votre prénom.";
     if (form.lastName.trim().length < 2) e.lastName = "Veuillez indiquer votre nom.";
     if (!isValidPhone(form.phone)) e.phone = "Numéro invalide. Exemple : +221 77 123 45 67";
-    if (form.deliveryLocation.trim().length < 2) e.deliveryLocation = "Indiquez votre lieu de livraison.";
+    if (form.deliveryLocation.trim().length < 2)
+      e.deliveryLocation = "Indiquez votre lieu de livraison.";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -81,6 +104,7 @@ function CheckoutPage() {
         note: form.note.trim(),
       },
       items: cart,
+      promoCode: promo?.valid ? promo.code : null,
     });
     if (!result.ok) {
       toast(result.error, "error");
@@ -164,15 +188,57 @@ function CheckoutPage() {
               {cart.map((item) => {
                 const p = products.find((x) => x.id === item.productId);
                 if (!p) return null;
+                const variant = item.variantId
+                  ? (p.variants.find((v) => v.id === item.variantId) ?? null)
+                  : null;
                 return (
-                  <li key={p.id} className="flex justify-between gap-3">
+                  <li
+                    key={`${p.id}-${item.variantId ?? "base"}`}
+                    className="flex justify-between gap-3"
+                  >
                     <span className="text-muted-foreground">
-                      {p.brand} {p.name} × {item.quantity}
+                      {p.brand} {p.name}
+                      {variant ? ` (${variant.size})` : ""} × {item.quantity}
                     </span>
                   </li>
                 );
               })}
             </ul>
+
+            <div className="mt-4 border-t border-border pt-3">
+              <label htmlFor="promo-code" className="mb-1 block text-sm font-medium">
+                Code promo
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="promo-code"
+                  value={promoInput}
+                  onChange={(e) => {
+                    setPromoInput(e.target.value);
+                    setPromo(null);
+                  }}
+                  placeholder="Entrez votre code"
+                  className="field !min-h-9 flex-1 text-sm uppercase"
+                />
+                <button
+                  type="button"
+                  onClick={() => void applyPromo()}
+                  disabled={previewPromo.isPending || !promoInput.trim()}
+                  className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+                >
+                  Appliquer
+                </button>
+              </div>
+              {promo && !promo.valid && (
+                <p className="mt-1 text-xs text-destructive">{promo.message}</p>
+              )}
+              {promo?.valid && (
+                <p className="mt-1 text-xs text-success">
+                  Code « {promo.code} » appliqué : -{formatPrice(promo.discount, currency)}
+                </p>
+              )}
+            </div>
+
             <dl className="mt-4 space-y-2 border-t border-border pt-3 text-sm">
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Sous-total</dt>
@@ -182,12 +248,22 @@ function CheckoutPage() {
                 <dt className="text-muted-foreground">Réduction</dt>
                 <dd>{totals.discount > 0 ? `-${formatPrice(totals.discount, currency)}` : "—"}</dd>
               </div>
+              {promoDiscount > 0 && (
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Code promo</dt>
+                  <dd className="text-success">-{formatPrice(promoDiscount, currency)}</dd>
+                </div>
+              )}
               <div className="flex justify-between border-t border-border pt-3 text-base font-bold">
                 <dt>Total</dt>
-                <dd>{formatPrice(totals.total, currency)}</dd>
+                <dd>{formatPrice(finalTotal, currency)}</dd>
               </div>
             </dl>
-            <button type="submit" disabled={createOrder.isPending} className="btn-base btn-success mt-5 w-full">
+            <button
+              type="submit"
+              disabled={createOrder.isPending}
+              className="btn-base btn-success mt-5 w-full"
+            >
               Valider ma commande
             </button>
             <Link to="/panier" className="btn-base btn-outline mt-2 w-full">

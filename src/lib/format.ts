@@ -1,5 +1,7 @@
 export function formatPrice(value: number, currency = "FCFA"): string {
-  return `${Math.round(value).toLocaleString("fr-FR").replace(/\u202f|\u00a0/g, " ")} ${currency}`;
+  return `${Math.round(value)
+    .toLocaleString("fr-FR")
+    .replace(/\u202f|\u00a0/g, " ")} ${currency}`;
 }
 
 export function formatDate(iso: string): string {

@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteLayout } from "@/components/site";
 import { ProductImage } from "@/components/ProductImage";
+import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
+import { Skeleton } from "@/components/Skeleton";
 import { formatDate, formatPrice } from "@/lib/format";
 import { useOrderReceipt } from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
@@ -13,7 +15,10 @@ export const Route = createFileRoute("/facture/$id")({
       { title: "Facture de commande | New Era Hub 241" },
       { name: "description", content: "Récapitulatif de votre commande et paiement via WhatsApp." },
       { property: "og:title", content: "Facture de commande | New Era Hub 241" },
-      { property: "og:description", content: "Récapitulatif de commande et lien de paiement WhatsApp." },
+      {
+        property: "og:description",
+        content: "Récapitulatif de commande et lien de paiement WhatsApp.",
+      },
       { property: "og:type", content: "website" },
       { name: "robots", content: "noindex" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -30,7 +35,16 @@ function InvoicePage() {
   if (isLoading || !settings) {
     return (
       <SiteLayout>
-        <div className="container-page py-16 text-center text-sm text-muted-foreground">Chargement...</div>
+        <div className="container-page max-w-3xl py-8">
+          <div className="border border-border p-5 sm:p-8">
+            <div className="flex justify-between gap-4 border-b border-border pb-5">
+              <Skeleton className="h-10 w-40" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+            <Skeleton className="mt-5 h-24 w-full" />
+            <Skeleton className="mt-4 h-40 w-full" />
+          </div>
+        </div>
       </SiteLayout>
     );
   }
@@ -41,11 +55,16 @@ function InvoicePage() {
         <div className="container-page py-16 text-center">
           <h1 className="text-2xl">Commande introuvable.</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Cette facture n'existe pas ou a été créée sur un autre appareil.
+            Vérifiez le numéro de commande, ou réessayez depuis la page de suivi.
           </p>
-          <Link to="/boutique" className="btn-base btn-dark mt-6">
-            Retour à la boutique
-          </Link>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link to="/suivi-commande" className="btn-base btn-dark">
+              Réessayer
+            </Link>
+            <Link to="/boutique" className="btn-base btn-outline">
+              Retour à la boutique
+            </Link>
+          </div>
         </div>
       </SiteLayout>
     );
@@ -78,7 +97,10 @@ function InvoicePage() {
                 )}
                 {" · "}
                 {settings.email ? (
-                  <a href={`mailto:${settings.email}`} className="hover:text-foreground hover:underline">
+                  <a
+                    href={`mailto:${settings.email}`}
+                    className="hover:text-foreground hover:underline"
+                  >
                     {settings.email}
                   </a>
                 ) : null}
@@ -110,9 +132,19 @@ function InvoicePage() {
                 ) : null}
               </p>
               {order.customer.note && (
-                <p className="mt-2 text-sm text-muted-foreground">Précision : {order.customer.note}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Précision : {order.customer.note}
+                </p>
               )}
             </div>
+            {order.history.length > 0 && (
+              <div>
+                <h2 className="text-sm font-bold uppercase tracking-wide">Suivi de la commande</h2>
+                <div className="mt-3">
+                  <OrderStatusTimeline history={order.history} />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="overflow-x-auto border-t border-border">
@@ -136,14 +168,21 @@ function InvoicePage() {
                           className="h-14 w-14 shrink-0 border border-border bg-white object-contain p-1"
                         />
                         <div>
-                          <div className="text-xs font-semibold uppercase text-muted-foreground">{item.brand}</div>
-                          <div className="font-medium">{item.name}</div>
+                          <div className="text-xs font-semibold uppercase text-muted-foreground">
+                            {item.brand}
+                          </div>
+                          <div className="font-medium">
+                            {item.name}
+                            {item.variantSize ? ` — Taille ${item.variantSize}` : ""}
+                          </div>
                           <div className="text-xs text-muted-foreground">{item.sku}</div>
                         </div>
                       </div>
                     </td>
                     <td className="py-3 text-center">{item.quantity}</td>
-                    <td className="py-3 text-right">{formatPrice(item.unitPrice, settings.currency)}</td>
+                    <td className="py-3 text-right">
+                      {formatPrice(item.unitPrice, settings.currency)}
+                    </td>
                     <td className="py-3 text-right font-semibold">
                       {formatPrice(item.unitPrice * item.quantity, settings.currency)}
                     </td>
@@ -159,8 +198,12 @@ function InvoicePage() {
               <dd>{formatPrice(order.subtotal, settings.currency)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-muted-foreground">Réduction</dt>
-              <dd>{order.discount > 0 ? `-${formatPrice(order.discount, settings.currency)}` : "—"}</dd>
+              <dt className="text-muted-foreground">
+                Réduction{order.promoCode ? ` (${order.promoCode})` : ""}
+              </dt>
+              <dd>
+                {order.discount > 0 ? `-${formatPrice(order.discount, settings.currency)}` : "—"}
+              </dd>
             </div>
             <div className="flex justify-between border-t border-border pt-2 text-base font-bold">
               <dt>Total</dt>
@@ -173,16 +216,16 @@ function InvoicePage() {
           href={whatsappUrl(order, settings)}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-base btn-success mt-5 w-full text-base"
+          className="btn-base btn-success mt-5 w-full text-base print:hidden"
         >
           Procéder au paiement sur WhatsApp
         </a>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
-          Le message contient votre numéro de commande, vos informations et la liste des articles. Les photos des
-          produits ne peuvent pas être jointes automatiquement.
+        <p className="mt-2 text-center text-xs text-muted-foreground print:hidden">
+          Le message contient votre numéro de commande, vos informations et la liste des articles.
+          Les photos des produits ne peuvent pas être jointes automatiquement.
         </p>
 
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
+        <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">
           <Link to="/boutique" className="btn-base btn-outline">
             Continuer mes achats
           </Link>

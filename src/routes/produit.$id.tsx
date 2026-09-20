@@ -1,19 +1,34 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Heart, Share2, X, ZoomIn } from "lucide-react";
 import { SiteLayout } from "@/components/site";
-import { PriceTag, StockBadge } from "@/components/ProductCard";
+import { ProductCard, PriceTag, StockBadge } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 import { addToCart } from "@/lib/cart";
-import { useProduct } from "@/lib/api/products";
+import { isFavorite, toggleFavorite, useFavorites } from "@/lib/favorites";
+import { useProduct, useProducts } from "@/lib/api/products";
+import { useCreateStockAlert } from "@/lib/api/stock-alerts";
+import { useCreateReview, useProductReviews } from "@/lib/api/reviews";
 import { useSettings } from "@/lib/api/settings";
+import { formatDate, formatPrice, isValidPhone } from "@/lib/format";
+import { Skeleton } from "@/components/Skeleton";
+import { StarRating, StarRatingInput } from "@/components/StarRating";
+import { productShareText, productShareUrl } from "@/lib/whatsapp";
+import { activeBundle, quantityTotal } from "@/lib/types";
 
 export const Route = createFileRoute("/produit/$id")({
   head: () => ({
     meta: [
       { title: "Fiche produit | New Era Hub 241" },
-      { name: "description", content: "Détail du produit : prix, disponibilité, description et ajout au panier." },
+      {
+        name: "description",
+        content: "Détail du produit : prix, disponibilité, description et ajout au panier.",
+      },
       { property: "og:title", content: "Fiche produit | New Era Hub 241" },
-      { property: "og:description", content: "Détail du produit : prix, disponibilité et description." },
+      {
+        property: "og:description",
+        content: "Détail du produit : prix, disponibilité et description.",
+      },
       { property: "og:type", content: "product" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -21,17 +36,174 @@ export const Route = createFileRoute("/produit/$id")({
   component: ProductPage,
 });
 
+function StockAlertForm({ productId }: { productId: string }) {
+  const [phone, setPhone] = useState("");
+  const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
+  const createAlert = useCreateStockAlert();
+
+  if (sent) {
+    return (
+      <p className="text-sm text-success">
+        Merci ! Nous vous préviendrons dès que ce produit sera de nouveau disponible.
+      </p>
+    );
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!isValidPhone(phone)) {
+      setError("Numéro invalide. Exemple : +221 77 123 45 67");
+      return;
+    }
+    createAlert.mutate({ productId, phone: phone.trim() }, { onSuccess: () => setSent(true) });
+  }
+
+  return (
+    <form onSubmit={submit} className="flex flex-wrap items-start gap-2">
+      <div className="min-w-[180px] flex-1">
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => {
+            setPhone(e.target.value);
+            setError("");
+          }}
+          placeholder="Votre numéro WhatsApp"
+          className={`field !min-h-11 ${error ? "border-destructive" : ""}`}
+          aria-invalid={!!error}
+        />
+        {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+      </div>
+      <button
+        type="submit"
+        disabled={createAlert.isPending}
+        className="btn-base btn-dark !min-h-11"
+      >
+        Me prévenir
+      </button>
+    </form>
+  );
+}
+
+function ReviewForm({ productId }: { productId: string }) {
+  const [name, setName] = useState("");
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
+  const createReview = useCreateReview();
+
+  if (sent) {
+    return (
+      <p className="mt-6 text-sm text-success">
+        Merci pour votre avis ! Il sera publié après validation.
+      </p>
+    );
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (name.trim().length < 2) {
+      setError("Merci d'indiquer votre nom.");
+      return;
+    }
+    createReview.mutate(
+      { productId, authorName: name.trim(), rating, comment: comment.trim() },
+      { onSuccess: () => setSent(true) },
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="mt-6 max-w-sm border border-border p-4">
+      <h3 className="text-sm font-bold uppercase tracking-wide">Laisser un avis</h3>
+      <div className="mt-3">
+        <StarRatingInput value={rating} onChange={setRating} />
+      </div>
+      <label htmlFor="review-name" className="mt-3 mb-1 block text-sm font-medium">
+        Votre nom
+      </label>
+      <input
+        id="review-name"
+        value={name}
+        onChange={(e) => {
+          setName(e.target.value);
+          setError("");
+        }}
+        className={`field ${error ? "border-destructive" : ""}`}
+        aria-invalid={!!error}
+      />
+      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
+      <label htmlFor="review-comment" className="mt-3 mb-1 block text-sm font-medium">
+        Commentaire (facultatif)
+      </label>
+      <textarea
+        id="review-comment"
+        rows={3}
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        className="field"
+      />
+      <button
+        type="submit"
+        disabled={createReview.isPending}
+        className="btn-base btn-dark mt-3 w-full"
+      >
+        Envoyer mon avis
+      </button>
+    </form>
+  );
+}
+
 function ProductPage() {
   const { id } = Route.useParams();
   const { data: product, isLoading } = useProduct(id);
+  const { data: products = [] } = useProducts();
   const { data: settings } = useSettings();
+  const { data: reviews = [] } = useProductReviews(product?.id);
+  useFavorites(); // subscribe so this page re-renders when the favorite state changes
   const [imageIndex, setImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [zoomOpen, setZoomOpen] = useState(false);
+
+  useEffect(() => {
+    if (!zoomOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setZoomOpen(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [zoomOpen]);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!product || product.variants.length === 0) return;
+    if (product.variants.some((v) => v.id === selectedVariantId)) return;
+    const firstInStock = product.variants.find((v) => v.stock > 0);
+    setSelectedVariantId(firstInStock?.id ?? null);
+  }, [product, selectedVariantId]);
+
+  useEffect(() => {
+    setQuantity(1);
+  }, [selectedVariantId]);
 
   if (isLoading) {
     return (
       <SiteLayout>
-        <div className="container-page py-16 text-center text-sm text-muted-foreground">Chargement...</div>
+        <div className="container-page py-6 sm:py-10">
+          <Skeleton className="h-4 w-64" />
+          <div className="mt-5 grid gap-8 lg:grid-cols-2">
+            <Skeleton className="aspect-square w-full" />
+            <div className="space-y-3">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="mt-4 h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="mt-4 h-11 w-48" />
+            </div>
+          </div>
+        </div>
       </SiteLayout>
     );
   }
@@ -49,8 +221,39 @@ function ProductPage() {
     );
   }
 
-  const out = product.stock <= 0;
-  const max = Math.max(1, product.stock);
+  const hasSizes = product.variants.length > 0;
+  const selectedVariant = hasSizes
+    ? (product.variants.find((v) => v.id === selectedVariantId) ?? null)
+    : null;
+  const anySizeInStock = hasSizes ? product.variants.some((v) => v.stock > 0) : true;
+  const availableStock = hasSizes ? (selectedVariant?.stock ?? 0) : product.stock;
+  const out = hasSizes ? !anySizeInStock : product.stock <= 0;
+  const max = Math.max(1, availableStock);
+  const currency = settings?.currency ?? "FCFA";
+  const bundle = activeBundle(product);
+  const total = quantityTotal(product, quantity);
+  const related = products
+    .filter((p) => p.isActive && p.id !== product.id && p.category === product.category)
+    .slice(0, 4);
+  const avgRating =
+    reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : null;
+
+  async function share() {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${product!.brand} ${product!.name}`,
+          text: productShareText(product!, currency, url),
+          url,
+        });
+      } catch {
+        /* user cancelled the native share sheet */
+      }
+      return;
+    }
+    window.open(productShareUrl(product!, currency, url), "_blank", "noopener,noreferrer");
+  }
 
   return (
     <SiteLayout>
@@ -68,14 +271,23 @@ function ProductPage() {
 
         <div className="grid gap-8 lg:grid-cols-2">
           <div>
-            <div className="aspect-square overflow-hidden border border-border bg-white">
+            <button
+              type="button"
+              onClick={() => setZoomOpen(true)}
+              aria-label="Agrandir l'image"
+              className="group relative block aspect-square w-full overflow-hidden border border-border bg-white"
+            >
               <ProductImage
                 src={product.images[imageIndex] ?? product.images[0]}
                 alt={`${product.brand} ${product.name}`}
                 className="h-full w-full object-contain p-8"
                 iconSize={40}
               />
-            </div>
+              <span className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-background/80 px-2 py-1 text-xs font-medium text-muted-foreground opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                <ZoomIn size={14} />
+                Agrandir
+              </span>
+            </button>
             {product.images.length > 1 && (
               <div className="mt-3 flex gap-3">
                 {product.images.map((img, i) => (
@@ -96,73 +308,226 @@ function ProductPage() {
           </div>
 
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {product.brand}
-            </span>
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {product.brand}
+              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite(product.id)}
+                  aria-pressed={isFavorite(product.id)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  <Heart
+                    size={14}
+                    className={isFavorite(product.id) ? "fill-destructive text-destructive" : ""}
+                  />
+                  {isFavorite(product.id) ? "Favori" : "Ajouter aux favoris"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void share()}
+                  className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  <Share2 size={14} />
+                  Partager
+                </button>
+              </div>
+            </div>
             <h1 className="mt-1 text-2xl sm:text-3xl">{product.name}</h1>
+            {avgRating !== null && (
+              <div className="mt-1 flex items-center gap-2">
+                <StarRating value={avgRating} />
+                <span className="text-sm text-muted-foreground">
+                  {avgRating.toFixed(1)} ({reviews.length} avis)
+                </span>
+              </div>
+            )}
             <div className="mt-4">
-              <PriceTag product={product} currency={settings?.currency ?? "FCFA"} size="lg" />
+              <PriceTag product={product} currency={currency} size="lg" />
             </div>
             <div className="mt-2">
               <StockBadge product={product} />
             </div>
 
-            <p className="mt-5 text-sm leading-relaxed text-muted-foreground">{product.description}</p>
+            <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
+              {product.description}
+            </p>
 
             <dl className="mt-5 grid grid-cols-2 gap-y-2 border-y border-border py-4 text-sm">
               <dt className="text-muted-foreground">Référence</dt>
               <dd className="font-medium">{product.sku}</dd>
               <dt className="text-muted-foreground">Stock disponible</dt>
-              <dd className="font-medium">{product.stock}</dd>
+              <dd className="font-medium">{hasSizes ? availableStock : product.stock}</dd>
               <dt className="text-muted-foreground">Marque</dt>
               <dd className="font-medium">{product.brand}</dd>
             </dl>
 
             {out ? (
               <div className="mt-6">
-                <p className="mb-3 font-semibold text-destructive">Rupture de stock</p>
-                <button type="button" disabled className="btn-base btn-success w-full sm:w-auto">
-                  Ajouter au panier
-                </button>
+                <p className="mb-1 font-semibold text-destructive">Rupture de stock</p>
+                <p className="mb-3 text-sm text-muted-foreground">
+                  Laissez votre numéro WhatsApp, nous vous préviendrons dès le réapprovisionnement.
+                </p>
+                <StockAlertForm productId={product.id} />
               </div>
             ) : (
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <div className="flex items-center border border-border-strong">
+              <div className="mt-6">
+                {hasSizes && (
+                  <div className="mb-4">
+                    <span className="mb-2 block text-sm font-medium">Taille</span>
+                    <div className="flex flex-wrap gap-2">
+                      {product.variants.map((v) => (
+                        <button
+                          key={v.id}
+                          type="button"
+                          disabled={v.stock <= 0}
+                          onClick={() => setSelectedVariantId(v.id)}
+                          className={`btn-base !min-h-9 !px-3 !py-1.5 text-sm ${
+                            selectedVariantId === v.id ? "btn-dark" : "btn-outline"
+                          } ${v.stock <= 0 ? "opacity-40 line-through" : ""}`}
+                        >
+                          {v.size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {bundle && (
+                  <p className="mb-3 text-sm font-semibold text-success">
+                    {bundle.quantity} pour {formatPrice(bundle.price, currency)}
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center border border-border-strong">
+                    <button
+                      type="button"
+                      className="h-11 w-11 text-lg"
+                      aria-label="Diminuer la quantité"
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    >
+                      −
+                    </button>
+                    <span className="w-10 text-center text-sm font-semibold" aria-live="polite">
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      className="h-11 w-11 text-lg"
+                      aria-label="Augmenter la quantité"
+                      disabled={hasSizes && !selectedVariant}
+                      onClick={() => setQuantity((q) => Math.min(max, q + 1))}
+                    >
+                      +
+                    </button>
+                  </div>
                   <button
                     type="button"
-                    className="h-11 w-11 text-lg"
-                    aria-label="Diminuer la quantité"
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    disabled={hasSizes && !selectedVariant}
+                    className="btn-base btn-success flex-1 sm:flex-none sm:px-8"
+                    onClick={() =>
+                      addToCart(
+                        product.id,
+                        hasSizes ? selectedVariantId : null,
+                        quantity,
+                        availableStock,
+                      )
+                    }
                   >
-                    −
+                    Ajouter au panier
                   </button>
-                  <span className="w-10 text-center text-sm font-semibold" aria-live="polite">
-                    {quantity}
-                  </span>
-                  <button
-                    type="button"
-                    className="h-11 w-11 text-lg"
-                    aria-label="Augmenter la quantité"
-                    onClick={() => setQuantity((q) => Math.min(max, q + 1))}
-                  >
-                    +
-                  </button>
+                  <Link to="/panier" className="btn-base btn-outline">
+                    Voir le panier
+                  </Link>
                 </div>
-                <button
-                  type="button"
-                  className="btn-base btn-success flex-1 sm:flex-none sm:px-8"
-                  onClick={() => addToCart(product.id, quantity, product.stock)}
-                >
-                  Ajouter au panier
-                </button>
-                <Link to="/panier" className="btn-base btn-outline">
-                  Voir le panier
-                </Link>
+                {quantity > 1 && (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Total pour {quantity} :{" "}
+                    <span className="font-semibold text-foreground">
+                      {formatPrice(total, currency)}
+                    </span>
+                  </p>
+                )}
               </div>
             )}
           </div>
         </div>
+
+        <section className="mt-12 max-w-2xl">
+          <h2 className="mb-4 text-xl sm:text-2xl">Avis clients</h2>
+          {reviews.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Aucun avis pour ce produit pour le moment.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border border-y border-border">
+              {reviews.map((r) => (
+                <li key={r.id} className="py-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium">{r.authorName}</span>
+                    <StarRating value={r.rating} />
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{formatDate(r.createdAt)}</p>
+                  {r.comment && <p className="mt-2 text-sm">{r.comment}</p>}
+                </li>
+              ))}
+            </ul>
+          )}
+          <ReviewForm productId={product.id} />
+        </section>
+
+        {related.length > 0 && (
+          <section className="mt-12">
+            <h2 className="mb-4 text-xl sm:text-2xl">Produits similaires</h2>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+              {related.map((p) => (
+                <ProductCard key={p.id} product={p} currency={currency} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
+
+      {zoomOpen && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/90 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image agrandie"
+          onClick={() => setZoomOpen(false)}
+        >
+          <button
+            type="button"
+            onClick={() => setZoomOpen(false)}
+            aria-label="Fermer"
+            className="absolute right-4 top-4 text-white/80 hover:text-white"
+          >
+            <X size={28} />
+          </button>
+          <ProductImage
+            src={product.images[imageIndex] ?? product.images[0]}
+            alt={`${product.brand} ${product.name}`}
+            className="max-h-[85vh] max-w-[90vw] object-contain"
+          />
+          {product.images.length > 1 && (
+            <div className="absolute bottom-6 flex gap-2">
+              {product.images.map((img, i) => (
+                <button
+                  key={img + i}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setImageIndex(i);
+                  }}
+                  aria-label={`Voir l'image ${i + 1}`}
+                  className={`h-2 w-2 ${i === imageIndex ? "bg-white" : "bg-white/40"}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </SiteLayout>
   );
 }

@@ -11,6 +11,8 @@ type OrderItemRow = {
   image: string | null;
   unit_price: number;
   base_price: number;
+  cost_price?: number;
+  variant_size?: string | null;
   quantity: number;
 };
 
@@ -26,6 +28,7 @@ type OrderRow = {
   subtotal: number;
   discount: number;
   total: number;
+  promo_code?: string | null;
   status: OrderStatus;
   created_at: string;
   updated_at: string;
@@ -42,6 +45,8 @@ function mapOrderItem(row: OrderItemRow): OrderItem {
     image: row.image ?? "",
     unitPrice: Number(row.unit_price),
     basePrice: Number(row.base_price),
+    costPrice: row.cost_price !== undefined ? Number(row.cost_price) : 0,
+    variantSize: row.variant_size ?? null,
     quantity: row.quantity,
   };
 }
@@ -62,6 +67,7 @@ function mapOrder(row: OrderRow): Order {
     subtotal: Number(row.subtotal),
     discount: Number(row.discount),
     total: Number(row.total),
+    promoCode: row.promo_code ?? null,
     status: row.status,
     history: (row.order_status_history ?? [])
       .map((h) => ({ status: h.status, at: h.at }))
@@ -117,8 +123,7 @@ export function useUpdateOrderStatus() {
 }
 
 export type CreateOrderResult =
-  | { ok: true; orderId: string; orderNumber: string }
-  | { ok: false; error: string };
+  { ok: true; orderId: string; orderNumber: string } | { ok: false; error: string };
 
 export function useCreateOrder() {
   const qc = useQueryClient();
@@ -126,9 +131,11 @@ export function useCreateOrder() {
     mutationFn: async ({
       customer,
       items,
+      promoCode,
     }: {
       customer: Customer;
       items: CartItem[];
+      promoCode?: string | null;
     }): Promise<CreateOrderResult> => {
       const { data, error } = await supabase.rpc("create_order", {
         p_first_name: customer.firstName,
@@ -137,7 +144,12 @@ export function useCreateOrder() {
         p_delivery_location: customer.deliveryLocation,
         p_address: customer.address ?? "",
         p_note: customer.note ?? "",
-        p_items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
+        p_items: items.map((i) => ({
+          product_id: i.productId,
+          variant_id: i.variantId,
+          quantity: i.quantity,
+        })),
+        ...(promoCode ? { p_promo_code: promoCode } : {}),
       });
       if (error) return { ok: false, error: error.message };
       const row = Array.isArray(data) ? data[0] : data;

@@ -1,14 +1,19 @@
 import { useState } from "react";
-import type { Product } from "@/lib/types";
+import { Trash2 } from "lucide-react";
+import { PRODUCT_CATEGORIES, type Product } from "@/lib/types";
 import type { ProductInput } from "@/lib/api/products";
 import { ImageUploader } from "@/components/ImageUploader";
+import { formatPrice } from "@/lib/format";
+import { useAddVariant, useRemoveVariant } from "@/lib/api/stock-variants";
 
 const BLANK = {
   name: "",
   brand: "",
+  category: PRODUCT_CATEGORIES[0],
   description: "",
   price: "",
   promotionalPrice: "",
+  costPrice: "",
   stock: "0",
   lowStockThreshold: "3",
   sku: "",
@@ -17,7 +22,9 @@ const BLANK = {
   isFeatured: false,
 };
 
-type Errors = Partial<Record<"name" | "brand" | "price" | "sku" | "images" | "promotionalPrice", string>>;
+type Errors = Partial<
+  Record<"name" | "brand" | "price" | "sku" | "images" | "promotionalPrice" | "costPrice", string>
+>;
 
 export function ProductForm({
   product,
@@ -33,9 +40,11 @@ export function ProductForm({
       ? {
           name: product.name,
           brand: product.brand,
+          category: product.category,
           description: product.description,
           price: String(product.price),
           promotionalPrice: product.promotionalPrice ? String(product.promotionalPrice) : "",
+          costPrice: product.costPrice ? String(product.costPrice) : "",
           stock: String(product.stock),
           lowStockThreshold: String(product.lowStockThreshold),
           sku: product.sku,
@@ -46,21 +55,34 @@ export function ProductForm({
       : BLANK,
   );
   const [errors, setErrors] = useState<Errors>({});
+  const hasSizes = (product?.variants.length ?? 0) > 0;
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  const priceNum = Number(form.price);
+  const promoNum = form.promotionalPrice ? Number(form.promotionalPrice) : null;
+  const costNum = form.costPrice ? Number(form.costPrice) : 0;
+  const effectivePrice = promoNum && promoNum > 0 && promoNum < priceNum ? promoNum : priceNum;
+  const marginHint =
+    form.costPrice && Number.isFinite(effectivePrice) && effectivePrice > 0
+      ? `Marge : ${formatPrice(effectivePrice - costNum)} (${Math.round(((effectivePrice - costNum) / effectivePrice) * 100)}%)`
+      : null;
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const price = Number(form.price);
     const promo = form.promotionalPrice ? Number(form.promotionalPrice) : null;
+    const costPrice = form.costPrice ? Number(form.costPrice) : 0;
     const err: Errors = {};
     if (form.name.trim().length < 2) err.name = "Nom requis.";
     if (form.brand.trim().length < 2) err.brand = "Marque requise.";
     if (!Number.isFinite(price) || price <= 0) err.price = "Prix invalide.";
     if (promo !== null && (!Number.isFinite(promo) || promo <= 0 || promo >= price))
       err.promotionalPrice = "Le prix promotionnel doit être inférieur au prix normal.";
+    if (form.costPrice && (!Number.isFinite(costPrice) || costPrice < 0))
+      err.costPrice = "Prix d'achat invalide.";
     if (form.sku.trim().length < 2) err.sku = "Référence requise.";
     if (form.images.length === 0) err.images = "Au moins une image est requise.";
     setErrors(err);
@@ -69,9 +91,16 @@ export function ProductForm({
     onSubmit({
       name: form.name.trim(),
       brand: form.brand.trim().toUpperCase(),
+      category: form.category,
       description: form.description.trim(),
       price,
       promotionalPrice: promo,
+      costPrice,
+      // Multi-buy bundle promos are configured from the Promotions page, not
+      // this form — pass through the existing values untouched.
+      bundleQuantity: product?.bundleQuantity ?? null,
+      bundlePrice: product?.bundlePrice ?? null,
+      bundleActive: product?.bundleActive ?? false,
       stock: Math.max(0, Math.round(Number(form.stock) || 0)),
       lowStockThreshold: Math.max(0, Math.round(Number(form.lowStockThreshold) || 0)),
       sku: form.sku.trim().toUpperCase(),
@@ -84,8 +113,37 @@ export function ProductForm({
   return (
     <form onSubmit={submit} noValidate className="mt-6 max-w-3xl space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Text id="name" label="Nom" value={form.name} onChange={(v) => set("name", v)} error={errors.name} />
-        <Text id="brand" label="Marque" value={form.brand} onChange={(v) => set("brand", v)} error={errors.brand} />
+        <Text
+          id="name"
+          label="Nom"
+          value={form.name}
+          onChange={(v) => set("name", v)}
+          error={errors.name}
+        />
+        <Text
+          id="brand"
+          label="Marque"
+          value={form.brand}
+          onChange={(v) => set("brand", v)}
+          error={errors.brand}
+        />
+        <div>
+          <label htmlFor="category" className="mb-1 block text-sm font-medium">
+            Catégorie
+          </label>
+          <select
+            id="category"
+            className="field"
+            value={form.category}
+            onChange={(e) => set("category", e.target.value as (typeof PRODUCT_CATEGORIES)[number])}
+          >
+            {PRODUCT_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
         <Text
           id="price"
           label="Prix"
@@ -102,7 +160,32 @@ export function ProductForm({
           onChange={(v) => set("promotionalPrice", v)}
           error={errors.promotionalPrice}
         />
-        <Text id="stock" label="Stock" type="number" value={form.stock} onChange={(v) => set("stock", v)} />
+        <div>
+          <Text
+            id="costPrice"
+            label="Prix d'achat (pour le calcul de bénéfice)"
+            type="number"
+            value={form.costPrice}
+            onChange={(v) => set("costPrice", v)}
+            error={errors.costPrice}
+          />
+          {marginHint && <p className="mt-1 text-xs text-muted-foreground">{marginHint}</p>}
+        </div>
+        <div>
+          <Text
+            id="stock"
+            label="Stock"
+            type="number"
+            value={form.stock}
+            onChange={(v) => set("stock", v)}
+            disabled={hasSizes}
+          />
+          {hasSizes && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Calculé automatiquement à partir des tailles ci-dessous.
+            </p>
+          )}
+        </div>
         <Text
           id="lowStockThreshold"
           label="Seuil d'alerte stock"
@@ -110,7 +193,13 @@ export function ProductForm({
           value={form.lowStockThreshold}
           onChange={(v) => set("lowStockThreshold", v)}
         />
-        <Text id="sku" label="Référence" value={form.sku} onChange={(v) => set("sku", v)} error={errors.sku} />
+        <Text
+          id="sku"
+          label="Référence"
+          value={form.sku}
+          onChange={(v) => set("sku", v)}
+          error={errors.sku}
+        />
       </div>
 
       <div>
@@ -126,15 +215,38 @@ export function ProductForm({
         />
       </div>
 
-      <ImageUploader images={form.images} onChange={(images) => set("images", images)} error={errors.images} />
+      <ImageUploader
+        images={form.images}
+        onChange={(images) => set("images", images)}
+        error={errors.images}
+      />
+
+      <div>
+        <label className="mb-1 block text-sm font-medium">Tailles</label>
+        {product ? (
+          <VariantsSection product={product} />
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Enregistrez d'abord le produit pour pouvoir ajouter des tailles.
+          </p>
+        )}
+      </div>
 
       <div className="flex flex-wrap gap-6">
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={form.isActive} onChange={(e) => set("isActive", e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={form.isActive}
+            onChange={(e) => set("isActive", e.target.checked)}
+          />
           Produit actif (visible sur le site)
         </label>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={form.isFeatured} onChange={(e) => set("isFeatured", e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={form.isFeatured}
+            onChange={(e) => set("isFeatured", e.target.checked)}
+          />
           Mettre en avant sur l'accueil
         </label>
       </div>
@@ -146,6 +258,89 @@ export function ProductForm({
   );
 }
 
+function VariantsSection({ product }: { product: Product }) {
+  const [newSize, setNewSize] = useState("");
+  const [newStock, setNewStock] = useState("0");
+  const addVariant = useAddVariant();
+  const removeVariant = useRemoveVariant();
+
+  function add(e: React.FormEvent) {
+    e.preventDefault();
+    const size = newSize.trim();
+    if (!size) return;
+    addVariant.mutate(
+      { productId: product.id, size, initialStock: Math.max(0, Math.round(Number(newStock) || 0)) },
+      {
+        onSuccess: () => {
+          setNewSize("");
+          setNewStock("0");
+        },
+      },
+    );
+  }
+
+  return (
+    <div>
+      <p className="mb-2 text-xs text-muted-foreground">
+        Chaque taille a son propre stock. Le stock total du produit est calculé automatiquement.
+      </p>
+      {product.variants.length > 0 && (
+        <ul className="mb-3 divide-y divide-border border border-border">
+          {product.variants.map((v) => (
+            <li key={v.id} className="flex items-center justify-between gap-3 p-2.5 text-sm">
+              <span>
+                <strong>{v.size}</strong> — {v.stock} en stock
+              </span>
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-destructive"
+                onClick={() => removeVariant.mutate(v.id)}
+                aria-label={`Supprimer la taille ${v.size}`}
+              >
+                <Trash2 size={14} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form onSubmit={add} className="flex flex-wrap items-end gap-2">
+        <div>
+          <label htmlFor="new-variant-size" className="mb-1 block text-xs text-muted-foreground">
+            Taille
+          </label>
+          <input
+            id="new-variant-size"
+            value={newSize}
+            onChange={(e) => setNewSize(e.target.value)}
+            placeholder="M"
+            className="field !min-h-9 w-24"
+          />
+        </div>
+        <div>
+          <label htmlFor="new-variant-stock" className="mb-1 block text-xs text-muted-foreground">
+            Stock initial
+          </label>
+          <input
+            id="new-variant-stock"
+            type="number"
+            min={0}
+            value={newStock}
+            onChange={(e) => setNewStock(e.target.value)}
+            className="field !min-h-9 w-24"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={addVariant.isPending || !newSize.trim()}
+          className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+        >
+          Ajouter
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function Text({
   id,
   label,
@@ -153,6 +348,7 @@ function Text({
   onChange,
   error,
   type = "text",
+  disabled = false,
 }: {
   id: string;
   label: string;
@@ -160,6 +356,7 @@ function Text({
   onChange: (v: string) => void;
   error?: string | undefined;
   type?: string;
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -172,7 +369,8 @@ function Text({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!error}
-        className={`field ${error ? "border-destructive" : ""}`}
+        disabled={disabled}
+        className={`field ${error ? "border-destructive" : ""} ${disabled ? "opacity-60" : ""}`}
       />
       {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
     </div>

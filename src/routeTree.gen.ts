@@ -10,31 +10,32 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BoutiqueRouteImport } from './routes/boutique'
 import { Route as CommandeRouteImport } from './routes/commande'
+import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
+import { Route as FavorisRouteImport } from './routes/favoris'
+import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
+import { Route as Nehub53ff1f11RouteImport } from './routes/nehub-53ff1f11'
 import { Route as PanierRouteImport } from './routes/panier'
 import { Route as ReinitialiserMotDePasseRouteImport } from './routes/reinitialiser-mot-de-passe'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as AdminParametresRouteImport } from './routes/admin.parametres'
-import { Route as AdminPromotionsRouteImport } from './routes/admin.promotions'
-import { Route as AdminStocksRouteImport } from './routes/admin.stocks'
+import { Route as SuiviCommandeRouteImport } from './routes/suivi-commande'
 import { Route as FactureIdRouteImport } from './routes/facture.$id'
+import { Route as Nehub53ff1f11IndexRouteImport } from './routes/nehub-53ff1f11.index'
+import { Route as Nehub53ff1f11AvisRouteImport } from './routes/nehub-53ff1f11.avis'
+import { Route as Nehub53ff1f11CodesPromoRouteImport } from './routes/nehub-53ff1f11.codes-promo'
+import { Route as Nehub53ff1f11ParametresRouteImport } from './routes/nehub-53ff1f11.parametres'
+import { Route as Nehub53ff1f11PromotionsRouteImport } from './routes/nehub-53ff1f11.promotions'
+import { Route as Nehub53ff1f11StocksRouteImport } from './routes/nehub-53ff1f11.stocks'
 import { Route as ProduitIdRouteImport } from './routes/produit.$id'
-import { Route as AdminCommandesIndexRouteImport } from './routes/admin.commandes.index'
-import { Route as AdminCommandesIdRouteImport } from './routes/admin.commandes.$id'
-import { Route as AdminProduitsIndexRouteImport } from './routes/admin.produits.index'
-import { Route as AdminProduitsIdRouteImport } from './routes/admin.produits.$id'
-import { Route as AdminProduitsNouveauRouteImport } from './routes/admin.produits.nouveau'
+import { Route as Nehub53ff1f11CommandesIndexRouteImport } from './routes/nehub-53ff1f11.commandes.index'
+import { Route as Nehub53ff1f11CommandesIdRouteImport } from './routes/nehub-53ff1f11.commandes.$id'
+import { Route as Nehub53ff1f11ProduitsIndexRouteImport } from './routes/nehub-53ff1f11.produits.index'
+import { Route as Nehub53ff1f11ProduitsIdRouteImport } from './routes/nehub-53ff1f11.produits.$id'
+import { Route as Nehub53ff1f11ProduitsNouveauRouteImport } from './routes/nehub-53ff1f11.produits.nouveau'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BoutiqueRoute = BoutiqueRouteImport.update({
@@ -47,6 +48,26 @@ const CommandeRoute = CommandeRouteImport.update({
   path: '/commande',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
+  id: '/confidentialite',
+  path: '/confidentialite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FavorisRoute = FavorisRouteImport.update({
+  id: '/favoris',
+  path: '/favoris',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MentionsLegalesRoute = MentionsLegalesRouteImport.update({
+  id: '/mentions-legales',
+  path: '/mentions-legales',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Nehub53ff1f11Route = Nehub53ff1f11RouteImport.update({
+  id: '/nehub-53ff1f11',
+  path: '/nehub-53ff1f11',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PanierRoute = PanierRouteImport.update({
   id: '/panier',
   path: '/panier',
@@ -57,185 +78,244 @@ const ReinitialiserMotDePasseRoute = ReinitialiserMotDePasseRouteImport.update({
   path: '/reinitialiser-mot-de-passe',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminParametresRoute = AdminParametresRouteImport.update({
-  id: '/parametres',
-  path: '/parametres',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPromotionsRoute = AdminPromotionsRouteImport.update({
-  id: '/promotions',
-  path: '/promotions',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminStocksRoute = AdminStocksRouteImport.update({
-  id: '/stocks',
-  path: '/stocks',
-  getParentRoute: () => AdminRoute,
+const SuiviCommandeRoute = SuiviCommandeRouteImport.update({
+  id: '/suivi-commande',
+  path: '/suivi-commande',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const FactureIdRoute = FactureIdRouteImport.update({
   id: '/facture/$id',
   path: '/facture/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const Nehub53ff1f11IndexRoute = Nehub53ff1f11IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => Nehub53ff1f11Route,
+} as any)
+const Nehub53ff1f11AvisRoute = Nehub53ff1f11AvisRouteImport.update({
+  id: '/avis',
+  path: '/avis',
+  getParentRoute: () => Nehub53ff1f11Route,
+} as any)
+const Nehub53ff1f11CodesPromoRoute = Nehub53ff1f11CodesPromoRouteImport.update({
+  id: '/codes-promo',
+  path: '/codes-promo',
+  getParentRoute: () => Nehub53ff1f11Route,
+} as any)
+const Nehub53ff1f11ParametresRoute = Nehub53ff1f11ParametresRouteImport.update({
+  id: '/parametres',
+  path: '/parametres',
+  getParentRoute: () => Nehub53ff1f11Route,
+} as any)
+const Nehub53ff1f11PromotionsRoute = Nehub53ff1f11PromotionsRouteImport.update({
+  id: '/promotions',
+  path: '/promotions',
+  getParentRoute: () => Nehub53ff1f11Route,
+} as any)
+const Nehub53ff1f11StocksRoute = Nehub53ff1f11StocksRouteImport.update({
+  id: '/stocks',
+  path: '/stocks',
+  getParentRoute: () => Nehub53ff1f11Route,
+} as any)
 const ProduitIdRoute = ProduitIdRouteImport.update({
   id: '/produit/$id',
   path: '/produit/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminCommandesIndexRoute = AdminCommandesIndexRouteImport.update({
-  id: '/commandes/',
-  path: '/commandes/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCommandesIdRoute = AdminCommandesIdRouteImport.update({
-  id: '/commandes/$id',
-  path: '/commandes/$id',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminProduitsIndexRoute = AdminProduitsIndexRouteImport.update({
-  id: '/produits/',
-  path: '/produits/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminProduitsIdRoute = AdminProduitsIdRouteImport.update({
+const Nehub53ff1f11CommandesIndexRoute =
+  Nehub53ff1f11CommandesIndexRouteImport.update({
+    id: '/commandes/',
+    path: '/commandes/',
+    getParentRoute: () => Nehub53ff1f11Route,
+  } as any)
+const Nehub53ff1f11CommandesIdRoute =
+  Nehub53ff1f11CommandesIdRouteImport.update({
+    id: '/commandes/$id',
+    path: '/commandes/$id',
+    getParentRoute: () => Nehub53ff1f11Route,
+  } as any)
+const Nehub53ff1f11ProduitsIndexRoute =
+  Nehub53ff1f11ProduitsIndexRouteImport.update({
+    id: '/produits/',
+    path: '/produits/',
+    getParentRoute: () => Nehub53ff1f11Route,
+  } as any)
+const Nehub53ff1f11ProduitsIdRoute = Nehub53ff1f11ProduitsIdRouteImport.update({
   id: '/produits/$id',
   path: '/produits/$id',
-  getParentRoute: () => AdminRoute,
+  getParentRoute: () => Nehub53ff1f11Route,
 } as any)
-const AdminProduitsNouveauRoute = AdminProduitsNouveauRouteImport.update({
-  id: '/produits/nouveau',
-  path: '/produits/nouveau',
-  getParentRoute: () => AdminRoute,
-} as any)
+const Nehub53ff1f11ProduitsNouveauRoute =
+  Nehub53ff1f11ProduitsNouveauRouteImport.update({
+    id: '/produits/nouveau',
+    path: '/produits/nouveau',
+    getParentRoute: () => Nehub53ff1f11Route,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteWithChildren
   '/boutique': typeof BoutiqueRoute
   '/commande': typeof CommandeRoute
+  '/confidentialite': typeof ConfidentialiteRoute
+  '/favoris': typeof FavorisRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
+  '/nehub-53ff1f11': typeof Nehub53ff1f11RouteWithChildren
   '/panier': typeof PanierRoute
   '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
-  '/admin/parametres': typeof AdminParametresRoute
-  '/admin/promotions': typeof AdminPromotionsRoute
-  '/admin/stocks': typeof AdminStocksRoute
+  '/suivi-commande': typeof SuiviCommandeRoute
   '/facture/$id': typeof FactureIdRoute
+  '/nehub-53ff1f11/avis': typeof Nehub53ff1f11AvisRoute
+  '/nehub-53ff1f11/codes-promo': typeof Nehub53ff1f11CodesPromoRoute
+  '/nehub-53ff1f11/parametres': typeof Nehub53ff1f11ParametresRoute
+  '/nehub-53ff1f11/promotions': typeof Nehub53ff1f11PromotionsRoute
+  '/nehub-53ff1f11/stocks': typeof Nehub53ff1f11StocksRoute
   '/produit/$id': typeof ProduitIdRoute
-  '/admin/': typeof AdminIndexRoute
-  '/admin/commandes/$id': typeof AdminCommandesIdRoute
-  '/admin/produits/$id': typeof AdminProduitsIdRoute
-  '/admin/produits/nouveau': typeof AdminProduitsNouveauRoute
-  '/admin/commandes/': typeof AdminCommandesIndexRoute
-  '/admin/produits/': typeof AdminProduitsIndexRoute
+  '/nehub-53ff1f11/': typeof Nehub53ff1f11IndexRoute
+  '/nehub-53ff1f11/commandes/$id': typeof Nehub53ff1f11CommandesIdRoute
+  '/nehub-53ff1f11/produits/$id': typeof Nehub53ff1f11ProduitsIdRoute
+  '/nehub-53ff1f11/produits/nouveau': typeof Nehub53ff1f11ProduitsNouveauRoute
+  '/nehub-53ff1f11/commandes/': typeof Nehub53ff1f11CommandesIndexRoute
+  '/nehub-53ff1f11/produits/': typeof Nehub53ff1f11ProduitsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/boutique': typeof BoutiqueRoute
   '/commande': typeof CommandeRoute
+  '/confidentialite': typeof ConfidentialiteRoute
+  '/favoris': typeof FavorisRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/panier': typeof PanierRoute
   '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
-  '/admin/parametres': typeof AdminParametresRoute
-  '/admin/promotions': typeof AdminPromotionsRoute
-  '/admin/stocks': typeof AdminStocksRoute
+  '/suivi-commande': typeof SuiviCommandeRoute
   '/facture/$id': typeof FactureIdRoute
+  '/nehub-53ff1f11/avis': typeof Nehub53ff1f11AvisRoute
+  '/nehub-53ff1f11/codes-promo': typeof Nehub53ff1f11CodesPromoRoute
+  '/nehub-53ff1f11/parametres': typeof Nehub53ff1f11ParametresRoute
+  '/nehub-53ff1f11/promotions': typeof Nehub53ff1f11PromotionsRoute
+  '/nehub-53ff1f11/stocks': typeof Nehub53ff1f11StocksRoute
   '/produit/$id': typeof ProduitIdRoute
-  '/admin': typeof AdminIndexRoute
-  '/admin/commandes/$id': typeof AdminCommandesIdRoute
-  '/admin/produits/$id': typeof AdminProduitsIdRoute
-  '/admin/produits/nouveau': typeof AdminProduitsNouveauRoute
-  '/admin/commandes': typeof AdminCommandesIndexRoute
-  '/admin/produits': typeof AdminProduitsIndexRoute
+  '/nehub-53ff1f11': typeof Nehub53ff1f11IndexRoute
+  '/nehub-53ff1f11/commandes/$id': typeof Nehub53ff1f11CommandesIdRoute
+  '/nehub-53ff1f11/produits/$id': typeof Nehub53ff1f11ProduitsIdRoute
+  '/nehub-53ff1f11/produits/nouveau': typeof Nehub53ff1f11ProduitsNouveauRoute
+  '/nehub-53ff1f11/commandes': typeof Nehub53ff1f11CommandesIndexRoute
+  '/nehub-53ff1f11/produits': typeof Nehub53ff1f11ProduitsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteWithChildren
   '/boutique': typeof BoutiqueRoute
   '/commande': typeof CommandeRoute
+  '/confidentialite': typeof ConfidentialiteRoute
+  '/favoris': typeof FavorisRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
+  '/nehub-53ff1f11': typeof Nehub53ff1f11RouteWithChildren
   '/panier': typeof PanierRoute
   '/reinitialiser-mot-de-passe': typeof ReinitialiserMotDePasseRoute
-  '/admin/parametres': typeof AdminParametresRoute
-  '/admin/promotions': typeof AdminPromotionsRoute
-  '/admin/stocks': typeof AdminStocksRoute
+  '/suivi-commande': typeof SuiviCommandeRoute
   '/facture/$id': typeof FactureIdRoute
+  '/nehub-53ff1f11/avis': typeof Nehub53ff1f11AvisRoute
+  '/nehub-53ff1f11/codes-promo': typeof Nehub53ff1f11CodesPromoRoute
+  '/nehub-53ff1f11/parametres': typeof Nehub53ff1f11ParametresRoute
+  '/nehub-53ff1f11/promotions': typeof Nehub53ff1f11PromotionsRoute
+  '/nehub-53ff1f11/stocks': typeof Nehub53ff1f11StocksRoute
   '/produit/$id': typeof ProduitIdRoute
-  '/admin/': typeof AdminIndexRoute
-  '/admin/commandes/$id': typeof AdminCommandesIdRoute
-  '/admin/produits/$id': typeof AdminProduitsIdRoute
-  '/admin/produits/nouveau': typeof AdminProduitsNouveauRoute
-  '/admin/commandes/': typeof AdminCommandesIndexRoute
-  '/admin/produits/': typeof AdminProduitsIndexRoute
+  '/nehub-53ff1f11/': typeof Nehub53ff1f11IndexRoute
+  '/nehub-53ff1f11/commandes/$id': typeof Nehub53ff1f11CommandesIdRoute
+  '/nehub-53ff1f11/produits/$id': typeof Nehub53ff1f11ProduitsIdRoute
+  '/nehub-53ff1f11/produits/nouveau': typeof Nehub53ff1f11ProduitsNouveauRoute
+  '/nehub-53ff1f11/commandes/': typeof Nehub53ff1f11CommandesIndexRoute
+  '/nehub-53ff1f11/produits/': typeof Nehub53ff1f11ProduitsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admin'
     | '/boutique'
     | '/commande'
+    | '/confidentialite'
+    | '/favoris'
+    | '/mentions-legales'
+    | '/nehub-53ff1f11'
     | '/panier'
     | '/reinitialiser-mot-de-passe'
-    | '/admin/parametres'
-    | '/admin/promotions'
-    | '/admin/stocks'
+    | '/suivi-commande'
     | '/facture/$id'
+    | '/nehub-53ff1f11/avis'
+    | '/nehub-53ff1f11/codes-promo'
+    | '/nehub-53ff1f11/parametres'
+    | '/nehub-53ff1f11/promotions'
+    | '/nehub-53ff1f11/stocks'
     | '/produit/$id'
-    | '/admin/'
-    | '/admin/commandes/$id'
-    | '/admin/produits/$id'
-    | '/admin/produits/nouveau'
-    | '/admin/commandes/'
-    | '/admin/produits/'
+    | '/nehub-53ff1f11/'
+    | '/nehub-53ff1f11/commandes/$id'
+    | '/nehub-53ff1f11/produits/$id'
+    | '/nehub-53ff1f11/produits/nouveau'
+    | '/nehub-53ff1f11/commandes/'
+    | '/nehub-53ff1f11/produits/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/boutique'
     | '/commande'
+    | '/confidentialite'
+    | '/favoris'
+    | '/mentions-legales'
     | '/panier'
     | '/reinitialiser-mot-de-passe'
-    | '/admin/parametres'
-    | '/admin/promotions'
-    | '/admin/stocks'
+    | '/suivi-commande'
     | '/facture/$id'
+    | '/nehub-53ff1f11/avis'
+    | '/nehub-53ff1f11/codes-promo'
+    | '/nehub-53ff1f11/parametres'
+    | '/nehub-53ff1f11/promotions'
+    | '/nehub-53ff1f11/stocks'
     | '/produit/$id'
-    | '/admin'
-    | '/admin/commandes/$id'
-    | '/admin/produits/$id'
-    | '/admin/produits/nouveau'
-    | '/admin/commandes'
-    | '/admin/produits'
+    | '/nehub-53ff1f11'
+    | '/nehub-53ff1f11/commandes/$id'
+    | '/nehub-53ff1f11/produits/$id'
+    | '/nehub-53ff1f11/produits/nouveau'
+    | '/nehub-53ff1f11/commandes'
+    | '/nehub-53ff1f11/produits'
   id:
     | '__root__'
     | '/'
-    | '/admin'
     | '/boutique'
     | '/commande'
+    | '/confidentialite'
+    | '/favoris'
+    | '/mentions-legales'
+    | '/nehub-53ff1f11'
     | '/panier'
     | '/reinitialiser-mot-de-passe'
-    | '/admin/parametres'
-    | '/admin/promotions'
-    | '/admin/stocks'
+    | '/suivi-commande'
     | '/facture/$id'
+    | '/nehub-53ff1f11/avis'
+    | '/nehub-53ff1f11/codes-promo'
+    | '/nehub-53ff1f11/parametres'
+    | '/nehub-53ff1f11/promotions'
+    | '/nehub-53ff1f11/stocks'
     | '/produit/$id'
-    | '/admin/'
-    | '/admin/commandes/$id'
-    | '/admin/produits/$id'
-    | '/admin/produits/nouveau'
-    | '/admin/commandes/'
-    | '/admin/produits/'
+    | '/nehub-53ff1f11/'
+    | '/nehub-53ff1f11/commandes/$id'
+    | '/nehub-53ff1f11/produits/$id'
+    | '/nehub-53ff1f11/produits/nouveau'
+    | '/nehub-53ff1f11/commandes/'
+    | '/nehub-53ff1f11/produits/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRouteWithChildren
   BoutiqueRoute: typeof BoutiqueRoute
   CommandeRoute: typeof CommandeRoute
+  ConfidentialiteRoute: typeof ConfidentialiteRoute
+  FavorisRoute: typeof FavorisRoute
+  MentionsLegalesRoute: typeof MentionsLegalesRoute
+  Nehub53ff1f11Route: typeof Nehub53ff1f11RouteWithChildren
   PanierRoute: typeof PanierRoute
   ReinitialiserMotDePasseRoute: typeof ReinitialiserMotDePasseRoute
+  SuiviCommandeRoute: typeof SuiviCommandeRoute
   FactureIdRoute: typeof FactureIdRoute
   ProduitIdRoute: typeof ProduitIdRoute
 }
@@ -247,13 +327,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/boutique': {
@@ -270,6 +343,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CommandeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/confidentialite': {
+      id: '/confidentialite'
+      path: '/confidentialite'
+      fullPath: '/confidentialite'
+      preLoaderRoute: typeof ConfidentialiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/favoris': {
+      id: '/favoris'
+      path: '/favoris'
+      fullPath: '/favoris'
+      preLoaderRoute: typeof FavorisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mentions-legales': {
+      id: '/mentions-legales'
+      path: '/mentions-legales'
+      fullPath: '/mentions-legales'
+      preLoaderRoute: typeof MentionsLegalesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nehub-53ff1f11': {
+      id: '/nehub-53ff1f11'
+      path: '/nehub-53ff1f11'
+      fullPath: '/nehub-53ff1f11'
+      preLoaderRoute: typeof Nehub53ff1f11RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/panier': {
       id: '/panier'
       path: '/panier'
@@ -284,33 +385,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReinitialiserMotDePasseRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/parametres': {
-      id: '/admin/parametres'
-      path: '/parametres'
-      fullPath: '/admin/parametres'
-      preLoaderRoute: typeof AdminParametresRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/promotions': {
-      id: '/admin/promotions'
-      path: '/promotions'
-      fullPath: '/admin/promotions'
-      preLoaderRoute: typeof AdminPromotionsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/stocks': {
-      id: '/admin/stocks'
-      path: '/stocks'
-      fullPath: '/admin/stocks'
-      preLoaderRoute: typeof AdminStocksRouteImport
-      parentRoute: typeof AdminRoute
+    '/suivi-commande': {
+      id: '/suivi-commande'
+      path: '/suivi-commande'
+      fullPath: '/suivi-commande'
+      preLoaderRoute: typeof SuiviCommandeRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/facture/$id': {
       id: '/facture/$id'
@@ -319,6 +399,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FactureIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/nehub-53ff1f11/': {
+      id: '/nehub-53ff1f11/'
+      path: '/'
+      fullPath: '/nehub-53ff1f11/'
+      preLoaderRoute: typeof Nehub53ff1f11IndexRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
+    }
+    '/nehub-53ff1f11/avis': {
+      id: '/nehub-53ff1f11/avis'
+      path: '/avis'
+      fullPath: '/nehub-53ff1f11/avis'
+      preLoaderRoute: typeof Nehub53ff1f11AvisRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
+    }
+    '/nehub-53ff1f11/codes-promo': {
+      id: '/nehub-53ff1f11/codes-promo'
+      path: '/codes-promo'
+      fullPath: '/nehub-53ff1f11/codes-promo'
+      preLoaderRoute: typeof Nehub53ff1f11CodesPromoRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
+    }
+    '/nehub-53ff1f11/parametres': {
+      id: '/nehub-53ff1f11/parametres'
+      path: '/parametres'
+      fullPath: '/nehub-53ff1f11/parametres'
+      preLoaderRoute: typeof Nehub53ff1f11ParametresRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
+    }
+    '/nehub-53ff1f11/promotions': {
+      id: '/nehub-53ff1f11/promotions'
+      path: '/promotions'
+      fullPath: '/nehub-53ff1f11/promotions'
+      preLoaderRoute: typeof Nehub53ff1f11PromotionsRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
+    }
+    '/nehub-53ff1f11/stocks': {
+      id: '/nehub-53ff1f11/stocks'
+      path: '/stocks'
+      fullPath: '/nehub-53ff1f11/stocks'
+      preLoaderRoute: typeof Nehub53ff1f11StocksRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
+    }
     '/produit/$id': {
       id: '/produit/$id'
       path: '/produit/$id'
@@ -326,77 +448,87 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProduitIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/commandes/': {
-      id: '/admin/commandes/'
+    '/nehub-53ff1f11/commandes/': {
+      id: '/nehub-53ff1f11/commandes/'
       path: '/commandes'
-      fullPath: '/admin/commandes/'
-      preLoaderRoute: typeof AdminCommandesIndexRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/nehub-53ff1f11/commandes/'
+      preLoaderRoute: typeof Nehub53ff1f11CommandesIndexRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
     }
-    '/admin/commandes/$id': {
-      id: '/admin/commandes/$id'
+    '/nehub-53ff1f11/commandes/$id': {
+      id: '/nehub-53ff1f11/commandes/$id'
       path: '/commandes/$id'
-      fullPath: '/admin/commandes/$id'
-      preLoaderRoute: typeof AdminCommandesIdRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/nehub-53ff1f11/commandes/$id'
+      preLoaderRoute: typeof Nehub53ff1f11CommandesIdRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
     }
-    '/admin/produits/': {
-      id: '/admin/produits/'
+    '/nehub-53ff1f11/produits/': {
+      id: '/nehub-53ff1f11/produits/'
       path: '/produits'
-      fullPath: '/admin/produits/'
-      preLoaderRoute: typeof AdminProduitsIndexRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/nehub-53ff1f11/produits/'
+      preLoaderRoute: typeof Nehub53ff1f11ProduitsIndexRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
     }
-    '/admin/produits/$id': {
-      id: '/admin/produits/$id'
+    '/nehub-53ff1f11/produits/$id': {
+      id: '/nehub-53ff1f11/produits/$id'
       path: '/produits/$id'
-      fullPath: '/admin/produits/$id'
-      preLoaderRoute: typeof AdminProduitsIdRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/nehub-53ff1f11/produits/$id'
+      preLoaderRoute: typeof Nehub53ff1f11ProduitsIdRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
     }
-    '/admin/produits/nouveau': {
-      id: '/admin/produits/nouveau'
+    '/nehub-53ff1f11/produits/nouveau': {
+      id: '/nehub-53ff1f11/produits/nouveau'
       path: '/produits/nouveau'
-      fullPath: '/admin/produits/nouveau'
-      preLoaderRoute: typeof AdminProduitsNouveauRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/nehub-53ff1f11/produits/nouveau'
+      preLoaderRoute: typeof Nehub53ff1f11ProduitsNouveauRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
     }
   }
 }
 
-interface AdminRouteChildren {
-  AdminParametresRoute: typeof AdminParametresRoute
-  AdminPromotionsRoute: typeof AdminPromotionsRoute
-  AdminStocksRoute: typeof AdminStocksRoute
-  AdminIndexRoute: typeof AdminIndexRoute
-  AdminCommandesIdRoute: typeof AdminCommandesIdRoute
-  AdminProduitsIdRoute: typeof AdminProduitsIdRoute
-  AdminProduitsNouveauRoute: typeof AdminProduitsNouveauRoute
-  AdminCommandesIndexRoute: typeof AdminCommandesIndexRoute
-  AdminProduitsIndexRoute: typeof AdminProduitsIndexRoute
+interface Nehub53ff1f11RouteChildren {
+  Nehub53ff1f11AvisRoute: typeof Nehub53ff1f11AvisRoute
+  Nehub53ff1f11CodesPromoRoute: typeof Nehub53ff1f11CodesPromoRoute
+  Nehub53ff1f11ParametresRoute: typeof Nehub53ff1f11ParametresRoute
+  Nehub53ff1f11PromotionsRoute: typeof Nehub53ff1f11PromotionsRoute
+  Nehub53ff1f11StocksRoute: typeof Nehub53ff1f11StocksRoute
+  Nehub53ff1f11IndexRoute: typeof Nehub53ff1f11IndexRoute
+  Nehub53ff1f11CommandesIdRoute: typeof Nehub53ff1f11CommandesIdRoute
+  Nehub53ff1f11ProduitsIdRoute: typeof Nehub53ff1f11ProduitsIdRoute
+  Nehub53ff1f11ProduitsNouveauRoute: typeof Nehub53ff1f11ProduitsNouveauRoute
+  Nehub53ff1f11CommandesIndexRoute: typeof Nehub53ff1f11CommandesIndexRoute
+  Nehub53ff1f11ProduitsIndexRoute: typeof Nehub53ff1f11ProduitsIndexRoute
 }
 
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminParametresRoute: AdminParametresRoute,
-  AdminPromotionsRoute: AdminPromotionsRoute,
-  AdminStocksRoute: AdminStocksRoute,
-  AdminIndexRoute: AdminIndexRoute,
-  AdminCommandesIdRoute: AdminCommandesIdRoute,
-  AdminProduitsIdRoute: AdminProduitsIdRoute,
-  AdminProduitsNouveauRoute: AdminProduitsNouveauRoute,
-  AdminCommandesIndexRoute: AdminCommandesIndexRoute,
-  AdminProduitsIndexRoute: AdminProduitsIndexRoute,
+const Nehub53ff1f11RouteChildren: Nehub53ff1f11RouteChildren = {
+  Nehub53ff1f11AvisRoute: Nehub53ff1f11AvisRoute,
+  Nehub53ff1f11CodesPromoRoute: Nehub53ff1f11CodesPromoRoute,
+  Nehub53ff1f11ParametresRoute: Nehub53ff1f11ParametresRoute,
+  Nehub53ff1f11PromotionsRoute: Nehub53ff1f11PromotionsRoute,
+  Nehub53ff1f11StocksRoute: Nehub53ff1f11StocksRoute,
+  Nehub53ff1f11IndexRoute: Nehub53ff1f11IndexRoute,
+  Nehub53ff1f11CommandesIdRoute: Nehub53ff1f11CommandesIdRoute,
+  Nehub53ff1f11ProduitsIdRoute: Nehub53ff1f11ProduitsIdRoute,
+  Nehub53ff1f11ProduitsNouveauRoute: Nehub53ff1f11ProduitsNouveauRoute,
+  Nehub53ff1f11CommandesIndexRoute: Nehub53ff1f11CommandesIndexRoute,
+  Nehub53ff1f11ProduitsIndexRoute: Nehub53ff1f11ProduitsIndexRoute,
 }
 
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+const Nehub53ff1f11RouteWithChildren = Nehub53ff1f11Route._addFileChildren(
+  Nehub53ff1f11RouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRouteWithChildren,
   BoutiqueRoute: BoutiqueRoute,
   CommandeRoute: CommandeRoute,
+  ConfidentialiteRoute: ConfidentialiteRoute,
+  FavorisRoute: FavorisRoute,
+  MentionsLegalesRoute: MentionsLegalesRoute,
+  Nehub53ff1f11Route: Nehub53ff1f11RouteWithChildren,
   PanierRoute: PanierRoute,
   ReinitialiserMotDePasseRoute: ReinitialiserMotDePasseRoute,
+  SuiviCommandeRoute: SuiviCommandeRoute,
   FactureIdRoute: FactureIdRoute,
   ProduitIdRoute: ProduitIdRoute,
 }

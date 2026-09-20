@@ -3,7 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { Product } from "@/lib/types";
 
-type ProductRow = Database["public"]["Tables"]["products"]["Row"];
+type ProductVariantRow = Database["public"]["Tables"]["product_variants"]["Row"];
+type ProductRow = Database["public"]["Tables"]["products"]["Row"] & {
+  product_variants?: ProductVariantRow[];
+};
 type ProductUpdateRow = Database["public"]["Tables"]["products"]["Update"];
 
 function mapProduct(row: ProductRow): Product {
@@ -11,9 +14,15 @@ function mapProduct(row: ProductRow): Product {
     id: row.id,
     name: row.name,
     brand: row.brand,
+    category: row.category,
     description: row.description,
     price: Number(row.price),
     promotionalPrice: row.promotional_price !== null ? Number(row.promotional_price) : null,
+    costPrice: row.cost_price !== undefined && row.cost_price !== null ? Number(row.cost_price) : 0,
+    bundleQuantity: row.bundle_quantity ?? null,
+    bundlePrice:
+      row.bundle_price !== null && row.bundle_price !== undefined ? Number(row.bundle_price) : null,
+    bundleActive: row.bundle_active ?? false,
     stock: row.stock,
     lowStockThreshold: row.low_stock_threshold,
     sold: row.sold,
@@ -21,20 +30,30 @@ function mapProduct(row: ProductRow): Product {
     images: row.images ?? [],
     isActive: row.is_active,
     isFeatured: row.is_featured,
+    variants: (row.product_variants ?? []).map((v) => ({ id: v.id, size: v.size, stock: v.stock })),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
-export type ProductInput = Omit<Product, "id" | "createdAt" | "updatedAt" | "sold">;
+// Variants are managed through their own dedicated mutations (useAddVariant /
+// useRemoveVariant / useAdjustVariantStock in stock-variants.ts), not through
+// the generic product create/update path — there's no `variants` column on
+// `products` to map here.
+export type ProductInput = Omit<Product, "id" | "createdAt" | "updatedAt" | "sold" | "variants">;
 
 function toUpdateRow(input: Partial<ProductInput>): ProductUpdateRow {
   const row: ProductUpdateRow = {};
   if (input.name !== undefined) row.name = input.name;
   if (input.brand !== undefined) row.brand = input.brand;
+  if (input.category !== undefined) row.category = input.category;
   if (input.description !== undefined) row.description = input.description;
   if (input.price !== undefined) row.price = input.price;
   if (input.promotionalPrice !== undefined) row.promotional_price = input.promotionalPrice;
+  if (input.costPrice !== undefined) row.cost_price = input.costPrice;
+  if (input.bundleQuantity !== undefined) row.bundle_quantity = input.bundleQuantity;
+  if (input.bundlePrice !== undefined) row.bundle_price = input.bundlePrice;
+  if (input.bundleActive !== undefined) row.bundle_active = input.bundleActive;
   if (input.lowStockThreshold !== undefined) row.low_stock_threshold = input.lowStockThreshold;
   if (input.sku !== undefined) row.sku = input.sku;
   if (input.images !== undefined) row.images = input.images;
@@ -44,13 +63,20 @@ function toUpdateRow(input: Partial<ProductInput>): ProductUpdateRow {
 }
 
 async function fetchProducts(): Promise<Product[]> {
-  const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
+  const { data, error } = await supabase
+    .from("products")
+    .select("*, product_variants(*)")
+    .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map(mapProduct);
 }
 
 async function fetchProduct(id: string): Promise<Product | null> {
-  const { data, error } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
+  const { data, error } = await supabase
+    .from("products")
+    .select("*, product_variants(*)")
+    .eq("id", id)
+    .maybeSingle();
   if (error) throw error;
   return data ? mapProduct(data) : null;
 }
@@ -78,9 +104,14 @@ export function useCreateProduct() {
         .insert({
           name: input.name,
           brand: input.brand,
+          category: input.category,
           description: input.description,
           price: input.price,
           promotional_price: input.promotionalPrice,
+          cost_price: input.costPrice,
+          bundle_quantity: input.bundleQuantity,
+          bundle_price: input.bundlePrice,
+          bundle_active: input.bundleActive,
           stock: input.stock,
           low_stock_threshold: input.lowStockThreshold,
           sku: input.sku,

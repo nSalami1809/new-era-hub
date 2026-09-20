@@ -6,15 +6,21 @@ import { formatPrice } from "@/lib/format";
 import { cartTotals, removeFromCart, setCartQuantity, useCart } from "@/lib/cart";
 import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
-import { effectivePrice } from "@/lib/types";
+import { activeBundle, effectivePrice, quantityTotal } from "@/lib/types";
 
 export const Route = createFileRoute("/panier")({
   head: () => ({
     meta: [
       { title: "Votre panier | New Era Hub 241" },
-      { name: "description", content: "Vérifiez vos articles, ajustez les quantités et passez votre commande." },
+      {
+        name: "description",
+        content: "Vérifiez vos articles, ajustez les quantités et passez votre commande.",
+      },
       { property: "og:title", content: "Votre panier | New Era Hub 241" },
-      { property: "og:description", content: "Vérifiez vos articles et passez commande en quelques secondes." },
+      {
+        property: "og:description",
+        content: "Vérifiez vos articles et passez commande en quelques secondes.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -38,7 +44,9 @@ function CartPage() {
       <SiteLayout>
         <div className="container-page py-16 text-center">
           <h1 className="text-2xl">Votre panier est vide.</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Parcourez le catalogue pour trouver votre casquette.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Parcourez le catalogue pour trouver votre bonheur.
+          </p>
           <Link to="/boutique" className="btn-base btn-dark mt-6">
             Continuer mes achats
           </Link>
@@ -56,20 +64,49 @@ function CartPage() {
           <div className="divide-y divide-border border-y border-border">
             {lines.map(({ item, product }) => {
               const p = product!;
+              const variant = item.variantId
+                ? (p.variants.find((v) => v.id === item.variantId) ?? null)
+                : null;
+              const availableStock = variant ? variant.stock : p.stock;
               const unit = effectivePrice(p);
+              const bundle = activeBundle(p);
+              const lineTotal = quantityTotal(p, item.quantity);
               return (
-                <div key={p.id} className="flex gap-4 py-4">
-                  <Link to="/produit/$id" params={{ id: p.id }} className="h-24 w-24 shrink-0 border border-border bg-white">
-                    <ProductImage src={p.images[0]} alt={`${p.brand} ${p.name}`} className="h-full w-full object-contain p-1.5" />
+                <div key={`${p.id}-${item.variantId ?? "base"}`} className="flex gap-4 py-4">
+                  <Link
+                    to="/produit/$id"
+                    params={{ id: p.id }}
+                    className="h-24 w-24 shrink-0 border border-border bg-white"
+                  >
+                    <ProductImage
+                      src={p.images[0]}
+                      alt={`${p.brand} ${p.name}`}
+                      className="h-full w-full object-contain p-1.5"
+                    />
                   </Link>
                   <div className="flex flex-1 flex-col gap-1">
-                    <span className="text-xs font-semibold uppercase text-muted-foreground">{p.brand}</span>
-                    <Link to="/produit/$id" params={{ id: p.id }} className="font-semibold hover:underline">
+                    <span className="text-xs font-semibold uppercase text-muted-foreground">
+                      {p.brand}
+                    </span>
+                    <Link
+                      to="/produit/$id"
+                      params={{ id: p.id }}
+                      className="font-semibold hover:underline"
+                    >
                       {p.name}
                     </Link>
+                    {variant && (
+                      <span className="text-xs text-muted-foreground">Taille : {variant.size}</span>
+                    )}
                     <span className="text-sm text-muted-foreground">
                       {formatPrice(unit, currency)} l'unité
                     </span>
+                    {bundle && (
+                      <span className="text-xs font-medium text-success">
+                        {bundle.quantity} pour {formatPrice(bundle.price, currency)}
+                        {item.quantity >= bundle.quantity ? " (appliqué)" : ""}
+                      </span>
+                    )}
 
                     <div className="mt-2 flex flex-wrap items-center gap-3">
                       <div className="flex items-center border border-border-strong">
@@ -77,16 +114,22 @@ function CartPage() {
                           type="button"
                           className="h-10 w-10"
                           aria-label={`Diminuer la quantité de ${p.name}`}
-                          onClick={() => setCartQuantity(p.id, item.quantity - 1, p.stock)}
+                          onClick={() =>
+                            setCartQuantity(p.id, item.variantId, item.quantity - 1, availableStock)
+                          }
                         >
                           −
                         </button>
-                        <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
+                        <span className="w-8 text-center text-sm font-semibold">
+                          {item.quantity}
+                        </span>
                         <button
                           type="button"
                           className="h-10 w-10"
                           aria-label={`Augmenter la quantité de ${p.name}`}
-                          onClick={() => setCartQuantity(p.id, item.quantity + 1, p.stock)}
+                          onClick={() =>
+                            setCartQuantity(p.id, item.variantId, item.quantity + 1, availableStock)
+                          }
                         >
                           +
                         </button>
@@ -94,14 +137,14 @@ function CartPage() {
                       <button
                         type="button"
                         className="btn-base btn-danger !min-h-10 !px-3 !py-2 text-sm"
-                        onClick={() => removeFromCart(p.id)}
+                        onClick={() => removeFromCart(p.id, item.variantId)}
                       >
                         <Trash2 size={16} />
                         Supprimer
                       </button>
                     </div>
                   </div>
-                  <div className="text-right font-semibold">{formatPrice(unit * item.quantity, currency)}</div>
+                  <div className="text-right font-semibold">{formatPrice(lineTotal, currency)}</div>
                 </div>
               );
             })}
@@ -117,7 +160,9 @@ function CartPage() {
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Réduction</dt>
                 <dd className={totals.discount > 0 ? "text-success" : ""}>
-                  {totals.discount > 0 ? `-${formatPrice(totals.discount, currency)}` : formatPrice(0, currency)}
+                  {totals.discount > 0
+                    ? `-${formatPrice(totals.discount, currency)}`
+                    : formatPrice(0, currency)}
                 </dd>
               </div>
               <div className="flex justify-between border-t border-border pt-3 text-base font-bold">
