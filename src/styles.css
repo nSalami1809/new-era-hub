@@ -1,0 +1,194 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+/*
+ * Design system — boutique de casquettes.
+ * Blanc, noir, gris; vert pour les actions positives, rouge pour les
+ * actions destructives. Typographie Ranade.
+ */
+
+@font-face {
+  font-family: "Ranade";
+  src: url("/fonts/ranade-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ranade";
+  src: url("/fonts/ranade-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ranade";
+  src: url("/fonts/ranade-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme inline {
+  --font-sans: "Ranade", ui-sans-serif, system-ui, sans-serif;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: var(--radius);
+  --radius-xl: 6px;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+:root {
+  --radius: 4px;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.17 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.17 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.17 0 0);
+  --primary: oklch(0.17 0 0);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.968 0 0);
+  --secondary-foreground: oklch(0.17 0 0);
+  --muted: oklch(0.972 0 0);
+  --muted-foreground: oklch(0.47 0 0);
+  --accent: oklch(0.96 0 0);
+  --accent-foreground: oklch(0.17 0 0);
+  --success: oklch(0.52 0.14 150);
+  --success-foreground: oklch(1 0 0);
+  --destructive: oklch(0.53 0.2 27);
+  --destructive-foreground: oklch(1 0 0);
+  --warning: oklch(0.63 0.14 70);
+  --border: oklch(0.91 0 0);
+  --border-strong: oklch(0.82 0 0);
+  --input: oklch(0.88 0 0);
+  --ring: oklch(0.17 0 0);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "tnum" 0;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+}
+
+@utility container-page {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 1200px;
+  padding-inline: 1rem;
+}
+
+@utility btn-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  line-height: 1;
+  padding: 0.75rem 1.125rem;
+  min-height: 44px;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@utility btn-success {
+  background-color: var(--color-success);
+  color: var(--color-success-foreground);
+  &:hover:not(:disabled) {
+    background-color: oklch(0.45 0.14 150);
+  }
+}
+
+@utility btn-danger {
+  background-color: var(--color-destructive);
+  color: var(--color-destructive-foreground);
+  &:hover:not(:disabled) {
+    background-color: oklch(0.46 0.2 27);
+  }
+}
+
+@utility btn-dark {
+  background-color: var(--color-primary);
+  color: var(--color-primary-foreground);
+  &:hover:not(:disabled) {
+    background-color: oklch(0.3 0 0);
+  }
+}
+
+@utility btn-outline {
+  background-color: transparent;
+  color: var(--color-foreground);
+  border: 1px solid var(--color-border-strong);
+  &:hover:not(:disabled) {
+    background-color: var(--color-muted);
+  }
+}
+
+@utility field {
+  width: 100%;
+  border: 1px solid var(--color-input);
+  border-radius: var(--radius);
+  padding: 0.625rem 0.75rem;
+  font-size: 0.9375rem;
+  min-height: 42px;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  &::placeholder {
+    color: var(--color-muted-foreground);
+  }
+}
