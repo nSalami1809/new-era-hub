@@ -4,7 +4,6 @@ import { formatPrice } from "@/lib/format";
 import { addToCart, cartQuantity, setCartQuantity, useCart } from "@/lib/cart";
 import { isFavorite, toggleFavorite, useFavorites } from "@/lib/favorites";
 import { ProductImage } from "@/components/ProductImage";
-import { useImageBackgroundColor } from "@/lib/image-color";
 import {
   activeBundle,
   discountPercent,
@@ -79,13 +78,9 @@ export function ProductCard({
   useFavorites(); // subscribe so this card re-renders when its own favorite state changes
   const qty = cartQuantity(product.id, null);
   const favorite = isFavorite(product.id);
-  const bgColor = useImageBackgroundColor(product.images[0]);
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
-      <div
-        className="relative aspect-square overflow-hidden transition-colors duration-300"
-        style={{ backgroundColor: bgColor ?? "#ffffff" }}
-      >
+      <div className="relative aspect-square overflow-hidden bg-muted">
         <Link to="/produit/$id" params={{ id: product.id }} className="block h-full w-full">
           <ProductImage
             src={product.images[0]}

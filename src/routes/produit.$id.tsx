@@ -15,7 +15,6 @@ import { Skeleton } from "@/components/Skeleton";
 import { StarRating, StarRatingInput } from "@/components/StarRating";
 import { productShareText, productShareUrl } from "@/lib/whatsapp";
 import { activeBundle, quantityTotal } from "@/lib/types";
-import { useImageBackgroundColor } from "@/lib/image-color";
 
 export const Route = createFileRoute("/produit/$id")({
   head: () => ({
@@ -170,14 +169,12 @@ function ImageThumbnail({
   onClick: () => void;
   label: string;
 }) {
-  const bg = useImageBackgroundColor(src);
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={label}
-      style={{ backgroundColor: bg ?? "#ffffff" }}
-      className={`h-20 w-20 overflow-hidden rounded-xl border-2 transition-colors ${
+      className={`h-20 w-20 overflow-hidden rounded-xl border-2 bg-muted transition-colors ${
         active ? "border-foreground" : "border-border hover:border-border-strong"
       }`}
     >
@@ -196,7 +193,6 @@ function ProductPage() {
   const [imageIndex, setImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [zoomOpen, setZoomOpen] = useState(false);
-  const mainImageBg = useImageBackgroundColor(product?.images[imageIndex] ?? product?.images[0]);
 
   useEffect(() => {
     if (!zoomOpen) return;
@@ -307,8 +303,7 @@ function ProductPage() {
               type="button"
               onClick={() => setZoomOpen(true)}
               aria-label="Agrandir l'image"
-              className="group relative block aspect-square w-full overflow-hidden rounded-3xl border border-border shadow-sm transition-colors duration-300"
-              style={{ backgroundColor: mainImageBg ?? "#ffffff" }}
+              className="group relative block aspect-square w-full overflow-hidden rounded-3xl border border-border bg-muted shadow-sm"
             >
               <ProductImage
                 src={product.images[imageIndex] ?? product.images[0]}

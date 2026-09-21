@@ -7,16 +7,13 @@ import { cartTotals, removeFromCart, setCartQuantity, useCart } from "@/lib/cart
 import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
 import { activeBundle, effectivePrice, quantityTotal } from "@/lib/types";
-import { useImageBackgroundColor } from "@/lib/image-color";
 
 function CartLineImage({ src, alt, productId }: { src: string; alt: string; productId: string }) {
-  const bg = useImageBackgroundColor(src);
   return (
     <Link
       to="/produit/$id"
       params={{ id: productId }}
-      className="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-border transition-colors duration-300"
-      style={{ backgroundColor: bg ?? "#ffffff" }}
+      className="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-border bg-muted"
     >
       <ProductImage src={src} alt={alt} className="h-full w-full object-contain p-1.5" />
     </Link>

@@ -5,7 +5,6 @@ import { ProductImage } from "@/components/ProductImage";
 import { ProductGridSkeleton, Skeleton } from "@/components/Skeleton";
 import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
-import { useImageBackgroundColor } from "@/lib/image-color";
 import type { Product } from "@/lib/types";
 
 function CategoryTile({
@@ -17,17 +16,13 @@ function CategoryTile({
   count: number;
   cover: Product;
 }) {
-  const bg = useImageBackgroundColor(cover.images[0]);
   return (
     <Link
       to="/boutique"
       search={{ category }}
       className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
     >
-      <div
-        className="aspect-square overflow-hidden transition-colors duration-300"
-        style={{ backgroundColor: bg ?? "#ffffff" }}
-      >
+      <div className="aspect-square overflow-hidden bg-muted">
         <ProductImage
           src={cover.images[0]}
           alt=""
@@ -84,7 +79,6 @@ function Index() {
     .filter((c) => c.count > 0 && c.cover);
 
   const heroProduct = featured[0] ?? active[0];
-  const heroBg = useImageBackgroundColor(heroProduct?.images[0]);
 
   return (
     <SiteLayout>
@@ -116,8 +110,7 @@ function Index() {
             <Link
               to="/produit/$id"
               params={{ id: heroProduct.id }}
-              className="group relative mx-auto block aspect-square w-full max-w-md overflow-hidden rounded-3xl border border-border shadow-sm transition-colors duration-300"
-              style={{ backgroundColor: heroBg ?? "#ffffff" }}
+              className="group relative mx-auto block aspect-square w-full max-w-md overflow-hidden rounded-3xl border border-border bg-muted shadow-sm"
               aria-label={`Voir ${heroProduct.brand} ${heroProduct.name}`}
             >
               <ProductImage
