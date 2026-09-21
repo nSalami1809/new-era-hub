@@ -38,7 +38,10 @@ function OrderLookupPage() {
   return (
     <SiteLayout>
       <div className="container-page flex justify-center py-12 sm:py-16">
-        <form onSubmit={submit} className="w-full max-w-sm">
+        <form
+          onSubmit={submit}
+          className="w-full max-w-sm rounded-3xl border border-border bg-card p-6 shadow-sm sm:p-8"
+        >
           <nav className="mb-4 text-sm text-muted-foreground">
             <Link to="/" className="hover:underline">
               Accueil

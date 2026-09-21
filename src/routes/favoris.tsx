@@ -44,7 +44,7 @@ function FavoritesPage() {
             <ProductGridSkeleton count={4} />
           </div>
         ) : favorites.length === 0 ? (
-          <div className="mt-10 border border-border p-10 text-center">
+          <div className="mt-10 rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
             <p className="font-semibold">Vous n'avez pas encore de favoris.</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Appuyez sur le cœur d'un produit pour le retrouver ici.

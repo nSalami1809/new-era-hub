@@ -5,7 +5,14 @@
 /*
  * Design system — New Era Hub 241.
  * Blanc, noir, gris; vert pour les actions positives, rouge pour les
- * actions destructives. Typographie Ranade.
+ * actions destructives; ambre comme accent de marque. Typographie Ranade.
+ *
+ * L'admin (nehub-53ff1f11.*) reste anguleux/sans ombre par choix — c'est un
+ * outil, pas une vitrine. La boutique (tout ce qui passe par <SiteLayout>,
+ * scopé via la classe .storefront posée dessus) prend des coins arrondis et
+ * des ombres douces : voir --radius-btn/--radius-field/--radius-card plus
+ * bas, à 0 par défaut (donc inertes partout où .storefront n'est pas un
+ * ancêtre) et redéfinis uniquement dans le scope .storefront.
  */
 
 @font-face {
@@ -59,6 +66,8 @@
   --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
 }
 
 :root {
@@ -86,6 +95,27 @@
   --border-strong: oklch(0.82 0 0);
   --input: oklch(0.88 0 0);
   --ring: oklch(0.17 0 0);
+  /* Warm amber — the one brand accent, used sparingly on the storefront
+     (kicker badges, hover accents) so it stays a highlight, not noise. */
+  --brand: oklch(0.75 0.15 75);
+  --brand-foreground: oklch(0.22 0.04 75);
+}
+
+/*
+ * Storefront-only look: pill buttons/inputs and rounded, softly-elevated
+ * cards. Scoped to .storefront (set on <SiteLayout>) so the admin keeps its
+ * own square/near-0 radius scale (defined above in @theme inline) — these
+ * redefine the SAME --radius-* variables the theme reads from, just inside
+ * this one subtree, so plain `rounded-lg`/`rounded-2xl`/etc. classes just
+ * work at storefront scale without any arbitrary-value clutter per call site.
+ */
+.storefront {
+  --radius-btn: 999px;
+  --radius-field: 0.875rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
 }
 
 @layer base {
@@ -129,7 +159,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0;
+  border-radius: var(--radius-btn, 0);
   font-weight: 600;
   font-size: 0.9375rem;
   line-height: 1;
@@ -138,8 +168,13 @@
   transition:
     background-color 120ms ease,
     color 120ms ease,
-    border-color 120ms ease;
+    border-color 120ms ease,
+    transform 120ms ease,
+    box-shadow 120ms ease;
   cursor: pointer;
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -182,13 +217,20 @@
 @utility field {
   width: 100%;
   border: 1px solid var(--color-input);
-  border-radius: 0;
+  border-radius: var(--radius-field, 0);
   padding: 0.625rem 0.75rem;
   font-size: 0.9375rem;
   min-height: 42px;
   background-color: var(--color-background);
   color: var(--color-foreground);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
   &::placeholder {
     color: var(--color-muted-foreground);
+  }
+  &:focus-visible {
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 3px oklch(0.17 0 0 / 8%);
   }
 }

@@ -31,7 +31,7 @@ function SearchSuggestions({
 }) {
   if (!open || suggestions.length === 0) return null;
   return (
-    <div className="absolute left-0 right-0 top-full z-50 mt-1 border border-border bg-background shadow-sm">
+    <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-border bg-background shadow-lg">
       <ul className="divide-y divide-border">
         {suggestions.map((p) => (
           <li key={p.id}>
@@ -40,12 +40,12 @@ function SearchSuggestions({
               params={{ id: p.id }}
               onMouseDown={(e) => e.preventDefault()}
               onClick={onSelect}
-              className="flex items-center gap-3 p-2.5 hover:bg-muted"
+              className="flex items-center gap-3 p-2.5 transition-colors hover:bg-muted"
             >
               <ProductImage
                 src={p.images[0]}
                 alt=""
-                className="h-10 w-10 shrink-0 border border-border bg-white object-contain p-1"
+                className="h-10 w-10 shrink-0 rounded-lg border border-border bg-white object-contain p-1"
               />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{p.name}</div>
@@ -136,18 +136,18 @@ export function SiteHeader() {
           className="group relative py-2 text-sm font-bold uppercase tracking-wide text-foreground"
         >
           {item.label}
-          <span className="absolute inset-x-0 -bottom-0.5 h-[2px] w-full origin-left scale-x-0 bg-foreground transition-transform duration-300 ease-out group-hover:scale-x-100" />
+          <span className="absolute inset-x-0 -bottom-0.5 h-[2px] w-full origin-left scale-x-0 bg-brand transition-transform duration-300 ease-out group-hover:scale-x-100" />
         </Link>
       ))}
     </>
   );
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background print:hidden">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm print:hidden">
       <div className="container-page flex h-24 items-center gap-4 sm:h-28">
         <button
           type="button"
-          className="-ml-2 p-2 md:hidden"
+          className="-ml-2 rounded-full p-2 transition-colors hover:bg-muted md:hidden"
           aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
           onClick={() => setOpen((v) => !v)}
         >
@@ -184,7 +184,7 @@ export function SiteHeader() {
               onBlur={() => setTimeout(() => setSuggestionsOpen(false), 150)}
               autoComplete="off"
               placeholder="Rechercher un produit, une marque..."
-              className="field !min-h-[38px] w-72 pl-9"
+              className="field !min-h-[38px] w-72 border-transparent bg-muted pl-9 focus-visible:border-border-strong focus-visible:bg-background"
             />
             <SearchSuggestions
               open={suggestionsOpen}
@@ -200,7 +200,7 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-1 lg:ml-3">
           <Link
             to="/favoris"
-            className="hidden p-2 text-foreground sm:block"
+            className="hidden rounded-full p-2.5 text-foreground transition-colors hover:bg-muted sm:block"
             aria-label={`Favoris, ${favoritesCount} produit(s)`}
           >
             <Heart
@@ -210,11 +210,11 @@ export function SiteHeader() {
           </Link>
           <Link
             to="/panier"
-            className="relative flex items-center gap-2 p-2"
+            className="relative flex items-center gap-2 rounded-full p-2.5 transition-colors hover:bg-muted"
             aria-label={`Panier, ${count} article(s)`}
           >
             <ShoppingBag size={20} />
-            <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center bg-foreground px-1 text-[11px] font-semibold text-background">
+            <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[11px] font-semibold text-brand-foreground">
               {count}
             </span>
           </Link>
@@ -239,7 +239,7 @@ export function SiteHeader() {
               onBlur={() => setTimeout(() => setSuggestionsOpen(false), 150)}
               autoComplete="off"
               placeholder="Rechercher un produit, une marque..."
-              className="field !min-h-[40px] w-full pl-9"
+              className="field !min-h-[40px] w-full border-transparent bg-muted pl-9 focus-visible:border-border-strong focus-visible:bg-background"
             />
             <SearchSuggestions
               open={suggestionsOpen}
@@ -278,7 +278,7 @@ export function SiteFooter() {
   const { data: settings } = useSettings();
   const storeName = settings?.storeName ?? FALLBACK_STORE_NAME;
   return (
-    <footer className="mt-16 border-t border-border bg-muted/40 print:hidden">
+    <footer className="mt-16 rounded-t-3xl border-t border-border bg-muted/40 print:hidden">
       <div className="container-page grid gap-8 py-10 sm:grid-cols-3">
         <div>
           <img
@@ -363,7 +363,7 @@ export function SiteFooter() {
 
 export function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="storefront flex min-h-screen flex-col">
       <SiteHeader />
       <main className="flex-1">{children}</main>
       <SiteFooter />

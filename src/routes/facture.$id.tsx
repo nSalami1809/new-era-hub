@@ -36,13 +36,13 @@ function InvoicePage() {
     return (
       <SiteLayout>
         <div className="container-page max-w-3xl py-8">
-          <div className="border border-border p-5 sm:p-8">
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-8">
             <div className="flex justify-between gap-4 border-b border-border pb-5">
-              <Skeleton className="h-10 w-40" />
-              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 w-40 rounded-full" />
+              <Skeleton className="h-10 w-32 rounded-full" />
             </div>
-            <Skeleton className="mt-5 h-24 w-full" />
-            <Skeleton className="mt-4 h-40 w-full" />
+            <Skeleton className="mt-5 h-24 w-full rounded-xl" />
+            <Skeleton className="mt-4 h-40 w-full rounded-xl" />
           </div>
         </div>
       </SiteLayout>
@@ -76,7 +76,7 @@ function InvoicePage() {
   return (
     <SiteLayout>
       <div className="container-page max-w-3xl py-8">
-        <div className="border border-border p-5 sm:p-8">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm print:rounded-none print:border-black print:shadow-none sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5">
             <div>
               <div className="flex items-center gap-2">
@@ -112,7 +112,7 @@ function InvoicePage() {
             <div className="text-right text-sm">
               <p className="text-lg font-bold">Commande #{order.orderNumber}</p>
               <p className="text-muted-foreground">{formatDate(order.createdAt)}</p>
-              <p className="mt-1 inline-block border border-border px-2 py-0.5 text-xs font-semibold">
+              <p className="mt-1 inline-block rounded-full border border-border px-2.5 py-0.5 text-xs font-semibold">
                 {order.status}
               </p>
             </div>
@@ -168,7 +168,7 @@ function InvoicePage() {
                         <ProductImage
                           src={item.image}
                           alt={`${item.brand} ${item.name}`}
-                          className="h-14 w-14 shrink-0 border border-border bg-white object-contain p-1"
+                          className="h-14 w-14 shrink-0 rounded-lg border border-border bg-white object-contain p-1"
                         />
                         <div>
                           <div className="text-xs font-semibold uppercase text-muted-foreground">

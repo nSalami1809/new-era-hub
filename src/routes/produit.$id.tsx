@@ -115,7 +115,10 @@ function ReviewForm({ productId }: { productId: string }) {
   }
 
   return (
-    <form onSubmit={submit} className="mt-6 max-w-sm border border-border p-4">
+    <form
+      onSubmit={submit}
+      className="mt-6 max-w-sm rounded-2xl border border-border bg-card p-4 shadow-sm"
+    >
       <h3 className="text-sm font-bold uppercase tracking-wide">Laisser un avis</h3>
       <div className="mt-3">
         <StarRatingInput value={rating} onChange={setRating} />
@@ -191,16 +194,16 @@ function ProductPage() {
     return (
       <SiteLayout>
         <div className="container-page py-6 sm:py-10">
-          <Skeleton className="h-4 w-64" />
+          <Skeleton className="h-4 w-64 rounded-full" />
           <div className="mt-5 grid gap-8 lg:grid-cols-2">
-            <Skeleton className="aspect-square w-full" />
+            <Skeleton className="aspect-square w-full rounded-3xl" />
             <div className="space-y-3">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="mt-4 h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="mt-4 h-11 w-48" />
+              <Skeleton className="h-3 w-24 rounded-full" />
+              <Skeleton className="h-8 w-3/4 rounded-full" />
+              <Skeleton className="h-6 w-32 rounded-full" />
+              <Skeleton className="mt-4 h-24 w-full rounded-xl" />
+              <Skeleton className="h-24 w-full rounded-xl" />
+              <Skeleton className="mt-4 h-11 w-48 rounded-full" />
             </div>
           </div>
         </div>
@@ -275,7 +278,7 @@ function ProductPage() {
               type="button"
               onClick={() => setZoomOpen(true)}
               aria-label="Agrandir l'image"
-              className="group relative block aspect-square w-full overflow-hidden border border-border bg-white"
+              className="group relative block aspect-square w-full overflow-hidden rounded-3xl border border-border bg-white shadow-sm"
             >
               <ProductImage
                 src={product.images[imageIndex] ?? product.images[0]}
@@ -284,7 +287,7 @@ function ProductPage() {
                 iconSize={40}
                 priority
               />
-              <span className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-background/80 px-2 py-1 text-xs font-medium text-muted-foreground opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+              <span className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-background/80 px-3 py-1.5 text-xs font-medium text-muted-foreground opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100">
                 <ZoomIn size={14} />
                 Agrandir
               </span>
@@ -297,8 +300,10 @@ function ProductPage() {
                     type="button"
                     onClick={() => setImageIndex(i)}
                     aria-label={`Voir l'image ${i + 1}`}
-                    className={`h-20 w-20 overflow-hidden border bg-white ${
-                      i === imageIndex ? "border-foreground" : "border-border"
+                    className={`h-20 w-20 overflow-hidden rounded-xl border-2 bg-white transition-colors ${
+                      i === imageIndex
+                        ? "border-foreground"
+                        : "border-border hover:border-border-strong"
                     }`}
                   >
                     <ProductImage src={img} alt="" className="h-full w-full object-contain p-1.5" />
@@ -401,7 +406,7 @@ function ProductPage() {
                   </p>
                 )}
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center border border-border-strong">
+                  <div className="flex items-center rounded-full border border-border-strong">
                     <button
                       type="button"
                       className="h-11 w-11 text-lg"
@@ -462,7 +467,7 @@ function ProductPage() {
               Aucun avis pour ce produit pour le moment.
             </p>
           ) : (
-            <ul className="divide-y divide-border border-y border-border">
+            <ul className="divide-y divide-border rounded-2xl border border-border bg-card px-4 shadow-sm">
               {reviews.map((r) => (
                 <li key={r.id} className="py-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -522,7 +527,7 @@ function ProductPage() {
                     setImageIndex(i);
                   }}
                   aria-label={`Voir l'image ${i + 1}`}
-                  className={`h-2 w-2 ${i === imageIndex ? "bg-white" : "bg-white/40"}`}
+                  className={`h-2 w-2 rounded-full ${i === imageIndex ? "bg-white" : "bg-white/40"}`}
                 />
               ))}
             </div>

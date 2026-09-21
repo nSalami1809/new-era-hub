@@ -137,7 +137,7 @@ function Boutique() {
           )}
         </p>
 
-        <div className="mt-5 flex flex-wrap items-center gap-3 border-y border-border py-3">
+        <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
           <div className="flex items-center gap-2">
             <label htmlFor="category" className="text-sm text-muted-foreground">
               Catégorie
@@ -256,7 +256,7 @@ function Boutique() {
             <ProductGridSkeleton count={8} />
           </div>
         ) : results.length === 0 ? (
-          <div className="mt-10 border border-border p-10 text-center">
+          <div className="mt-10 rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
             <p className="font-semibold">Aucun produit ne correspond à votre recherche.</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Essayez un autre mot-clé ou retirez les filtres.

@@ -197,7 +197,7 @@ function CheckoutPage() {
             </div>
           </div>
 
-          <aside className="h-fit border border-border p-5">
+          <aside className="h-fit rounded-2xl border border-border bg-card p-5 shadow-sm">
             <h2 className="text-lg">Récapitulatif</h2>
             <ul className="mt-3 space-y-2 text-sm">
               {cart.map((item) => {

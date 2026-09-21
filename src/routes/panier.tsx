@@ -72,7 +72,7 @@ function CartPage() {
         <h1 className="text-2xl sm:text-3xl">Panier</h1>
 
         <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_340px]">
-          <div className="divide-y divide-border border-y border-border">
+          <div className="divide-y divide-border rounded-2xl border border-border bg-card px-4 shadow-sm sm:px-5">
             {lines.map(({ item, product }) => {
               const p = product!;
               const variant = item.variantId
@@ -87,7 +87,7 @@ function CartPage() {
                   <Link
                     to="/produit/$id"
                     params={{ id: p.id }}
-                    className="h-24 w-24 shrink-0 border border-border bg-white"
+                    className="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-border bg-white"
                   >
                     <ProductImage
                       src={p.images[0]}
@@ -120,7 +120,7 @@ function CartPage() {
                     )}
 
                     <div className="mt-2 flex flex-wrap items-center gap-3">
-                      <div className="flex items-center border border-border-strong">
+                      <div className="flex items-center rounded-full border border-border-strong">
                         <button
                           type="button"
                           className="h-10 w-10"
@@ -161,7 +161,7 @@ function CartPage() {
             })}
           </div>
 
-          <aside className="h-fit border border-border p-5 lg:sticky lg:top-24">
+          <aside className="h-fit rounded-2xl border border-border bg-card p-5 shadow-sm lg:sticky lg:top-24">
             <h2 className="text-lg">Résumé</h2>
             <dl className="mt-4 space-y-2 text-sm">
               <div className="flex justify-between">

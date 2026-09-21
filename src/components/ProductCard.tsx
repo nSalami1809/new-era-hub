@@ -49,7 +49,7 @@ export function PriceTag({
           {formatPrice(effectivePrice(product), currency)}
         </span>
         {percent !== null && (
-          <span className="bg-destructive px-1.5 py-0.5 text-xs font-semibold text-destructive-foreground">
+          <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-semibold text-destructive-foreground">
             -{percent}%
           </span>
         )}
@@ -79,18 +79,18 @@ export function ProductCard({
   const qty = cartQuantity(product.id, null);
   const favorite = isFavorite(product.id);
   return (
-    <article className="flex flex-col border border-border bg-card">
+    <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
       <div className="relative aspect-square overflow-hidden bg-white">
         <Link to="/produit/$id" params={{ id: product.id }} className="block h-full w-full">
           <ProductImage
             src={product.images[0]}
             alt={`${product.brand} ${product.name}`}
             priority={priority}
-            className="h-full w-full object-contain p-4 transition-transform duration-200 hover:scale-[1.04] sm:p-6"
+            className="h-full w-full object-contain p-4 transition-transform duration-300 ease-out group-hover:scale-[1.06] sm:p-6"
           />
         </Link>
         {out && (
-          <span className="absolute left-0 top-0 bg-foreground px-2 py-1 text-xs font-semibold text-background">
+          <span className="absolute left-2 top-2 rounded-full bg-foreground px-2.5 py-1 text-xs font-semibold text-background">
             Rupture
           </span>
         )}
@@ -101,7 +101,7 @@ export function ProductCard({
             favorite ? `Retirer ${product.name} des favoris` : `Ajouter ${product.name} aux favoris`
           }
           aria-pressed={favorite}
-          className="absolute right-2 top-2 bg-background/80 p-1.5 backdrop-blur-sm"
+          className="absolute right-2 top-2 rounded-full bg-background/90 p-2 shadow-sm backdrop-blur-sm transition-transform hover:scale-110"
         >
           <Heart
             size={18}

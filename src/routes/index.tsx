@@ -1,10 +1,29 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { MessageCircle, ShieldCheck, Truck } from "lucide-react";
 import { SiteLayout } from "@/components/site";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductGridSkeleton, Skeleton } from "@/components/Skeleton";
 import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
+
+const TRUST_POINTS = [
+  {
+    icon: MessageCircle,
+    title: "Commande simple",
+    body: "Vous choisissez, vous finalisez le paiement directement sur WhatsApp.",
+  },
+  {
+    icon: Truck,
+    title: "Livraison dans votre ville",
+    body: "Renseignez votre lieu de livraison à la commande, on s'occupe du reste.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Stock réel, produits vérifiés",
+    body: "Ce que vous voyez en ligne est disponible en boutique.",
+  },
+];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -45,28 +64,66 @@ function Index() {
     })
     .filter((c) => c.count > 0 && c.cover);
 
+  const heroProduct = featured[0] ?? active[0];
+
   return (
     <SiteLayout>
-      <section className="border-b border-border">
-        <div className="container-page flex flex-col gap-4 py-10 sm:py-14">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Nouvelle sélection disponible
-          </p>
-          <h1 className="max-w-2xl text-3xl leading-tight sm:text-4xl">
-            Des produits pensés pour votre style.
-          </h1>
-          <p className="max-w-xl text-sm text-muted-foreground sm:text-base">
-            Marques reconnues, stock réel, livraison dans votre ville. Vous commandez ici, vous
-            finalisez le paiement sur WhatsApp.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link to="/boutique" className="btn-base btn-dark">
-              Voir la boutique
-            </Link>
-            <Link to="/boutique" search={{ promo: true }} className="btn-base btn-outline">
-              Voir les promotions
-            </Link>
+      <section className="overflow-hidden border-b border-border bg-muted/30">
+        <div className="container-page grid items-center gap-8 py-10 sm:py-14 lg:grid-cols-2 lg:py-20">
+          <div className="flex flex-col gap-4">
+            <span className="inline-flex w-fit items-center rounded-full bg-brand px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-foreground">
+              Nouvelle sélection disponible
+            </span>
+            <h1 className="max-w-xl text-4xl leading-[1.05] sm:text-5xl">
+              Des produits pensés pour votre style.
+            </h1>
+            <p className="max-w-xl text-sm text-muted-foreground sm:text-base">
+              Marques reconnues, stock réel, livraison dans votre ville. Vous commandez ici, vous
+              finalisez le paiement sur WhatsApp.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-3">
+              <Link to="/boutique" className="btn-base btn-dark">
+                Voir la boutique
+              </Link>
+              <Link to="/boutique" search={{ promo: true }} className="btn-base btn-outline">
+                Voir les promotions
+              </Link>
+            </div>
           </div>
+
+          {heroProduct && (
+            <Link
+              to="/produit/$id"
+              params={{ id: heroProduct.id }}
+              className="group relative mx-auto block aspect-square w-full max-w-md"
+              aria-label={`Voir ${heroProduct.brand} ${heroProduct.name}`}
+            >
+              <span className="absolute inset-6 rounded-full bg-brand/25 blur-2xl" aria-hidden />
+              <span className="absolute inset-0 rounded-[2.5rem] bg-background shadow-xl" />
+              <ProductImage
+                src={heroProduct.images[0]}
+                alt={`${heroProduct.brand} ${heroProduct.name}`}
+                priority
+                className="relative h-full w-full object-contain p-10 transition-transform duration-300 ease-out group-hover:scale-105 sm:p-14"
+              />
+            </Link>
+          )}
+        </div>
+      </section>
+
+      <section className="border-b border-border">
+        <div className="container-page grid gap-6 py-8 sm:grid-cols-3">
+          {TRUST_POINTS.map(({ icon: Icon, title, body }) => (
+            <div key={title} className="flex items-start gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand/15 text-foreground">
+                <Icon size={20} />
+              </span>
+              <div>
+                <p className="text-sm font-bold">{title}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">{body}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -75,7 +132,7 @@ function Index() {
           <h2 className="mb-4 text-xl sm:text-2xl">Découvrir par catégorie</h2>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-square w-full" />
+              <Skeleton key={i} className="aspect-square w-full rounded-2xl" />
             ))}
           </div>
         </section>
@@ -90,13 +147,13 @@ function Index() {
                 key={category}
                 to="/boutique"
                 search={{ category }}
-                className="group flex flex-col border border-border bg-card transition-colors hover:border-border-strong"
+                className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
               >
                 <div className="aspect-square overflow-hidden bg-white">
                   <ProductImage
                     src={cover!.images[0]}
                     alt=""
-                    className="h-full w-full object-contain p-6 transition-transform duration-200 group-hover:scale-105 sm:p-8"
+                    className="h-full w-full object-contain p-6 transition-transform duration-300 ease-out group-hover:scale-105 sm:p-8"
                   />
                 </div>
                 <div className="p-3 sm:p-4">
