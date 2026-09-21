@@ -339,8 +339,7 @@ function SizeGrid({
     adjustStock.mutate({ variantId: existing.id, newStock: value });
   }
 
-  function addCustom(e: React.FormEvent) {
-    e.preventDefault();
+  function addCustom() {
     const size = customSize.trim();
     if (!size) return;
     addVariant.mutate(
@@ -388,18 +387,24 @@ function SizeGrid({
         );
       })}
       {showCustom ? (
-        <form onSubmit={addCustom} className="flex items-center gap-1">
+        <div className="flex items-center gap-1">
           <input
             autoFocus
             value={customSize}
             onChange={(e) => setCustomSize(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addCustom();
+              }
+            }}
             onBlur={() => {
               if (!customSize.trim()) setShowCustom(false);
             }}
             placeholder="Autre"
             className="field !min-h-8 w-16 text-xs"
           />
-        </form>
+        </div>
       ) : (
         <button
           type="button"
@@ -456,8 +461,7 @@ function NewColorForm({ product, onDone }: { product: Product; onDone: () => voi
   const [images, setImages] = useState<string[]>([]);
   const addColor = useAddColor();
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
+  function submit() {
     const trimmed = name.trim();
     if (!trimmed) return;
     addColor.mutate(
@@ -472,8 +476,13 @@ function NewColorForm({ product, onDone }: { product: Product; onDone: () => voi
     );
   }
 
+  // A plain <div>, not a <form>: this renders nested inside the product's
+  // own <form> (see ProductForm below), and HTML doesn't allow a <form>
+  // inside a <form> — the browser's HTML parser silently drops a nested one
+  // on the server-rendered page, so its "Ajouter" button would otherwise end
+  // up submitting the outer product form instead of adding the color.
   return (
-    <form onSubmit={submit} className="space-y-2 border border-dashed border-border-strong p-3">
+    <div className="space-y-2 border border-dashed border-border-strong p-3">
       <div className="flex flex-wrap items-end gap-2">
         <div>
           <label htmlFor="new-color-name" className="mb-1 block text-xs text-muted-foreground">
@@ -484,6 +493,12 @@ function NewColorForm({ product, onDone }: { product: Product; onDone: () => voi
             autoFocus
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                submit();
+              }
+            }}
             placeholder="Noir"
             className="field !min-h-9 w-28"
           />
@@ -501,7 +516,8 @@ function NewColorForm({ product, onDone }: { product: Product; onDone: () => voi
           />
         </div>
         <button
-          type="submit"
+          type="button"
+          onClick={submit}
           disabled={addColor.isPending || !name.trim()}
           className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
         >
@@ -517,7 +533,7 @@ function NewColorForm({ product, onDone }: { product: Product; onDone: () => voi
         </button>
       </div>
       <ImageUploader images={images} onChange={setImages} />
-    </form>
+    </div>
   );
 }
 
@@ -680,8 +696,7 @@ function ColorEditForm({ color, onDone }: { color: ProductColor; onDone: () => v
   const [images, setImages] = useState(color.images);
   const updateColor = useUpdateColor();
 
-  function save(e: React.FormEvent) {
-    e.preventDefault();
+  function save() {
     if (!name.trim()) return;
     updateColor.mutate(
       { colorId: color.id, name: name.trim(), hexColor: hex || null, images },
@@ -689,8 +704,10 @@ function ColorEditForm({ color, onDone }: { color: ProductColor; onDone: () => v
     );
   }
 
+  // A plain <div>, not a <form> — see the comment on NewColorForm above:
+  // this also renders nested inside the product's own <form>.
   return (
-    <form onSubmit={save} className="space-y-2">
+    <div className="space-y-2">
       <div className="flex flex-wrap items-end gap-2">
         <div>
           <label
@@ -703,6 +720,12 @@ function ColorEditForm({ color, onDone }: { color: ProductColor; onDone: () => v
             id={`edit-color-name-${color.id}`}
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                save();
+              }
+            }}
             className="field !min-h-9 w-28"
           />
         </div>
@@ -722,7 +745,8 @@ function ColorEditForm({ color, onDone }: { color: ProductColor; onDone: () => v
           />
         </div>
         <button
-          type="submit"
+          type="button"
+          onClick={save}
           disabled={updateColor.isPending || !name.trim()}
           className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
         >
@@ -738,7 +762,7 @@ function ColorEditForm({ color, onDone }: { color: ProductColor; onDone: () => v
         </button>
       </div>
       <ImageUploader images={images} onChange={setImages} />
-    </form>
+    </div>
   );
 }
 
