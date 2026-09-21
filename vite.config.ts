@@ -38,13 +38,6 @@ export default defineConfig(({ command, mode }) => {
         "@tanstack/react-query",
         "@tanstack/query-core",
       ],
-      // onnxruntime-web's default "bundle" entry inlines its ~14-28MB wasm
-      // binary via a static `new URL(..., import.meta.url)` that Vite copies
-      // into the build. This custom export condition (documented by the
-      // package itself) picks its "extern wasm" entry instead, which loads
-      // the wasm at runtime from the CDN path set in src/lib/image-background.ts
-      // — nothing wasm-related ends up in our own build output.
-      conditions: ["onnxruntime-web-use-extern-wasm"],
     },
     optimizeDeps: {
       include: [

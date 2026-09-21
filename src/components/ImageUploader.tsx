@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ImagePlus, Star, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/lib/toast";
 import { ProductImage } from "@/components/ProductImage";
 import { compressImage } from "@/lib/image-compression";
-import { preloadBackgroundRemoval, removeBackgroundAndCompose } from "@/lib/image-background";
+import { removeBackgroundAndCompose } from "@/lib/image-background";
 
 const BUCKET = "product-images";
 const MAX_SIZE_MB = 5;
@@ -22,9 +22,9 @@ function validate(file: File): boolean {
   return true;
 }
 
-/** Cuts the subject onto a white square with a shadow; falls back to a plain
- * flattened/compressed photo if the model can't confidently segment it (an
- * already-plain background, unusual lighting, or a runtime hiccup). */
+/** Cuts the subject onto a white square with a shadow (via remove.bg); falls
+ * back to a plain flattened/compressed photo if the service can't find a
+ * subject, is unreachable, or its credits/key are exhausted/missing. */
 async function prepareFile(file: File, removeBg: boolean): Promise<File> {
   if (removeBg) {
     try {
@@ -65,17 +65,12 @@ export function ImageUploader({
   const [progress, setProgress] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (removeBg) preloadBackgroundRemoval();
-  }, [removeBg]);
-
   async function handleFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
     const files = Array.from(fileList);
     setUploading(true);
-    // Sequential on purpose: background removal runs a model inference per
-    // photo, and running several at once would fight over the same CPU/WASM
-    // runtime instead of actually going faster.
+    // Sequential on purpose, so progress feedback stays accurate and a
+    // multi-photo upload doesn't burn through remove.bg credits in a burst.
     const uploaded: string[] = [];
     for (let i = 0; i < files.length; i++) {
       setProgress(
