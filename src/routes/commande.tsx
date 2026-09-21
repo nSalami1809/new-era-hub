@@ -7,6 +7,7 @@ import { cartTotals, clearCart, useCart } from "@/lib/cart";
 import { toast } from "@/lib/toast";
 import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
+import { useCategories } from "@/lib/api/categories";
 import { useCreateOrder } from "@/lib/api/orders";
 import { usePreviewPromoCode, type PromoPreview } from "@/lib/api/promo-codes";
 import { variantLabel } from "@/lib/types";
@@ -37,6 +38,7 @@ function CheckoutPage() {
   const cart = useCart();
   const { data: products = [] } = useProducts();
   const { data: settings } = useSettings();
+  const { data: categories = [] } = useCategories();
   const createOrder = useCreateOrder();
   const previewPromo = usePreviewPromoCode();
   const navigate = useNavigate();
@@ -211,7 +213,10 @@ function CheckoutPage() {
                 const color = variant?.colorId
                   ? (p.colors.find((c) => c.id === variant.colorId) ?? null)
                   : null;
-                const label = variant ? variantLabel(color?.name ?? null, variant.size) : "";
+                const sizeType = categories.find((c) => c.name === p.category)?.sizeType;
+                const label = variant
+                  ? variantLabel(color?.name ?? null, variant.size, sizeType)
+                  : "";
                 return (
                   <li
                     key={`${p.id}-${item.variantId ?? "base"}`}

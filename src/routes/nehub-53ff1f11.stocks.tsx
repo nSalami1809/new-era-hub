@@ -10,7 +10,8 @@ import { useAdjustStock, useStockMovements } from "@/lib/api/stock";
 import { useAdjustVariantStock } from "@/lib/api/stock-variants";
 import { useStockAlerts, useDeleteStockAlert } from "@/lib/api/stock-alerts";
 import { useViewMode } from "@/lib/use-view-mode";
-import { stockStatus, variantLabel, type ProductVariant } from "@/lib/types";
+import { useCategories } from "@/lib/api/categories";
+import { stockStatus, variantLabel, type ProductVariant, type SizeType } from "@/lib/types";
 
 export const Route = createFileRoute("/nehub-53ff1f11/stocks")({
   component: AdminStocks,
@@ -26,13 +27,15 @@ function statusMeta(status: "in" | "low" | "out") {
 function VariantStockRow({
   variant,
   colorName,
+  sizeType,
 }: {
   variant: ProductVariant;
   colorName: string | null;
+  sizeType: SizeType;
 }) {
   const [draft, setDraft] = useState("");
   const adjustVariant = useAdjustVariantStock();
-  const label = variantLabel(colorName, variant.size) || "Variante";
+  const label = variantLabel(colorName, variant.size, sizeType) || "Variante";
 
   function apply() {
     const newStock = draft === "" ? variant.stock : Math.max(0, Math.round(Number(draft)));
@@ -68,6 +71,7 @@ function VariantStockRow({
 
 function AdminStocks() {
   const { data: products = [], isLoading } = useProducts();
+  const { data: categories = [] } = useCategories();
   const { data: movements = [] } = useStockMovements();
   const { data: stockAlerts = [] } = useStockAlerts();
   const deleteStockAlert = useDeleteStockAlert();
@@ -162,6 +166,7 @@ function AdminStocks() {
                         key={v.id}
                         variant={v}
                         colorName={p.colors.find((c) => c.id === v.colorId)?.name ?? null}
+                        sizeType={categories.find((c) => c.name === p.category)?.sizeType ?? "none"}
                       />
                     ))}
                   </div>
@@ -241,6 +246,9 @@ function AdminStocks() {
                               key={v.id}
                               variant={v}
                               colorName={p.colors.find((c) => c.id === v.colorId)?.name ?? null}
+                              sizeType={
+                                categories.find((c) => c.name === p.category)?.sizeType ?? "none"
+                              }
                             />
                           ))}
                         </div>

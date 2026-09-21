@@ -30,7 +30,7 @@ export function buildWhatsappMessage(order: Order, settings: StoreSettings): str
   lines.push("");
   lines.push("🛒 *Ma commande*");
   for (const item of order.items) {
-    const label = variantLabel(item.variantColor, item.variantSize);
+    const label = variantLabel(item.variantColor, item.variantSize, item.variantSizeKind);
     const variant = label ? ` (${label})` : "";
     lines.push(
       `• ${item.brand} ${item.name}${variant} × ${item.quantity} — ${formatPrice(

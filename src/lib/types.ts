@@ -2,6 +2,22 @@
 // fixed list — any non-empty string the admin has created is valid.
 export type ProductCategory = string;
 
+// What kind of size a category's products use — drives both the wording
+// ("Pointure" vs "Taille") and which preset sizes the admin form offers.
+// 'none' hides the whole size UI (caps, bags, cosmetics...).
+export const SIZE_TYPES = ["none", "clothing", "shoes"] as const;
+export type SizeType = (typeof SIZE_TYPES)[number];
+
+export const SIZE_PRESETS: Record<Exclude<SizeType, "none">, string[]> = {
+  clothing: ["XS", "S", "M", "L", "XL", "XXL", "XXXL"],
+  shoes: ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"],
+};
+
+/** "Pointure" for shoes, "Taille" for everything else (clothing, or unknown/legacy data). */
+export function sizeWord(kind: SizeType | null | undefined): string {
+  return kind === "shoes" ? "Pointure" : "Taille";
+}
+
 export type ProductColor = {
   id: string;
   name: string;
@@ -69,6 +85,8 @@ export type OrderItem = {
   costPrice: number;
   variantSize: string | null;
   variantColor: string | null;
+  /** Snapshotted at purchase time so old orders keep saying "Pointure"/"Taille" correctly. */
+  variantSizeKind: SizeType | null;
   quantity: number;
 };
 
@@ -173,7 +191,13 @@ export function stockStatus(p: Product): "in" | "low" | "out" {
   return "in";
 }
 
-/** "Noir, Taille M" / "Noir" / "Taille M" / "" — combines a variant's color and size for display. */
-export function variantLabel(color: string | null, size: string | null): string {
-  return [color, size ? `Taille ${size}` : null].filter((x): x is string => !!x).join(", ");
+/** "Noir, Taille M" / "Noir" / "Pointure 42" / "" — combines a variant's color and size for display. */
+export function variantLabel(
+  color: string | null,
+  size: string | null,
+  kind?: SizeType | null,
+): string {
+  return [color, size ? `${sizeWord(kind)} ${size}` : null]
+    .filter((x): x is string => !!x)
+    .join(", ");
 }

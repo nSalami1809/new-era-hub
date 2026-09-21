@@ -27,6 +27,7 @@ export type Database = {
           variant_color: string | null;
           variant_id: string | null;
           variant_size: string | null;
+          variant_size_kind: string | null;
         };
         Insert: {
           base_price: number;
@@ -43,6 +44,7 @@ export type Database = {
           variant_color?: string | null;
           variant_id?: string | null;
           variant_size?: string | null;
+          variant_size_kind?: string | null;
         };
         Update: {
           base_price?: number;
@@ -59,6 +61,7 @@ export type Database = {
           variant_color?: string | null;
           variant_id?: string | null;
           variant_size?: string | null;
+          variant_size_kind?: string | null;
         };
         Relationships: [
           {
@@ -172,16 +175,19 @@ export type Database = {
           created_at: string;
           id: string;
           name: string;
+          size_type: string;
         };
         Insert: {
           created_at?: string;
           id?: string;
           name: string;
+          size_type?: string;
         };
         Update: {
           created_at?: string;
           id?: string;
           name?: string;
+          size_type?: string;
         };
         Relationships: [];
       };
@@ -620,6 +626,10 @@ export type Database = {
       remove_product_color: { Args: { p_color_id: string }; Returns: undefined };
       remove_product_variant: {
         Args: { p_variant_id: string };
+        Returns: undefined;
+      };
+      set_category_size_type: {
+        Args: { p_category_id: string; p_size_type: string };
         Returns: undefined;
       };
       update_product_color: {

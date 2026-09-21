@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { CartItem } from "@/lib/types";
-import type { Customer, Order, OrderItem, OrderStatus } from "@/lib/types";
+import type { Customer, Order, OrderItem, OrderStatus, SizeType } from "@/lib/types";
 
 type OrderItemRow = {
   product_id: string | null;
@@ -14,6 +14,7 @@ type OrderItemRow = {
   cost_price?: number;
   variant_size?: string | null;
   variant_color?: string | null;
+  variant_size_kind?: string | null;
   quantity: number;
 };
 
@@ -49,6 +50,7 @@ function mapOrderItem(row: OrderItemRow): OrderItem {
     costPrice: row.cost_price !== undefined ? Number(row.cost_price) : 0,
     variantSize: row.variant_size ?? null,
     variantColor: row.variant_color ?? null,
+    variantSizeKind: (row.variant_size_kind as SizeType | null | undefined) ?? null,
     quantity: row.quantity,
   };
 }

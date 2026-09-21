@@ -159,8 +159,8 @@ function AdminOrderDetail() {
                       </div>
                       <div className="font-medium">
                         {item.name}
-                        {variantLabel(item.variantColor, item.variantSize)
-                          ? ` — ${variantLabel(item.variantColor, item.variantSize)}`
+                        {variantLabel(item.variantColor, item.variantSize, item.variantSizeKind)
+                          ? ` — ${variantLabel(item.variantColor, item.variantSize, item.variantSizeKind)}`
                           : ""}
                       </div>
                       <div className="text-xs text-muted-foreground">{item.sku}</div>

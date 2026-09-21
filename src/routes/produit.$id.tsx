@@ -15,11 +15,12 @@ import {
 import { useCreateStockAlert } from "@/lib/api/stock-alerts";
 import { useCreateReview, useProductReviews } from "@/lib/api/reviews";
 import { settingsQueryOptions, useSettings } from "@/lib/api/settings";
+import { categoriesQueryOptions, useCategories } from "@/lib/api/categories";
 import { formatDate, formatPrice, isValidPhone } from "@/lib/format";
 import { Skeleton } from "@/components/Skeleton";
 import { StarRating, StarRatingInput } from "@/components/StarRating";
 import { productShareText, productShareUrl } from "@/lib/whatsapp";
-import { activeBundle, quantityTotal } from "@/lib/types";
+import { activeBundle, quantityTotal, sizeWord } from "@/lib/types";
 
 export const Route = createFileRoute("/produit/$id")({
   loader: async ({ context, params }) => {
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/produit/$id")({
       context.queryClient.ensureQueryData(productQueryOptions(params.id)),
       context.queryClient.ensureQueryData(productsQueryOptions),
       context.queryClient.ensureQueryData(settingsQueryOptions),
+      context.queryClient.ensureQueryData(categoriesQueryOptions),
     ]);
   },
   head: () => ({
@@ -200,6 +202,7 @@ function ProductPage() {
   const { data: product, isLoading } = useProduct(id);
   const { data: products = [] } = useProducts();
   const { data: settings } = useSettings();
+  const { data: categories = [] } = useCategories();
   const { data: reviews = [] } = useProductReviews(product?.id);
   useFavorites(); // subscribe so this page re-renders when the favorite state changes
   const [imageIndex, setImageIndex] = useState(0);
@@ -297,6 +300,7 @@ function ProductPage() {
   }
 
   const hasVariants = product.variants.length > 0;
+  const sizeType = categories.find((c) => c.name === product.category)?.sizeType ?? "none";
   const anyVariantInStock = hasVariants ? product.variants.some((v) => v.stock > 0) : true;
   const availableStock = hasVariants ? (selectedVariant?.stock ?? 0) : product.stock;
   const out = hasVariants ? !anyVariantInStock : product.stock <= 0;
@@ -491,7 +495,7 @@ function ProductPage() {
                 )}
                 {hasSizes && (
                   <div className="mb-4">
-                    <span className="mb-2 block text-sm font-medium">Taille</span>
+                    <span className="mb-2 block text-sm font-medium">{sizeWord(sizeType)}</span>
                     <div className="flex flex-wrap gap-2">
                       {variantsForColor.map((v) => (
                         <button

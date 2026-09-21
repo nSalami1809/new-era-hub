@@ -6,6 +6,7 @@ import { formatPrice } from "@/lib/format";
 import { cartTotals, removeFromCart, setCartQuantity, useCart } from "@/lib/cart";
 import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
+import { useCategories } from "@/lib/api/categories";
 import { activeBundle, effectivePrice, quantityTotal, variantLabel } from "@/lib/types";
 
 function CartLineImage({ src, alt, productId }: { src: string; alt: string; productId: string }) {
@@ -44,6 +45,7 @@ function CartPage() {
   const cart = useCart();
   const { data: products = [] } = useProducts();
   const { data: settings } = useSettings();
+  const { data: categories = [] } = useCategories();
   const currency = settings?.currency ?? "FCFA";
   const totals = cartTotals(cart, products);
 
@@ -93,7 +95,10 @@ function CartPage() {
               const color = variant?.colorId
                 ? (p.colors.find((c) => c.id === variant.colorId) ?? null)
                 : null;
-              const label = variant ? variantLabel(color?.name ?? null, variant.size) : "";
+              const sizeType = categories.find((c) => c.name === p.category)?.sizeType;
+              const label = variant
+                ? variantLabel(color?.name ?? null, variant.size, sizeType)
+                : "";
               const availableStock = variant ? variant.stock : p.stock;
               const unit = effectivePrice(p);
               const bundle = activeBundle(p);

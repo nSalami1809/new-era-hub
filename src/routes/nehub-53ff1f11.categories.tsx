@@ -2,7 +2,44 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/format";
-import { useCategories, useCreateCategory, useDeleteCategory } from "@/lib/api/categories";
+import {
+  useCategories,
+  useCreateCategory,
+  useDeleteCategory,
+  useSetCategorySizeType,
+} from "@/lib/api/categories";
+import { SIZE_TYPES, type SizeType } from "@/lib/types";
+
+const SIZE_TYPE_LABEL: Record<SizeType, string> = {
+  none: "Aucune taille",
+  clothing: "Tailles (S, M, L...)",
+  shoes: "Pointures (36, 37...)",
+};
+
+function SizeTypeSelect({
+  value,
+  onChange,
+  id,
+}: {
+  value: SizeType;
+  onChange: (v: SizeType) => void;
+  id?: string;
+}) {
+  return (
+    <select
+      id={id}
+      className="field !min-h-9 w-auto"
+      value={value}
+      onChange={(e) => onChange(e.target.value as SizeType)}
+    >
+      {SIZE_TYPES.map((t) => (
+        <option key={t} value={t}>
+          {SIZE_TYPE_LABEL[t]}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 export const Route = createFileRoute("/nehub-53ff1f11/categories")({
   component: AdminCategories,
@@ -12,7 +49,9 @@ function AdminCategories() {
   const { data: categories = [], isLoading } = useCategories();
   const createCategory = useCreateCategory();
   const deleteCategory = useDeleteCategory();
+  const setSizeType = useSetCategorySizeType();
   const [name, setName] = useState("");
+  const [sizeType, setSizeTypeInput] = useState<SizeType>("none");
   const [error, setError] = useState("");
 
   function submit(e: React.FormEvent) {
@@ -27,10 +66,16 @@ function AdminCategories() {
       return;
     }
     setError("");
-    createCategory.mutate(trimmed, {
-      onSuccess: () => setName(""),
-      onError: (err) => setError(err instanceof Error ? err.message : "Erreur, réessayez."),
-    });
+    createCategory.mutate(
+      { name: trimmed, sizeType },
+      {
+        onSuccess: () => {
+          setName("");
+          setSizeTypeInput("none");
+        },
+        onError: (err) => setError(err instanceof Error ? err.message : "Erreur, réessayez."),
+      },
+    );
   }
 
   function remove(id: string) {
@@ -48,7 +93,7 @@ function AdminCategories() {
         de la boutique.
       </p>
 
-      <form onSubmit={submit} className="mt-6 flex max-w-md flex-wrap items-end gap-2">
+      <form onSubmit={submit} className="mt-6 flex max-w-2xl flex-wrap items-end gap-2">
         <div className="flex-1">
           <label htmlFor="new-category" className="mb-1 block text-sm font-medium">
             Nouvelle catégorie
@@ -62,6 +107,16 @@ function AdminCategories() {
             }}
             placeholder="Ex : Sacs"
             className="field"
+          />
+        </div>
+        <div>
+          <label htmlFor="new-category-size-type" className="mb-1 block text-sm font-medium">
+            Taille des produits
+          </label>
+          <SizeTypeSelect
+            id="new-category-size-type"
+            value={sizeType}
+            onChange={setSizeTypeInput}
           />
         </div>
         <button
@@ -81,11 +136,12 @@ function AdminCategories() {
           Aucune catégorie pour le moment.
         </p>
       ) : (
-        <div className="mt-6 max-w-md overflow-x-auto border border-border">
+        <div className="mt-6 max-w-2xl overflow-x-auto border border-border">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted text-left text-xs uppercase text-muted-foreground">
                 <th className="p-3">Nom</th>
+                <th className="p-3">Taille des produits</th>
                 <th className="p-3">Créée le</th>
                 <th className="p-3 text-right">Actions</th>
               </tr>
@@ -94,6 +150,12 @@ function AdminCategories() {
               {categories.map((c) => (
                 <tr key={c.id} className="border-b border-border last:border-0">
                   <td className="p-3 font-medium">{c.name}</td>
+                  <td className="p-3">
+                    <SizeTypeSelect
+                      value={c.sizeType}
+                      onChange={(v) => setSizeType.mutate({ categoryId: c.id, sizeType: v })}
+                    />
+                  </td>
                   <td className="p-3 text-muted-foreground">{formatDate(c.createdAt)}</td>
                   <td className="p-3 text-right">
                     <button

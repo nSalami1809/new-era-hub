@@ -1,6 +1,12 @@
 import { useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
-import { variantLabel, type Product, type ProductColor } from "@/lib/types";
+import { Pencil, Trash2, X } from "lucide-react";
+import {
+  SIZE_PRESETS,
+  sizeWord,
+  type Product,
+  type ProductColor,
+  type SizeType,
+} from "@/lib/types";
 import type { ProductInput } from "@/lib/api/products";
 import { useCategories } from "@/lib/api/categories";
 import { ImageUploader } from "@/components/ImageUploader";
@@ -10,6 +16,7 @@ import { formatPrice } from "@/lib/format";
 import {
   useAddColor,
   useAddVariant,
+  useAdjustVariantStock,
   useRemoveColor,
   useRemoveVariant,
   useUpdateColor,
@@ -80,6 +87,7 @@ export function ProductForm({
   if (!product && !form.category && firstCategory) {
     set("category", firstCategory);
   }
+  const sizeType: SizeType = categories.find((c) => c.name === form.category)?.sizeType ?? "none";
 
   const priceNum = Number(form.price);
   const promoNum = form.promotionalPrice ? Number(form.promotionalPrice) : null;
@@ -248,23 +256,15 @@ export function ProductForm({
       />
 
       <div>
-        <label className="mb-1 block text-sm font-medium">Couleurs</label>
+        <label className="mb-1 block text-sm font-medium">
+          {sizeType === "none" ? "Couleurs" : `Couleurs et ${sizeWord(sizeType).toLowerCase()}s`}
+        </label>
         {product ? (
-          <ColorsSection product={product} />
+          <VariantsEditor product={product} sizeType={sizeType} />
         ) : (
           <p className="text-xs text-muted-foreground">
-            Enregistrez d'abord le produit pour pouvoir ajouter des couleurs.
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-medium">Tailles</label>
-        {product ? (
-          <VariantsSection product={product} />
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            Enregistrez d'abord le produit pour pouvoir ajouter des tailles.
+            Enregistrez d'abord le produit pour pouvoir ajouter des couleurs et des{" "}
+            {sizeWord(sizeType).toLowerCase()}s.
           </p>
         )}
       </div>
@@ -295,122 +295,363 @@ export function ProductForm({
   );
 }
 
-function VariantsSection({ product }: { product: Product }) {
-  const [newSize, setNewSize] = useState("");
-  const [newColorId, setNewColorId] = useState("");
-  const [newStock, setNewStock] = useState("0");
+/**
+ * Tap-to-set grid of preset sizes (Pointure 36-46 for shoes, Taille XS-XXXL
+ * for clothing) for one dimension — either one color (colorId set) or the
+ * whole product when it has no colors (colorId null). Typing a number in a
+ * size's box creates/updates its stock on blur; a size stays visible (at 0)
+ * once used so it can show as "out of stock" on the site rather than
+ * vanishing — the × removes it entirely.
+ */
+function SizeGrid({
+  product,
+  colorId,
+  sizeType,
+}: {
+  product: Product;
+  colorId: string | null;
+  sizeType: Exclude<SizeType, "none">;
+}) {
   const addVariant = useAddVariant();
   const removeVariant = useRemoveVariant();
-  const hasColors = product.colors.length > 0;
+  const adjustStock = useAdjustVariantStock();
+  const [showCustom, setShowCustom] = useState(false);
+  const [customSize, setCustomSize] = useState("");
 
-  function colorName(colorId: string | null) {
-    return colorId ? (product.colors.find((c) => c.id === colorId)?.name ?? null) : null;
+  const here = product.variants.filter((v) => v.colorId === colorId && v.size !== null);
+  const preset = SIZE_PRESETS[sizeType];
+  const extra = here.map((v) => v.size!).filter((s) => !preset.includes(s));
+  const sizes = [...preset, ...extra];
+
+  function variantFor(size: string) {
+    return here.find((v) => v.size === size) ?? null;
   }
 
-  function add(e: React.FormEvent) {
+  function commit(size: string, raw: string) {
+    const value = Math.max(0, Math.round(Number(raw) || 0));
+    const existing = variantFor(size);
+    if (!existing) {
+      if (value <= 0) return;
+      addVariant.mutate({ productId: product.id, size, colorId, initialStock: value });
+      return;
+    }
+    if (value === existing.stock) return;
+    adjustStock.mutate({ variantId: existing.id, newStock: value });
+  }
+
+  function addCustom(e: React.FormEvent) {
     e.preventDefault();
-    const size = newSize.trim();
-    if (!size && !newColorId) return;
+    const size = customSize.trim();
+    if (!size) return;
     addVariant.mutate(
-      {
-        productId: product.id,
-        size: size || null,
-        colorId: newColorId || null,
-        initialStock: Math.max(0, Math.round(Number(newStock) || 0)),
-      },
+      { productId: product.id, size, colorId, initialStock: 0 },
       {
         onSuccess: () => {
-          setNewSize("");
-          setNewColorId("");
-          setNewStock("0");
+          setCustomSize("");
+          setShowCustom(false);
         },
       },
     );
   }
 
   return (
-    <div>
-      <p className="mb-2 text-xs text-muted-foreground">
-        Chaque taille (et couleur, si le produit en a) a son propre stock. Le stock total du produit
-        est calculé automatiquement.
-      </p>
-      {product.variants.length > 0 && (
-        <ul className="mb-3 divide-y divide-border border border-border">
-          {product.variants.map((v) => {
-            const label = variantLabel(colorName(v.colorId), v.size) || "Variante";
-            return (
-              <li key={v.id} className="flex items-center justify-between gap-3 p-2.5 text-sm">
-                <span>
-                  <strong>{label}</strong> — {v.stock} en stock
-                </span>
-                <button
-                  type="button"
-                  className="text-muted-foreground hover:text-destructive"
-                  onClick={() => removeVariant.mutate(v.id)}
-                  aria-label={`Supprimer ${label}`}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+    <div className="flex flex-wrap items-center gap-1.5">
+      {sizes.map((size) => {
+        const v = variantFor(size);
+        return (
+          <div
+            key={size}
+            className="flex items-center overflow-hidden rounded border border-border"
+          >
+            <span className="px-2 py-1.5 text-xs font-medium">{size}</span>
+            <input
+              key={`${size}-${v?.stock ?? "new"}`}
+              type="number"
+              min={0}
+              defaultValue={v?.stock ?? ""}
+              placeholder="0"
+              aria-label={`Stock ${sizeWord(sizeType)} ${size}`}
+              onBlur={(e) => commit(size, e.target.value)}
+              className="field !min-h-8 w-14 rounded-none border-0 border-l border-border text-right"
+            />
+            {v && (
+              <button
+                type="button"
+                onClick={() => removeVariant.mutate(v.id)}
+                aria-label={`Supprimer la taille ${size}`}
+                className="px-1.5 text-muted-foreground hover:text-destructive"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+        );
+      })}
+      {showCustom ? (
+        <form onSubmit={addCustom} className="flex items-center gap-1">
+          <input
+            autoFocus
+            value={customSize}
+            onChange={(e) => setCustomSize(e.target.value)}
+            onBlur={() => {
+              if (!customSize.trim()) setShowCustom(false);
+            }}
+            placeholder="Autre"
+            className="field !min-h-8 w-16 text-xs"
+          />
+        </form>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowCustom(true)}
+          className="btn-base btn-outline !min-h-8 !px-2 !py-1 text-xs"
+        >
+          + Autre
+        </button>
       )}
-      <form onSubmit={add} className="flex flex-wrap items-end gap-2">
+    </div>
+  );
+}
+
+/** A color that doesn't need sizes (sizeType "none") just holds one stock number directly. */
+function FlatColorStock({ product, color }: { product: Product; color: ProductColor }) {
+  const addVariant = useAddVariant();
+  const adjustStock = useAdjustVariantStock();
+  const variant = product.variants.find((v) => v.colorId === color.id && v.size === null) ?? null;
+
+  function commit(raw: string) {
+    const value = Math.max(0, Math.round(Number(raw) || 0));
+    if (!variant) {
+      addVariant.mutate({
+        productId: product.id,
+        size: null,
+        colorId: color.id,
+        initialStock: value,
+      });
+      return;
+    }
+    if (value === variant.stock) return;
+    adjustStock.mutate({ variantId: variant.id, newStock: value });
+  }
+
+  return (
+    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+      Stock
+      <input
+        key={variant?.stock ?? "new"}
+        type="number"
+        min={0}
+        defaultValue={variant?.stock ?? ""}
+        placeholder="0"
+        onBlur={(e) => commit(e.target.value)}
+        className="field !min-h-8 w-20 text-right"
+      />
+    </label>
+  );
+}
+
+function NewColorForm({ product, onDone }: { product: Product; onDone: () => void }) {
+  const [name, setName] = useState("");
+  const [hex, setHex] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const addColor = useAddColor();
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    addColor.mutate(
+      {
+        productId: product.id,
+        name: trimmed,
+        hexColor: hex || null,
+        images,
+        sortOrder: product.colors.length,
+      },
+      { onSuccess: onDone },
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-2 border border-dashed border-border-strong p-3">
+      <div className="flex flex-wrap items-end gap-2">
         <div>
-          <label htmlFor="new-variant-size" className="mb-1 block text-xs text-muted-foreground">
-            Taille {hasColors ? "(optionnel)" : ""}
+          <label htmlFor="new-color-name" className="mb-1 block text-xs text-muted-foreground">
+            Nom
           </label>
           <input
-            id="new-variant-size"
-            value={newSize}
-            onChange={(e) => setNewSize(e.target.value)}
-            placeholder="M"
-            className="field !min-h-9 w-24"
+            id="new-color-name"
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Noir"
+            className="field !min-h-9 w-28"
           />
         </div>
-        {hasColors && (
-          <div>
-            <label htmlFor="new-variant-color" className="mb-1 block text-xs text-muted-foreground">
-              Couleur
-            </label>
-            <select
-              id="new-variant-color"
-              value={newColorId}
-              onChange={(e) => setNewColorId(e.target.value)}
-              className="field !min-h-9 w-32"
-            >
-              <option value="">Aucune couleur</option>
-              {product.colors.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
         <div>
-          <label htmlFor="new-variant-stock" className="mb-1 block text-xs text-muted-foreground">
-            Stock initial
+          <label htmlFor="new-color-hex" className="mb-1 block text-xs text-muted-foreground">
+            Teinte
           </label>
           <input
-            id="new-variant-stock"
-            type="number"
-            min={0}
-            value={newStock}
-            onChange={(e) => setNewStock(e.target.value)}
-            className="field !min-h-9 w-24"
+            id="new-color-hex"
+            type="color"
+            value={hex || "#000000"}
+            onChange={(e) => setHex(e.target.value)}
+            className="field !h-9 !min-h-9 w-14 !p-1"
           />
         </div>
         <button
           type="submit"
-          disabled={addVariant.isPending || (!newSize.trim() && !newColorId)}
+          disabled={addColor.isPending || !name.trim()}
           className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
         >
-          {addVariant.isPending && <Spinner size={14} />}
+          {addColor.isPending && <Spinner size={14} />}
           Ajouter
         </button>
-      </form>
+        <button
+          type="button"
+          onClick={onDone}
+          className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+        >
+          Annuler
+        </button>
+      </div>
+      <ImageUploader images={images} onChange={setImages} />
+    </form>
+  );
+}
+
+function ColorCard({
+  product,
+  color,
+  sizeType,
+}: {
+  product: Product;
+  color: ProductColor;
+  sizeType: SizeType;
+}) {
+  const [editing, setEditing] = useState(false);
+  const removeColor = useRemoveColor();
+
+  if (editing) {
+    return (
+      <div className="border border-border p-3">
+        <ColorEditForm color={color} onDone={() => setEditing(false)} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-border p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <ColorSwatch color={color} />
+          <strong className="text-sm">{color.name}</strong>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            aria-label={`Modifier la couleur ${color.name}`}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Pencil size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (
+                window.confirm(
+                  `Supprimer la couleur « ${color.name} » ? Son stock sera aussi supprimé.`,
+                )
+              ) {
+                removeColor.mutate(color.id);
+              }
+            }}
+            aria-label={`Supprimer la couleur ${color.name}`}
+            className="text-muted-foreground hover:text-destructive"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+      <div className="mt-2.5">
+        {sizeType === "none" ? (
+          <FlatColorStock product={product} color={color} />
+        ) : (
+          <SizeGrid product={product} colorId={color.id} sizeType={sizeType} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One place to manage colors and sizes, shaped by the product's category:
+ * no size UI at all for a category that doesn't use sizes (caps, bags...),
+ * a tap-to-set Pointure/Taille grid for one that does — per color once
+ * colors are added, or directly on the product when it has none. Colors
+ * stay optional for every category.
+ */
+function VariantsEditor({ product, sizeType }: { product: Product; sizeType: SizeType }) {
+  const [addingColor, setAddingColor] = useState(false);
+  const hasColors = product.colors.length > 0;
+  const removeVariant = useRemoveVariant();
+  // A category can be reclassified after sizes were added under the old
+  // type — keep those visible (with a way to remove them) instead of
+  // silently hiding stock-holding rows.
+  const orphaned = sizeType === "none" ? product.variants.filter((v) => v.size !== null) : [];
+
+  return (
+    <div className="space-y-3">
+      {orphaned.length > 0 && (
+        <div className="border border-warning/50 bg-warning/10 p-3">
+          <p className="mb-2 text-xs text-muted-foreground">
+            Cette catégorie n'utilise plus de tailles, mais ce produit en a encore :
+          </p>
+          <ul className="space-y-1">
+            {orphaned.map((v) => (
+              <li key={v.id} className="flex items-center justify-between gap-3 text-sm">
+                <span>
+                  {v.size} — {v.stock} en stock
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeVariant.mutate(v.id)}
+                  className="text-muted-foreground hover:text-destructive"
+                  aria-label={`Supprimer la taille ${v.size}`}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {sizeType !== "none" && !hasColors && (
+        <SizeGrid product={product} colorId={null} sizeType={sizeType} />
+      )}
+
+      {hasColors && (
+        <div className="space-y-3">
+          {product.colors.map((c) => (
+            <ColorCard key={c.id} product={product} color={c} sizeType={sizeType} />
+          ))}
+        </div>
+      )}
+
+      {addingColor ? (
+        <NewColorForm product={product} onDone={() => setAddingColor(false)} />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAddingColor(true)}
+          className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+        >
+          + Ajouter une couleur
+        </button>
+      )}
     </div>
   );
 }
@@ -498,130 +739,6 @@ function ColorEditForm({ color, onDone }: { color: ProductColor; onDone: () => v
       </div>
       <ImageUploader images={images} onChange={setImages} />
     </form>
-  );
-}
-
-function ColorsSection({ product }: { product: Product }) {
-  const [newName, setNewName] = useState("");
-  const [newHex, setNewHex] = useState("");
-  const [newImages, setNewImages] = useState<string[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const addColor = useAddColor();
-  const removeColor = useRemoveColor();
-
-  function add(e: React.FormEvent) {
-    e.preventDefault();
-    const name = newName.trim();
-    if (!name) return;
-    addColor.mutate(
-      {
-        productId: product.id,
-        name,
-        hexColor: newHex || null,
-        images: newImages,
-        sortOrder: product.colors.length,
-      },
-      {
-        onSuccess: () => {
-          setNewName("");
-          setNewHex("");
-          setNewImages([]);
-        },
-      },
-    );
-  }
-
-  return (
-    <div>
-      <p className="mb-2 text-xs text-muted-foreground">
-        Chaque couleur a ses propres photos : le client les voit en sélectionnant cette couleur sur
-        la fiche produit.
-      </p>
-      {product.colors.length > 0 && (
-        <ul className="mb-3 divide-y divide-border border border-border">
-          {product.colors.map((c) =>
-            editingId === c.id ? (
-              <li key={c.id} className="p-2.5">
-                <ColorEditForm color={c} onDone={() => setEditingId(null)} />
-              </li>
-            ) : (
-              <li key={c.id} className="flex items-center justify-between gap-3 p-2.5 text-sm">
-                <div className="flex items-center gap-2.5">
-                  <ColorSwatch color={c} />
-                  <span>
-                    <strong>{c.name}</strong> — {c.images.length} photo
-                    {c.images.length !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-foreground"
-                    onClick={() => setEditingId(c.id)}
-                    aria-label={`Modifier la couleur ${c.name}`}
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-destructive"
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          `Supprimer la couleur « ${c.name} » ? Les tailles associées à cette couleur et leur stock seront aussi supprimées.`,
-                        )
-                      ) {
-                        removeColor.mutate(c.id);
-                      }
-                    }}
-                    aria-label={`Supprimer la couleur ${c.name}`}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </li>
-            ),
-          )}
-        </ul>
-      )}
-      <form onSubmit={add} className="flex flex-wrap items-end gap-2">
-        <div>
-          <label htmlFor="new-color-name" className="mb-1 block text-xs text-muted-foreground">
-            Nom
-          </label>
-          <input
-            id="new-color-name"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Noir"
-            className="field !min-h-9 w-28"
-          />
-        </div>
-        <div>
-          <label htmlFor="new-color-hex" className="mb-1 block text-xs text-muted-foreground">
-            Teinte
-          </label>
-          <input
-            id="new-color-hex"
-            type="color"
-            value={newHex || "#000000"}
-            onChange={(e) => setNewHex(e.target.value)}
-            className="field !h-9 !min-h-9 w-14 !p-1"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={addColor.isPending || !newName.trim()}
-          className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
-        >
-          {addColor.isPending && <Spinner size={14} />}
-          Ajouter la couleur
-        </button>
-      </form>
-      <div className="mt-2">
-        <ImageUploader images={newImages} onChange={setNewImages} />
-      </div>
-    </div>
   );
 }
 
