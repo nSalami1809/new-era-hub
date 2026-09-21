@@ -11,6 +11,7 @@ import {
   Package,
   Archive,
   Tag,
+  Tags,
   ClipboardList,
   Settings,
   Star,
@@ -45,6 +46,7 @@ const ADMIN_ROOT = "/nehub-53ff1f11";
 const NAV: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: ADMIN_ROOT, label: "Tableau de bord", icon: LayoutDashboard, exact: true },
   { to: `${ADMIN_ROOT}/produits`, label: "Produits", icon: Package },
+  { to: `${ADMIN_ROOT}/categories`, label: "Catégories", icon: Tags },
   { to: `${ADMIN_ROOT}/stocks`, label: "Stocks", icon: Archive },
   { to: `${ADMIN_ROOT}/promotions`, label: "Promotions", icon: Tag },
   { to: `${ADMIN_ROOT}/codes-promo`, label: "Codes promo", icon: Ticket },

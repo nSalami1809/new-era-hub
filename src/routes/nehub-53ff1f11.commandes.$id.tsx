@@ -59,9 +59,18 @@ function AdminOrderDetail() {
           className="field !min-h-[38px] w-auto"
           value={order.status}
           disabled={updateStatus.isPending}
-          onChange={(e) =>
-            updateStatus.mutate({ id: order.id, status: e.target.value as OrderStatus })
-          }
+          onChange={(e) => {
+            const status = e.target.value as OrderStatus;
+            if (
+              status === "Annulée" &&
+              !window.confirm(
+                "Annuler cette commande ? Le stock des articles sera automatiquement remis à jour.",
+              )
+            ) {
+              return;
+            }
+            updateStatus.mutate({ id: order.id, status });
+          }}
         >
           {ORDER_STATUSES.map((s) => (
             <option key={s} value={s}>

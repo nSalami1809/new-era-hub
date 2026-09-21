@@ -68,9 +68,14 @@ function CheckoutPage() {
       <SiteLayout>
         <div className="container-page py-16 text-center">
           <h1 className="text-2xl">Votre panier est vide.</h1>
-          <Link to="/boutique" className="btn-base btn-dark mt-6">
-            Continuer mes achats
-          </Link>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link to="/boutique" className="btn-base btn-dark">
+              Continuer mes achats
+            </Link>
+            <Link to="/" className="btn-base btn-outline">
+              Retour à l'accueil
+            </Link>
+          </div>
         </div>
       </SiteLayout>
     );
@@ -84,7 +89,7 @@ function CheckoutPage() {
     const e: Errors = {};
     if (form.firstName.trim().length < 2) e.firstName = "Veuillez indiquer votre prénom.";
     if (form.lastName.trim().length < 2) e.lastName = "Veuillez indiquer votre nom.";
-    if (!isValidPhone(form.phone)) e.phone = "Numéro invalide. Exemple : +221 77 123 45 67";
+    if (!isValidPhone(form.phone)) e.phone = "Numéro invalide. Exemple : +241 06 05 63 66";
     if (form.deliveryLocation.trim().length < 2)
       e.deliveryLocation = "Indiquez votre lieu de livraison.";
     setErrors(e);
@@ -119,6 +124,16 @@ function CheckoutPage() {
   return (
     <SiteLayout>
       <div className="container-page py-8">
+        <nav className="mb-4 text-sm text-muted-foreground">
+          <Link to="/" className="hover:underline">
+            Accueil
+          </Link>{" "}
+          /{" "}
+          <Link to="/panier" className="hover:underline">
+            Panier
+          </Link>{" "}
+          / <span className="text-foreground">Commande</span>
+        </nav>
         <h1 className="text-2xl sm:text-3xl">Vos informations</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Ces informations servent uniquement à préparer et livrer votre commande.
@@ -150,7 +165,7 @@ function CheckoutPage() {
               error={errors.phone}
               type="tel"
               autoComplete="tel"
-              placeholder="+221 77 123 45 67"
+              placeholder="+241 06 05 63 66"
             />
             <Field
               id="deliveryLocation"

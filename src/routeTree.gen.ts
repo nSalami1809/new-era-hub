@@ -22,6 +22,7 @@ import { Route as SuiviCommandeRouteImport } from './routes/suivi-commande'
 import { Route as FactureIdRouteImport } from './routes/facture.$id'
 import { Route as Nehub53ff1f11IndexRouteImport } from './routes/nehub-53ff1f11.index'
 import { Route as Nehub53ff1f11AvisRouteImport } from './routes/nehub-53ff1f11.avis'
+import { Route as Nehub53ff1f11CategoriesRouteImport } from './routes/nehub-53ff1f11.categories'
 import { Route as Nehub53ff1f11CodesPromoRouteImport } from './routes/nehub-53ff1f11.codes-promo'
 import { Route as Nehub53ff1f11ParametresRouteImport } from './routes/nehub-53ff1f11.parametres'
 import { Route as Nehub53ff1f11PromotionsRouteImport } from './routes/nehub-53ff1f11.promotions'
@@ -98,6 +99,11 @@ const Nehub53ff1f11AvisRoute = Nehub53ff1f11AvisRouteImport.update({
   path: '/avis',
   getParentRoute: () => Nehub53ff1f11Route,
 } as any)
+const Nehub53ff1f11CategoriesRoute = Nehub53ff1f11CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => Nehub53ff1f11Route,
+} as any)
 const Nehub53ff1f11CodesPromoRoute = Nehub53ff1f11CodesPromoRouteImport.update({
   id: '/codes-promo',
   path: '/codes-promo',
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/suivi-commande': typeof SuiviCommandeRoute
   '/facture/$id': typeof FactureIdRoute
   '/nehub-53ff1f11/avis': typeof Nehub53ff1f11AvisRoute
+  '/nehub-53ff1f11/categories': typeof Nehub53ff1f11CategoriesRoute
   '/nehub-53ff1f11/codes-promo': typeof Nehub53ff1f11CodesPromoRoute
   '/nehub-53ff1f11/parametres': typeof Nehub53ff1f11ParametresRoute
   '/nehub-53ff1f11/promotions': typeof Nehub53ff1f11PromotionsRoute
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/suivi-commande': typeof SuiviCommandeRoute
   '/facture/$id': typeof FactureIdRoute
   '/nehub-53ff1f11/avis': typeof Nehub53ff1f11AvisRoute
+  '/nehub-53ff1f11/categories': typeof Nehub53ff1f11CategoriesRoute
   '/nehub-53ff1f11/codes-promo': typeof Nehub53ff1f11CodesPromoRoute
   '/nehub-53ff1f11/parametres': typeof Nehub53ff1f11ParametresRoute
   '/nehub-53ff1f11/promotions': typeof Nehub53ff1f11PromotionsRoute
@@ -216,6 +224,7 @@ export interface FileRoutesById {
   '/suivi-commande': typeof SuiviCommandeRoute
   '/facture/$id': typeof FactureIdRoute
   '/nehub-53ff1f11/avis': typeof Nehub53ff1f11AvisRoute
+  '/nehub-53ff1f11/categories': typeof Nehub53ff1f11CategoriesRoute
   '/nehub-53ff1f11/codes-promo': typeof Nehub53ff1f11CodesPromoRoute
   '/nehub-53ff1f11/parametres': typeof Nehub53ff1f11ParametresRoute
   '/nehub-53ff1f11/promotions': typeof Nehub53ff1f11PromotionsRoute
@@ -243,6 +252,7 @@ export interface FileRouteTypes {
     | '/suivi-commande'
     | '/facture/$id'
     | '/nehub-53ff1f11/avis'
+    | '/nehub-53ff1f11/categories'
     | '/nehub-53ff1f11/codes-promo'
     | '/nehub-53ff1f11/parametres'
     | '/nehub-53ff1f11/promotions'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/suivi-commande'
     | '/facture/$id'
     | '/nehub-53ff1f11/avis'
+    | '/nehub-53ff1f11/categories'
     | '/nehub-53ff1f11/codes-promo'
     | '/nehub-53ff1f11/parametres'
     | '/nehub-53ff1f11/promotions'
@@ -292,6 +303,7 @@ export interface FileRouteTypes {
     | '/suivi-commande'
     | '/facture/$id'
     | '/nehub-53ff1f11/avis'
+    | '/nehub-53ff1f11/categories'
     | '/nehub-53ff1f11/codes-promo'
     | '/nehub-53ff1f11/parametres'
     | '/nehub-53ff1f11/promotions'
@@ -413,6 +425,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Nehub53ff1f11AvisRouteImport
       parentRoute: typeof Nehub53ff1f11Route
     }
+    '/nehub-53ff1f11/categories': {
+      id: '/nehub-53ff1f11/categories'
+      path: '/categories'
+      fullPath: '/nehub-53ff1f11/categories'
+      preLoaderRoute: typeof Nehub53ff1f11CategoriesRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
+    }
     '/nehub-53ff1f11/codes-promo': {
       id: '/nehub-53ff1f11/codes-promo'
       path: '/codes-promo'
@@ -488,6 +507,7 @@ declare module '@tanstack/react-router' {
 
 interface Nehub53ff1f11RouteChildren {
   Nehub53ff1f11AvisRoute: typeof Nehub53ff1f11AvisRoute
+  Nehub53ff1f11CategoriesRoute: typeof Nehub53ff1f11CategoriesRoute
   Nehub53ff1f11CodesPromoRoute: typeof Nehub53ff1f11CodesPromoRoute
   Nehub53ff1f11ParametresRoute: typeof Nehub53ff1f11ParametresRoute
   Nehub53ff1f11PromotionsRoute: typeof Nehub53ff1f11PromotionsRoute
@@ -502,6 +522,7 @@ interface Nehub53ff1f11RouteChildren {
 
 const Nehub53ff1f11RouteChildren: Nehub53ff1f11RouteChildren = {
   Nehub53ff1f11AvisRoute: Nehub53ff1f11AvisRoute,
+  Nehub53ff1f11CategoriesRoute: Nehub53ff1f11CategoriesRoute,
   Nehub53ff1f11CodesPromoRoute: Nehub53ff1f11CodesPromoRoute,
   Nehub53ff1f11ParametresRoute: Nehub53ff1f11ParametresRoute,
   Nehub53ff1f11PromotionsRoute: Nehub53ff1f11PromotionsRoute,

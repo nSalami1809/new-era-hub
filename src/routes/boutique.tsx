@@ -1,11 +1,12 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { SiteLayout } from "@/components/site";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductGridSkeleton } from "@/components/Skeleton";
 import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
-import { effectivePrice, PRODUCT_CATEGORIES, type ProductCategory } from "@/lib/types";
+import { useCategories } from "@/lib/api/categories";
+import { effectivePrice, type ProductCategory } from "@/lib/types";
 
 type SortKey = "recent" | "price-asc" | "price-desc" | "name";
 
@@ -28,9 +29,10 @@ export const Route = createFileRoute("/boutique")({
     dispo: search["dispo"] === true || search["dispo"] === "true" ? true : undefined,
     brand: typeof search["brand"] === "string" && search["brand"] ? search["brand"] : undefined,
     size: typeof search["size"] === "string" && search["size"] ? search["size"] : undefined,
-    category: (PRODUCT_CATEGORIES as readonly string[]).includes(search["category"] as string)
-      ? (search["category"] as ProductCategory)
-      : undefined,
+    category:
+      typeof search["category"] === "string" && search["category"]
+        ? (search["category"] as ProductCategory)
+        : undefined,
     sort: (["recent", "price-asc", "price-desc", "name"] as const).includes(
       search["sort"] as SortKey,
     )
@@ -57,6 +59,7 @@ export const Route = createFileRoute("/boutique")({
 function Boutique() {
   const { data: products = [], isLoading } = useProducts();
   const { data: settings } = useSettings();
+  const { data: categories = [] } = useCategories();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/boutique" });
 
@@ -114,6 +117,12 @@ function Boutique() {
   return (
     <SiteLayout>
       <div className="container-page py-8">
+        <nav className="mb-4 text-sm text-muted-foreground">
+          <Link to="/" className="hover:underline">
+            Accueil
+          </Link>{" "}
+          / <span className="text-foreground">Boutique</span>
+        </nav>
         <h1 className="text-2xl sm:text-3xl">Boutique</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {search.q ? (
@@ -142,9 +151,9 @@ function Boutique() {
               }
             >
               <option value="">Toutes</option>
-              {PRODUCT_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
+              {categories.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
                 </option>
               ))}
             </select>

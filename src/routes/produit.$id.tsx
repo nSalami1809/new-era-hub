@@ -53,7 +53,7 @@ function StockAlertForm({ productId }: { productId: string }) {
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!isValidPhone(phone)) {
-      setError("Numéro invalide. Exemple : +221 77 123 45 67");
+      setError("Numéro invalide. Exemple : +241 06 05 63 66");
       return;
     }
     createAlert.mutate({ productId, phone: phone.trim() }, { onSuccess: () => setSent(true) });

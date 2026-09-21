@@ -1,6 +1,6 @@
-export const PRODUCT_CATEGORIES = ["Casquettes", "Vêtements", "Chaussures", "Accessoires"] as const;
-
-export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
+// Categories are admin-manageable (see src/lib/api/categories.ts), not a
+// fixed list — any non-empty string the admin has created is valid.
+export type ProductCategory = string;
 
 export type ProductVariant = {
   id: string;

@@ -47,9 +47,14 @@ function CartPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             Parcourez le catalogue pour trouver votre bonheur.
           </p>
-          <Link to="/boutique" className="btn-base btn-dark mt-6">
-            Continuer mes achats
-          </Link>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link to="/boutique" className="btn-base btn-dark">
+              Continuer mes achats
+            </Link>
+            <Link to="/" className="btn-base btn-outline">
+              Retour à l'accueil
+            </Link>
+          </div>
         </div>
       </SiteLayout>
     );
@@ -58,6 +63,12 @@ function CartPage() {
   return (
     <SiteLayout>
       <div className="container-page py-8">
+        <nav className="mb-4 text-sm text-muted-foreground">
+          <Link to="/" className="hover:underline">
+            Accueil
+          </Link>{" "}
+          / <span className="text-foreground">Panier</span>
+        </nav>
         <h1 className="text-2xl sm:text-3xl">Panier</h1>
 
         <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_340px]">

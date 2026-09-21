@@ -64,6 +64,9 @@ function InvoicePage() {
             <Link to="/boutique" className="btn-base btn-outline">
               Retour à la boutique
             </Link>
+            <Link to="/" className="btn-base btn-outline">
+              Retour à l'accueil
+            </Link>
           </div>
         </div>
       </SiteLayout>
@@ -228,6 +231,9 @@ function InvoicePage() {
         <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">
           <Link to="/boutique" className="btn-base btn-outline">
             Continuer mes achats
+          </Link>
+          <Link to="/" className="btn-base btn-outline">
+            Retour à l'accueil
           </Link>
           <button type="button" className="btn-base btn-outline" onClick={() => window.print()}>
             Imprimer la facture

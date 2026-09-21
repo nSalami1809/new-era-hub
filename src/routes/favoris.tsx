@@ -28,6 +28,12 @@ function FavoritesPage() {
   return (
     <SiteLayout>
       <div className="container-page py-8">
+        <nav className="mb-4 text-sm text-muted-foreground">
+          <Link to="/" className="hover:underline">
+            Accueil
+          </Link>{" "}
+          / <span className="text-foreground">Favoris</span>
+        </nav>
         <h1 className="text-2xl sm:text-3xl">Mes favoris</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {favorites.length} produit{favorites.length > 1 ? "s" : ""} mis de côté.
@@ -43,9 +49,14 @@ function FavoritesPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               Appuyez sur le cœur d'un produit pour le retrouver ici.
             </p>
-            <Link to="/boutique" className="btn-base btn-dark mt-6">
-              Parcourir la boutique
-            </Link>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Link to="/boutique" className="btn-base btn-dark">
+                Parcourir la boutique
+              </Link>
+              <Link to="/" className="btn-base btn-outline">
+                Retour à l'accueil
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">

@@ -14,7 +14,7 @@ const FIELDS: Array<{ key: keyof StoreSettings; label: string; type?: string; hi
   {
     key: "whatsappNumber",
     label: "Numéro WhatsApp",
-    hint: "Avec indicatif pays, sans espaces ni +. Ex: 221770000000",
+    hint: "Avec indicatif pays, sans espaces ni +. Ex: 24106056366",
   },
   { key: "currency", label: "Devise" },
   { key: "email", label: "Email de contact", type: "email" },

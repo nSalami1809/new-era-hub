@@ -5,7 +5,6 @@ import { ProductImage } from "@/components/ProductImage";
 import { ProductGridSkeleton, Skeleton } from "@/components/Skeleton";
 import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
-import { PRODUCT_CATEGORIES } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -38,11 +37,13 @@ function Index() {
     .slice(0, 4);
   const currency = settings?.currency ?? "FCFA";
 
-  const categories = PRODUCT_CATEGORIES.map((category) => {
-    const inCategory = active.filter((p) => p.category === category);
-    const cover = inCategory.find((p) => p.isFeatured) ?? inCategory[0];
-    return { category, count: inCategory.length, cover };
-  }).filter((c) => c.count > 0 && c.cover);
+  const categories = Array.from(new Set(active.map((p) => p.category)))
+    .map((category) => {
+      const inCategory = active.filter((p) => p.category === category);
+      const cover = inCategory.find((p) => p.isFeatured) ?? inCategory[0];
+      return { category, count: inCategory.length, cover };
+    })
+    .filter((c) => c.count > 0 && c.cover);
 
   return (
     <SiteLayout>

@@ -112,12 +112,22 @@ export function useUpdateOrderStatus() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: OrderStatus }) => {
+      // Cancelling goes through cancel_order instead of a plain status update
+      // so the stock sold to this order is restocked (and the change is
+      // logged in stock_movements) in the same transaction.
+      if (status === "Annulée") {
+        const { error } = await supabase.rpc("cancel_order", { p_order_id: id });
+        if (error) throw error;
+        return;
+      }
       const { error } = await supabase.from("orders").update({ status }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["orders"] });
       qc.invalidateQueries({ queryKey: ["orders", variables.id] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["stock-movements"] });
     },
   });
 }

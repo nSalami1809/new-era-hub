@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
-import { PRODUCT_CATEGORIES, type Product } from "@/lib/types";
+import type { Product } from "@/lib/types";
 import type { ProductInput } from "@/lib/api/products";
+import { useCategories } from "@/lib/api/categories";
 import { ImageUploader } from "@/components/ImageUploader";
 import { formatPrice } from "@/lib/format";
 import { useAddVariant, useRemoveVariant } from "@/lib/api/stock-variants";
@@ -9,7 +10,7 @@ import { useAddVariant, useRemoveVariant } from "@/lib/api/stock-variants";
 const BLANK = {
   name: "",
   brand: "",
-  category: PRODUCT_CATEGORIES[0],
+  category: "",
   description: "",
   price: "",
   promotionalPrice: "",
@@ -23,7 +24,10 @@ const BLANK = {
 };
 
 type Errors = Partial<
-  Record<"name" | "brand" | "price" | "sku" | "images" | "promotionalPrice" | "costPrice", string>
+  Record<
+    "name" | "brand" | "category" | "price" | "sku" | "images" | "promotionalPrice" | "costPrice",
+    string
+  >
 >;
 
 export function ProductForm({
@@ -56,9 +60,17 @@ export function ProductForm({
   );
   const [errors, setErrors] = useState<Errors>({});
   const hasSizes = (product?.variants.length ?? 0) > 0;
+  const { data: categories = [] } = useCategories();
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  // Once categories have loaded, default a brand-new product to the first one
+  // instead of leaving the select empty.
+  const firstCategory = categories[0]?.name;
+  if (!product && !form.category && firstCategory) {
+    set("category", firstCategory);
   }
 
   const priceNum = Number(form.price);
@@ -78,6 +90,7 @@ export function ProductForm({
     const err: Errors = {};
     if (form.name.trim().length < 2) err.name = "Nom requis.";
     if (form.brand.trim().length < 2) err.brand = "Marque requise.";
+    if (!form.category) err.category = "Catégorie requise.";
     if (!Number.isFinite(price) || price <= 0) err.price = "Prix invalide.";
     if (promo !== null && (!Number.isFinite(promo) || promo <= 0 || promo >= price))
       err.promotionalPrice = "Le prix promotionnel doit être inférieur au prix normal.";
@@ -135,14 +148,19 @@ export function ProductForm({
             id="category"
             className="field"
             value={form.category}
-            onChange={(e) => set("category", e.target.value as (typeof PRODUCT_CATEGORIES)[number])}
+            onChange={(e) => set("category", e.target.value)}
           >
-            {PRODUCT_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
+            {!form.category && <option value="">Sélectionner...</option>}
+            {categories.map((c) => (
+              <option key={c.id} value={c.name}>
+                {c.name}
               </option>
             ))}
           </select>
+          {errors.category && <p className="mt-1 text-sm text-destructive">{errors.category}</p>}
+          <p className="mt-1 text-xs text-muted-foreground">
+            Pour ajouter une nouvelle catégorie, rendez-vous dans Produits → Catégories.
+          </p>
         </div>
         <Text
           id="price"

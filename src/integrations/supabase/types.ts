@@ -164,37 +164,23 @@ export type Database = {
         };
         Relationships: [];
       };
-      product_variants: {
+      product_categories: {
         Row: {
           created_at: string;
           id: string;
-          product_id: string;
-          size: string;
-          stock: number;
+          name: string;
         };
         Insert: {
           created_at?: string;
           id?: string;
-          product_id: string;
-          size: string;
-          stock?: number;
+          name: string;
         };
         Update: {
           created_at?: string;
           id?: string;
-          product_id?: string;
-          size?: string;
-          stock?: number;
+          name?: string;
         };
-        Relationships: [
-          {
-            foreignKeyName: "product_variants_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
-          },
-        ];
+        Relationships: [];
       };
       product_reviews: {
         Row: {
@@ -234,13 +220,45 @@ export type Database = {
           },
         ];
       };
+      product_variants: {
+        Row: {
+          created_at: string;
+          id: string;
+          product_id: string;
+          size: string;
+          stock: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          product_id: string;
+          size: string;
+          stock?: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          product_id?: string;
+          size?: string;
+          stock?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       products: {
         Row: {
           brand: string;
           bundle_active: boolean;
           bundle_price: number | null;
           bundle_quantity: number | null;
-          category: Database["public"]["Enums"]["product_category"];
+          category: string;
           cost_price: number;
           created_at: string;
           description: string;
@@ -262,7 +280,7 @@ export type Database = {
           bundle_active?: boolean;
           bundle_price?: number | null;
           bundle_quantity?: number | null;
-          category?: Database["public"]["Enums"]["product_category"];
+          category?: string;
           cost_price?: number;
           created_at?: string;
           description?: string;
@@ -284,7 +302,7 @@ export type Database = {
           bundle_active?: boolean;
           bundle_price?: number | null;
           bundle_quantity?: number | null;
-          category?: Database["public"]["Enums"]["product_category"];
+          category?: string;
           cost_price?: number;
           created_at?: string;
           description?: string;
@@ -301,7 +319,15 @@ export type Database = {
           stock?: number;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "products_category_fkey";
+            columns: ["category"];
+            isOneToOne: false;
+            referencedRelation: "product_categories";
+            referencedColumns: ["name"];
+          },
+        ];
       };
       promo_codes: {
         Row: {
@@ -498,6 +524,7 @@ export type Database = {
         Args: { p_new_stock: number; p_reason: string; p_variant_id: string };
         Returns: undefined;
       };
+      cancel_order: { Args: { p_order_id: string }; Returns: undefined };
       create_order: {
         Args: {
           p_address: string;
@@ -535,7 +562,6 @@ export type Database = {
         | "Expédiée"
         | "Livrée"
         | "Annulée";
-      product_category: "Casquettes" | "Vêtements" | "Chaussures" | "Accessoires";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -667,7 +693,6 @@ export const Constants = {
         "Livrée",
         "Annulée",
       ],
-      product_category: ["Casquettes", "Vêtements", "Chaussures", "Accessoires"],
     },
   },
 } as const;
