@@ -22,10 +22,11 @@ function CategoryTile({
       search={{ category }}
       className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
     >
-      <div className="aspect-square overflow-hidden bg-muted">
+      <div className="aspect-square overflow-hidden bg-white">
         <ProductImage
           src={cover.images[0]}
           alt=""
+          width={300}
           className="h-full w-full object-contain p-6 transition-transform duration-300 ease-out group-hover:scale-105 sm:p-8"
         />
       </div>
@@ -116,13 +117,14 @@ function Index() {
             <Link
               to="/produit/$id"
               params={{ id: heroProduct.id }}
-              className="group relative mx-auto block aspect-square w-full max-w-md overflow-hidden rounded-3xl border border-border bg-muted shadow-sm"
+              className="group relative mx-auto block aspect-square w-full max-w-md overflow-hidden rounded-3xl border border-border bg-white shadow-sm"
               aria-label={`Voir ${heroProduct.brand} ${heroProduct.name}`}
             >
               <ProductImage
                 src={heroProduct.images[0]}
                 alt={`${heroProduct.brand} ${heroProduct.name}`}
                 priority
+                width={450}
                 className="h-full w-full object-contain p-10 transition-transform duration-300 ease-out group-hover:scale-105 sm:p-14"
               />
             </Link>

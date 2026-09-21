@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ImageOff } from "lucide-react";
+import { transformImageUrl } from "@/lib/image-transform";
 
 /**
  * Drop-in replacement for <img> on product photos: if the URL 404s or the
@@ -13,6 +14,7 @@ export function ProductImage({
   className,
   iconSize = 22,
   priority = false,
+  width,
 }: {
   src: string | null | undefined;
   alt: string;
@@ -22,6 +24,12 @@ export function ProductImage({
    * the first card above the fold): loads eagerly and at high priority
    * instead of the lazy-loading default. */
   priority?: boolean;
+  /** Display width in px this image is actually shown at — requests a
+   * resized/re-encoded version instead of the full ~1600px-capped original,
+   * so a 96px cart thumbnail doesn't ship the same bytes as a full detail
+   * view. Omit for the rare case the original resolution is wanted (the
+   * full-screen zoom view). */
+  width?: number;
 }) {
   const [failed, setFailed] = useState(false);
 
@@ -35,7 +43,7 @@ export function ProductImage({
 
   return (
     <img
-      src={src}
+      src={transformImageUrl(src, width)}
       alt={alt}
       loading={priority ? "eager" : "lazy"}
       fetchPriority={priority ? "high" : "auto"}

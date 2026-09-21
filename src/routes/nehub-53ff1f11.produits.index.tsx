@@ -233,6 +233,7 @@ function AdminProducts() {
                   <ProductImage
                     src={p.images[0]}
                     alt=""
+                    width={64}
                     className="h-16 w-16 shrink-0 border border-border bg-white object-contain p-1"
                   />
                   <div className="min-w-0 flex-1">
@@ -349,6 +350,7 @@ function AdminProducts() {
                       <ProductImage
                         src={p.images[0]}
                         alt=""
+                        width={48}
                         className="h-12 w-12 border border-border bg-white object-contain p-1"
                       />
                     </td>

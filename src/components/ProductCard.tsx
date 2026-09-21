@@ -80,12 +80,13 @@ export function ProductCard({
   const favorite = isFavorite(product.id);
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
-      <div className="relative aspect-square overflow-hidden bg-muted">
+      <div className="relative aspect-square overflow-hidden bg-white">
         <Link to="/produit/$id" params={{ id: product.id }} className="block h-full w-full">
           <ProductImage
             src={product.images[0]}
             alt={`${product.brand} ${product.name}`}
             priority={priority}
+            width={300}
             className="h-full w-full object-contain p-4 transition-transform duration-300 ease-out group-hover:scale-[1.06] sm:p-6"
           />
         </Link>

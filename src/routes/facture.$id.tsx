@@ -168,6 +168,7 @@ function InvoicePage() {
                         <ProductImage
                           src={item.image}
                           alt={`${item.brand} ${item.name}`}
+                          width={56}
                           className="h-14 w-14 shrink-0 rounded-lg border border-border bg-white object-contain p-1"
                         />
                         <div>

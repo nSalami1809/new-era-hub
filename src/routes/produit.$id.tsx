@@ -186,11 +186,11 @@ function ImageThumbnail({
       type="button"
       onClick={onClick}
       aria-label={label}
-      className={`h-20 w-20 overflow-hidden rounded-xl border-2 bg-muted transition-colors ${
+      className={`h-20 w-20 overflow-hidden rounded-xl border-2 bg-white transition-colors ${
         active ? "border-foreground" : "border-border hover:border-border-strong"
       }`}
     >
-      <ProductImage src={src} alt="" className="h-full w-full object-contain p-1.5" />
+      <ProductImage src={src} alt="" width={80} className="h-full w-full object-contain p-1.5" />
     </button>
   );
 }
@@ -315,7 +315,7 @@ function ProductPage() {
               type="button"
               onClick={() => setZoomOpen(true)}
               aria-label="Agrandir l'image"
-              className="group relative block aspect-square w-full overflow-hidden rounded-3xl border border-border bg-muted shadow-sm"
+              className="group relative block aspect-square w-full overflow-hidden rounded-3xl border border-border bg-white shadow-sm"
             >
               <ProductImage
                 src={product.images[imageIndex] ?? product.images[0]}
@@ -323,6 +323,7 @@ function ProductPage() {
                 className="h-full w-full object-contain p-8"
                 iconSize={40}
                 priority
+                width={600}
               />
               <span className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-background/80 px-3 py-1.5 text-xs font-medium text-muted-foreground opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100">
                 <ZoomIn size={14} />

@@ -13,9 +13,9 @@ function CartLineImage({ src, alt, productId }: { src: string; alt: string; prod
     <Link
       to="/produit/$id"
       params={{ id: productId }}
-      className="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-border bg-muted"
+      className="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-border bg-white"
     >
-      <ProductImage src={src} alt={alt} className="h-full w-full object-contain p-1.5" />
+      <ProductImage src={src} alt={alt} width={96} className="h-full w-full object-contain p-1.5" />
     </Link>
   );
 }

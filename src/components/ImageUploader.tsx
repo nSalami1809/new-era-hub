@@ -77,7 +77,12 @@ export function ImageUploader({
       <div className="flex flex-wrap gap-3">
         {images.map((src, i) => (
           <div key={src + i} className="group relative h-24 w-24 border border-border bg-white">
-            <ProductImage src={src} alt="" className="h-full w-full object-contain p-1" />
+            <ProductImage
+              src={src}
+              alt=""
+              width={96}
+              className="h-full w-full object-contain p-1"
+            />
             {i === 0 ? (
               <span className="absolute left-1 top-1 bg-foreground px-1.5 py-0.5 text-[10px] font-semibold text-background">
                 Principale

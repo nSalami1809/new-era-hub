@@ -45,6 +45,7 @@ function SearchSuggestions({
               <ProductImage
                 src={p.images[0]}
                 alt=""
+                width={40}
                 className="h-10 w-10 shrink-0 rounded-lg border border-border bg-white object-contain p-1"
               />
               <div className="min-w-0 flex-1">
