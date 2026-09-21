@@ -5,6 +5,44 @@ import { ProductImage } from "@/components/ProductImage";
 import { ProductGridSkeleton, Skeleton } from "@/components/Skeleton";
 import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
+import { useImageBackgroundColor } from "@/lib/image-color";
+import type { Product } from "@/lib/types";
+
+function CategoryTile({
+  category,
+  count,
+  cover,
+}: {
+  category: string;
+  count: number;
+  cover: Product;
+}) {
+  const bg = useImageBackgroundColor(cover.images[0]);
+  return (
+    <Link
+      to="/boutique"
+      search={{ category }}
+      className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+    >
+      <div
+        className="aspect-square overflow-hidden transition-colors duration-300"
+        style={{ backgroundColor: bg ?? "#ffffff" }}
+      >
+        <ProductImage
+          src={cover.images[0]}
+          alt=""
+          className="h-full w-full object-contain p-6 transition-transform duration-300 ease-out group-hover:scale-105 sm:p-8"
+        />
+      </div>
+      <div className="p-3 sm:p-4">
+        <span className="text-sm font-bold uppercase tracking-wide sm:text-base">{category}</span>
+        <span className="block text-xs text-muted-foreground">
+          {count} produit{count > 1 ? "s" : ""}
+        </span>
+      </div>
+    </Link>
+  );
+}
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -46,6 +84,7 @@ function Index() {
     .filter((c) => c.count > 0 && c.cover);
 
   const heroProduct = featured[0] ?? active[0];
+  const heroBg = useImageBackgroundColor(heroProduct?.images[0]);
 
   return (
     <SiteLayout>
@@ -77,7 +116,8 @@ function Index() {
             <Link
               to="/produit/$id"
               params={{ id: heroProduct.id }}
-              className="group relative mx-auto block aspect-square w-full max-w-md overflow-hidden rounded-3xl border border-border bg-white shadow-sm"
+              className="group relative mx-auto block aspect-square w-full max-w-md overflow-hidden rounded-3xl border border-border shadow-sm transition-colors duration-300"
+              style={{ backgroundColor: heroBg ?? "#ffffff" }}
               aria-label={`Voir ${heroProduct.brand} ${heroProduct.name}`}
             >
               <ProductImage
@@ -109,28 +149,7 @@ function Index() {
           <h2 className="mt-1 mb-4 text-2xl sm:text-3xl">Découvrir par catégorie</h2>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {categories.map(({ category, count, cover }) => (
-              <Link
-                key={category}
-                to="/boutique"
-                search={{ category }}
-                className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-              >
-                <div className="aspect-square overflow-hidden bg-white">
-                  <ProductImage
-                    src={cover!.images[0]}
-                    alt=""
-                    className="h-full w-full object-contain p-6 transition-transform duration-300 ease-out group-hover:scale-105 sm:p-8"
-                  />
-                </div>
-                <div className="p-3 sm:p-4">
-                  <span className="text-sm font-bold uppercase tracking-wide sm:text-base">
-                    {category}
-                  </span>
-                  <span className="block text-xs text-muted-foreground">
-                    {count} produit{count > 1 ? "s" : ""}
-                  </span>
-                </div>
-              </Link>
+              <CategoryTile key={category} category={category} count={count} cover={cover!} />
             ))}
           </div>
         </section>

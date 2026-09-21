@@ -7,6 +7,21 @@ import { cartTotals, removeFromCart, setCartQuantity, useCart } from "@/lib/cart
 import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
 import { activeBundle, effectivePrice, quantityTotal } from "@/lib/types";
+import { useImageBackgroundColor } from "@/lib/image-color";
+
+function CartLineImage({ src, alt, productId }: { src: string; alt: string; productId: string }) {
+  const bg = useImageBackgroundColor(src);
+  return (
+    <Link
+      to="/produit/$id"
+      params={{ id: productId }}
+      className="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-border transition-colors duration-300"
+      style={{ backgroundColor: bg ?? "#ffffff" }}
+    >
+      <ProductImage src={src} alt={alt} className="h-full w-full object-contain p-1.5" />
+    </Link>
+  );
+}
 
 export const Route = createFileRoute("/panier")({
   head: () => ({
@@ -84,17 +99,11 @@ function CartPage() {
               const lineTotal = quantityTotal(p, item.quantity);
               return (
                 <div key={`${p.id}-${item.variantId ?? "base"}`} className="flex gap-4 py-4">
-                  <Link
-                    to="/produit/$id"
-                    params={{ id: p.id }}
-                    className="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-border bg-white"
-                  >
-                    <ProductImage
-                      src={p.images[0]}
-                      alt={`${p.brand} ${p.name}`}
-                      className="h-full w-full object-contain p-1.5"
-                    />
-                  </Link>
+                  <CartLineImage
+                    src={p.images[0] ?? ""}
+                    alt={`${p.brand} ${p.name}`}
+                    productId={p.id}
+                  />
                   <div className="flex flex-1 flex-col gap-1">
                     <span className="text-xs font-semibold uppercase text-muted-foreground">
                       {p.brand}

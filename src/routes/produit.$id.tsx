@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/Skeleton";
 import { StarRating, StarRatingInput } from "@/components/StarRating";
 import { productShareText, productShareUrl } from "@/lib/whatsapp";
 import { activeBundle, quantityTotal } from "@/lib/types";
+import { useImageBackgroundColor } from "@/lib/image-color";
 
 export const Route = createFileRoute("/produit/$id")({
   head: () => ({
@@ -158,6 +159,33 @@ function ReviewForm({ productId }: { productId: string }) {
   );
 }
 
+function ImageThumbnail({
+  src,
+  active,
+  onClick,
+  label,
+}: {
+  src: string;
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  const bg = useImageBackgroundColor(src);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      style={{ backgroundColor: bg ?? "#ffffff" }}
+      className={`h-20 w-20 overflow-hidden rounded-xl border-2 transition-colors ${
+        active ? "border-foreground" : "border-border hover:border-border-strong"
+      }`}
+    >
+      <ProductImage src={src} alt="" className="h-full w-full object-contain p-1.5" />
+    </button>
+  );
+}
+
 function ProductPage() {
   const { id } = Route.useParams();
   const { data: product, isLoading } = useProduct(id);
@@ -168,6 +196,7 @@ function ProductPage() {
   const [imageIndex, setImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [zoomOpen, setZoomOpen] = useState(false);
+  const mainImageBg = useImageBackgroundColor(product?.images[imageIndex] ?? product?.images[0]);
 
   useEffect(() => {
     if (!zoomOpen) return;
@@ -278,7 +307,8 @@ function ProductPage() {
               type="button"
               onClick={() => setZoomOpen(true)}
               aria-label="Agrandir l'image"
-              className="group relative block aspect-square w-full overflow-hidden rounded-3xl border border-border bg-white shadow-sm"
+              className="group relative block aspect-square w-full overflow-hidden rounded-3xl border border-border shadow-sm transition-colors duration-300"
+              style={{ backgroundColor: mainImageBg ?? "#ffffff" }}
             >
               <ProductImage
                 src={product.images[imageIndex] ?? product.images[0]}
@@ -295,19 +325,13 @@ function ProductPage() {
             {product.images.length > 1 && (
               <div className="mt-3 flex gap-3">
                 {product.images.map((img, i) => (
-                  <button
+                  <ImageThumbnail
                     key={img + i}
-                    type="button"
+                    src={img}
+                    active={i === imageIndex}
                     onClick={() => setImageIndex(i)}
-                    aria-label={`Voir l'image ${i + 1}`}
-                    className={`h-20 w-20 overflow-hidden rounded-xl border-2 bg-white transition-colors ${
-                      i === imageIndex
-                        ? "border-foreground"
-                        : "border-border hover:border-border-strong"
-                    }`}
-                  >
-                    <ProductImage src={img} alt="" className="h-full w-full object-contain p-1.5" />
-                  </button>
+                    label={`Voir l'image ${i + 1}`}
+                  />
                 ))}
               </div>
             )}
