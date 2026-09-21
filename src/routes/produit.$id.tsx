@@ -341,7 +341,7 @@ function ProductPage() {
                 </button>
               </div>
             </div>
-            <h1 className="mt-1 text-2xl sm:text-3xl">{product.name}</h1>
+            <h1 className="mt-1 text-3xl sm:text-4xl">{product.name}</h1>
             {avgRating !== null && (
               <div className="mt-1 flex items-center gap-2">
                 <StarRating value={avgRating} />
@@ -461,7 +461,8 @@ function ProductPage() {
         </div>
 
         <section className="mt-12 max-w-2xl">
-          <h2 className="mb-4 text-xl sm:text-2xl">Avis clients</h2>
+          <span className="eyebrow">Communauté</span>
+          <h2 className="mt-1 mb-4 text-2xl sm:text-3xl">Avis clients</h2>
           {reviews.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Aucun avis pour ce produit pour le moment.
@@ -485,7 +486,8 @@ function ProductPage() {
 
         {related.length > 0 && (
           <section className="mt-12">
-            <h2 className="mb-4 text-xl sm:text-2xl">Produits similaires</h2>
+            <span className="eyebrow">Vous aimerez aussi</span>
+            <h2 className="mt-1 mb-4 text-2xl sm:text-3xl">Produits similaires</h2>
             <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
               {related.map((p) => (
                 <ProductCard key={p.id} product={p} currency={currency} />

@@ -36,7 +36,7 @@ export function PriceTag({
 }) {
   const percent = discountPercent(product);
   const bundle = activeBundle(product);
-  const main = size === "lg" ? "text-2xl" : "text-base";
+  const main = size === "lg" ? "text-3xl" : "text-base";
   return (
     <div>
       <div className="flex flex-wrap items-baseline gap-2">

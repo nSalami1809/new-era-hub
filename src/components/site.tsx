@@ -361,9 +361,25 @@ export function SiteFooter() {
   );
 }
 
+/** Slim utility bar above the header — the same place Nike/Adidas put
+ * shipping/payment info, so it reads as standard site chrome rather than a
+ * decorative "trust" block. Scrolls away with the page; the header below it
+ * is what stays sticky. */
+function AnnouncementBar() {
+  return (
+    <div className="bg-foreground py-2 text-center text-[11px] font-semibold tracking-wide text-background print:hidden sm:text-xs">
+      <p className="container-page truncate">
+        Paiement sécurisé sur WhatsApp · Livraison à Libreville, Owendo, Akanda, Ntoum · Stock
+        vérifié
+      </p>
+    </div>
+  );
+}
+
 export function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="storefront flex min-h-screen flex-col">
+      <AnnouncementBar />
       <SiteHeader />
       <main className="flex-1">{children}</main>
       <SiteFooter />

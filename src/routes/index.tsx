@@ -52,10 +52,8 @@ function Index() {
       <section className="overflow-hidden border-b border-border bg-muted/30">
         <div className="container-page grid items-center gap-8 py-10 sm:py-14 lg:grid-cols-2 lg:py-20">
           <div className="flex flex-col gap-4">
-            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              — Nouvelle sélection disponible
-            </span>
-            <h1 className="max-w-xl text-4xl leading-[1.05] sm:text-5xl">
+            <span className="eyebrow">— Nouvelle sélection disponible</span>
+            <h1 className="max-w-xl text-4xl sm:text-5xl">
               Le style qu'il vous faut, livré chez vous.
             </h1>
             <p className="max-w-xl text-sm text-muted-foreground sm:text-base">
@@ -95,7 +93,8 @@ function Index() {
 
       {isLoading && (
         <section className="container-page py-10">
-          <h2 className="mb-4 text-xl sm:text-2xl">Découvrir par catégorie</h2>
+          <span className="eyebrow">Catalogue</span>
+          <h2 className="mt-1 mb-4 text-2xl sm:text-3xl">Découvrir par catégorie</h2>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="aspect-square w-full rounded-2xl" />
@@ -106,7 +105,8 @@ function Index() {
 
       {!isLoading && categories.length > 0 && (
         <section className="container-page py-10">
-          <h2 className="mb-4 text-xl sm:text-2xl">Découvrir par catégorie</h2>
+          <span className="eyebrow">Catalogue</span>
+          <h2 className="mt-1 mb-4 text-2xl sm:text-3xl">Découvrir par catégorie</h2>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             {categories.map(({ category, count, cover }) => (
               <Link
@@ -138,7 +138,10 @@ function Index() {
 
       <section className="container-page pb-10">
         <div className="mb-4 flex items-end justify-between gap-4">
-          <h2 className="text-xl sm:text-2xl">Sélection du moment</h2>
+          <div>
+            <span className="eyebrow">Notre choix</span>
+            <h2 className="mt-1 text-2xl sm:text-3xl">Sélection du moment</h2>
+          </div>
           <Link to="/boutique" className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-sm">
             Tout voir
           </Link>
@@ -157,7 +160,10 @@ function Index() {
       {promos.length > 0 && (
         <section className="container-page pb-10">
           <div className="mb-4 flex items-end justify-between gap-4">
-            <h2 className="text-xl sm:text-2xl">Promotions en cours</h2>
+            <div>
+              <span className="eyebrow">En ce moment</span>
+              <h2 className="mt-1 text-2xl sm:text-3xl">Promotions en cours</h2>
+            </div>
             <Link
               to="/boutique"
               search={{ promo: true }}
