@@ -1,29 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { MessageCircle, ShieldCheck, Truck } from "lucide-react";
 import { SiteLayout } from "@/components/site";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductGridSkeleton, Skeleton } from "@/components/Skeleton";
 import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
-
-const TRUST_POINTS = [
-  {
-    icon: MessageCircle,
-    title: "Commande simple",
-    body: "Vous choisissez, vous finalisez le paiement directement sur WhatsApp.",
-  },
-  {
-    icon: Truck,
-    title: "Livraison dans votre ville",
-    body: "Renseignez votre lieu de livraison à la commande, on s'occupe du reste.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Stock réel, produits vérifiés",
-    body: "Ce que vous voyez en ligne est disponible en boutique.",
-  },
-];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -75,11 +56,14 @@ function Index() {
               — Nouvelle sélection disponible
             </span>
             <h1 className="max-w-xl text-4xl leading-[1.05] sm:text-5xl">
-              Des produits pensés pour votre style.
+              Le style qu'il vous faut, livré chez vous.
             </h1>
             <p className="max-w-xl text-sm text-muted-foreground sm:text-base">
-              Marques reconnues, stock réel, livraison dans votre ville. Vous commandez ici, vous
-              finalisez le paiement sur WhatsApp.
+              Découvrez nos produits sélectionnés avec soin, disponibles en stock. Commandez
+              facilement et finalisez votre paiement directement sur WhatsApp.
+            </p>
+            <p className="max-w-xl text-sm font-semibold sm:text-base">
+              Livraison à Libreville, Owendo, Akanda et Ntoum.
             </p>
             <div className="mt-2 flex flex-wrap gap-3">
               <Link to="/boutique" className="btn-base btn-dark">
@@ -106,22 +90,6 @@ function Index() {
               />
             </Link>
           )}
-        </div>
-      </section>
-
-      <section className="border-b border-border">
-        <div className="container-page grid gap-6 py-8 sm:grid-cols-3">
-          {TRUST_POINTS.map(({ icon: Icon, title, body }) => (
-            <div key={title} className="flex items-start gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-foreground text-background">
-                <Icon size={20} />
-              </span>
-              <div>
-                <p className="text-sm font-bold">{title}</p>
-                <p className="mt-0.5 text-sm text-muted-foreground">{body}</p>
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
