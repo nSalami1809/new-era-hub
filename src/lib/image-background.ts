@@ -2,12 +2,18 @@
 // ends up as a clean cutout centered on white with a soft shadow — the
 // "studio product shot" look used by Nike/Adidas/Dior.
 //
-// This calls remove.bg (via the "remove-background" Supabase Edge Function,
-// which holds the API key server-side) rather than running a model in the
-// browser: an earlier client-side attempt with U-2-Net produced visible
-// artifacts on non-trivial photos (e.g. a cap on its display stand — the
-// stand got kept as "foreground" and left ghosting around the edges).
-// remove.bg's matting handles these cases correctly.
+// This calls Leonardo.AI's "remove-bg" model (via the "remove-background"
+// Supabase Edge Function, which holds the API key server-side) rather than
+// running a model in the browser: an earlier client-side attempt with
+// U-2-Net produced visible artifacts on non-trivial photos (e.g. a cap on
+// its display stand — the stand got kept as "foreground" and left ghosting
+// around the edges).
+//
+// The edge function only ever hands back a plain transparent-background
+// cutout — no crop/shadow/bg_color from the provider — so this file's own
+// canvas compositing (bounding box, white square, drop shadow) stays the
+// single source of truth for the final look regardless of which provider
+// is behind the edge function.
 import { supabase } from "@/integrations/supabase/client";
 
 const OUTPUT_SIZE = 1200;
@@ -15,7 +21,7 @@ const PADDING_RATIO = 0.1; // margin kept empty around the subject, each side
 const ALPHA_THRESHOLD = 10; // 0-255, used only to find the subject's bounding box
 const JPEG_QUALITY = 0.9;
 
-async function callRemoveBg(file: File): Promise<Blob> {
+async function callBackgroundRemovalApi(file: File): Promise<Blob> {
   const form = new FormData();
   form.append("image_file", file, file.name);
   const { data, error } = await supabase.functions.invoke("remove-background", {
@@ -135,14 +141,15 @@ function canvasToFile(canvas: HTMLCanvasElement, originalName: string): Promise<
 }
 
 /**
- * Cuts the subject out of `file` (via remove.bg), centers it on a white
- * square with a soft drop shadow, and returns the result as a new JPEG File
- * ready to upload. Throws if remove.bg can't find a subject, if the edge
- * function rejects the request (quota, auth, missing key), or on a network
- * error — callers should fall back to the plain compression pipeline.
+ * Cuts the subject out of `file` (via the remove-background edge function),
+ * centers it on a white square with a soft drop shadow, and returns the
+ * result as a new JPEG File ready to upload. Throws if the provider can't
+ * find a subject, if the edge function rejects the request (quota, auth,
+ * missing key), or on a network error — callers should fall back to the
+ * plain compression pipeline.
  */
 export async function removeBackgroundAndCompose(file: File): Promise<File> {
-  const cutoutBlob = await callRemoveBg(file);
+  const cutoutBlob = await callBackgroundRemovalApi(file);
   const img = await loadImage(cutoutBlob);
   const canvas = drawToCanvas(img);
   const box = boundingBoxFromAlpha(canvas);

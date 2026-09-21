@@ -22,9 +22,10 @@ function validate(file: File): boolean {
   return true;
 }
 
-/** Cuts the subject onto a white square with a shadow (via remove.bg); falls
- * back to a plain flattened/compressed photo if the service can't find a
- * subject, is unreachable, or its credits/key are exhausted/missing. */
+/** Cuts the subject onto a white square with a shadow (via Leonardo.AI's
+ * remove-bg model); falls back to a plain flattened/compressed photo if the
+ * service can't find a subject, is unreachable, or its credits/key are
+ * exhausted/missing. */
 async function prepareFile(file: File, removeBg: boolean): Promise<File> {
   if (removeBg) {
     try {
@@ -70,7 +71,7 @@ export function ImageUploader({
     const files = Array.from(fileList);
     setUploading(true);
     // Sequential on purpose, so progress feedback stays accurate and a
-    // multi-photo upload doesn't burn through remove.bg credits in a burst.
+    // multi-photo upload doesn't burn through API credits in a burst.
     const uploaded: string[] = [];
     for (let i = 0; i < files.length; i++) {
       setProgress(

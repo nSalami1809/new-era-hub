@@ -1,9 +1,12 @@
-// Proxies a single product photo to the remove.bg API, so the API key
-// (REMOVE_BG_API_KEY, set as an Edge Function secret) never reaches the
-// browser. Admin-only: verifies the caller's JWT and is_admin() before
-// spending a remove.bg credit.
+// Proxies a single product photo to Leonardo.AI's "remove-bg" model, so the
+// API key (LEONARDO_API_KEY, set as an Edge Function secret) never reaches
+// the browser. Admin-only: verifies the caller's JWT and is_admin() before
+// spending a credit. Always asks Leonardo for a plain transparent cutout
+// (no crop/shadow/bg_color) — the client composites onto white with its own
+// shadow, so the final look stays identical regardless of provider.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { encodeBase64 } from "jsr:@std/encoding/base64";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -47,7 +50,7 @@ Deno.serve(async (req) => {
     return jsonError("Accès refusé.", 403);
   }
 
-  const apiKey = Deno.env.get("REMOVE_BG_API_KEY");
+  const apiKey = Deno.env.get("LEONARDO_API_KEY");
   if (!apiKey) {
     return jsonError("Service de détourage non configuré (clé API manquante).", 500);
   }
@@ -63,35 +66,69 @@ Deno.serve(async (req) => {
     return jsonError("Image manquante.", 400);
   }
 
-  const outgoingForm = new FormData();
-  outgoingForm.append("image_file", file, file.name);
-  outgoingForm.append("size", "auto");
+  const fileBytes = new Uint8Array(await file.arrayBuffer());
+  const base64Data = encodeBase64(fileBytes);
 
-  let rbResponse: Response;
+  let genResponse: Response;
   try {
-    rbResponse = await fetch("https://api.remove.bg/v1.0/removebg", {
+    genResponse = await fetch("https://cloud.leonardo.ai/api/rest/v2/generationssync", {
       method: "POST",
-      headers: { "X-Api-Key": apiKey },
-      body: outgoingForm,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        accept: "application/json",
+      },
+      body: JSON.stringify({
+        model: "remove-bg",
+        public: false,
+        ephemeral: true,
+        parameters: {
+          size: "auto",
+          type: "product",
+          format: "png",
+          guidances: {
+            image_reference: [{ image: { type: "BASE64", data: base64Data } }],
+          },
+        },
+      }),
     });
   } catch (err) {
-    console.error("remove.bg fetch failed", err);
+    console.error("leonardo fetch failed", err);
     return jsonError("Le service de détourage est injoignable.", 502);
   }
 
-  if (!rbResponse.ok) {
-    const errText = await rbResponse.text();
-    console.error("remove.bg error", rbResponse.status, errText);
+  if (!genResponse.ok) {
+    const errText = await genResponse.text();
+    console.error("leonardo error", genResponse.status, errText);
     const message =
-      rbResponse.status === 402
-        ? "Crédits remove.bg épuisés."
-        : rbResponse.status === 403
-          ? "Clé API remove.bg invalide."
+      genResponse.status === 402
+        ? "Crédits Leonardo.AI épuisés."
+        : genResponse.status === 401 || genResponse.status === 403
+          ? "Clé API Leonardo.AI invalide."
           : "Le détourage a échoué.";
     return jsonError(message, 502);
   }
 
-  const resultBytes = await rbResponse.arrayBuffer();
+  const genJson = (await genResponse.json()) as {
+    results?: { url?: string }[];
+  };
+  const resultUrl = genJson.results?.[0]?.url;
+  if (!resultUrl) {
+    return jsonError("Aucun résultat de détourage.", 502);
+  }
+
+  let imgResponse: Response;
+  try {
+    imgResponse = await fetch(resultUrl);
+  } catch (err) {
+    console.error("leonardo result fetch failed", err);
+    return jsonError("Le service de détourage est injoignable.", 502);
+  }
+  if (!imgResponse.ok) {
+    return jsonError("Le détourage a échoué.", 502);
+  }
+
+  const resultBytes = await imgResponse.arrayBuffer();
   return new Response(resultBytes, {
     status: 200,
     headers: { ...CORS_HEADERS, "Content-Type": "image/png" },
