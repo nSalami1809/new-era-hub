@@ -18,5 +18,8 @@ export function transformImageUrl(url: string, width?: number): string {
   if (!width || !url.includes(OBJECT_MARKER)) return url;
   const base = url.replace(OBJECT_MARKER, RENDER_MARKER);
   const separator = base.includes("?") ? "&" : "?";
-  return `${base}${separator}width=${Math.round(width * 2)}&quality=${DEFAULT_QUALITY}`;
+  // resize=contain -> resizing_type "fit" (scale to fit, full image kept).
+  // Without it the endpoint defaults to "fill", which *crops* to the exact
+  // box — confirmed live: that was silently chopping product photos in half.
+  return `${base}${separator}width=${Math.round(width * 2)}&resize=contain&quality=${DEFAULT_QUALITY}`;
 }
