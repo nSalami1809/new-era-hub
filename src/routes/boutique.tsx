@@ -265,8 +265,13 @@ function Boutique() {
         ) : (
           <>
             <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {visible.map((p) => (
-                <ProductCard key={p.id} product={p} currency={settings?.currency ?? "FCFA"} />
+              {visible.map((p, i) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  currency={settings?.currency ?? "FCFA"}
+                  priority={i === 0}
+                />
               ))}
             </div>
             {visibleCount < results.length && (

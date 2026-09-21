@@ -63,7 +63,15 @@ export function PriceTag({
   );
 }
 
-export function ProductCard({ product, currency }: { product: Product; currency: string }) {
+export function ProductCard({
+  product,
+  currency,
+  priority = false,
+}: {
+  product: Product;
+  currency: string;
+  priority?: boolean;
+}) {
   const out = product.stock <= 0;
   const hasSizes = product.variants.length > 0;
   useCart(); // subscribe so this card re-renders when its own quantity changes
@@ -77,6 +85,7 @@ export function ProductCard({ product, currency }: { product: Product; currency:
           <ProductImage
             src={product.images[0]}
             alt={`${product.brand} ${product.name}`}
+            priority={priority}
             className="h-full w-full object-contain p-4 transition-transform duration-200 hover:scale-[1.04] sm:p-6"
           />
         </Link>

@@ -37,7 +37,10 @@ let sessionPromise: Promise<import("onnxruntime-web").InferenceSession> | null =
 async function getSession() {
   if (!sessionPromise) {
     sessionPromise = (async () => {
-      const ort = await import("onnxruntime-web");
+      // The "/wasm" entry only pulls in the plain CPU wasm backend (no
+      // webgl/webgpu variants) — see the resolve.conditions comment in
+      // vite.config.ts for why this stays out of our build output entirely.
+      const ort = await import("onnxruntime-web/wasm");
       ort.env.wasm.wasmPaths = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/`;
       // No Cross-Origin-Isolation headers are configured on this site, so
       // multi-threaded wasm (which needs SharedArrayBuffer) isn't available.
@@ -86,7 +89,7 @@ function drawToCanvas(
 }
 
 async function segment(source: CanvasImageSource): Promise<Float32Array> {
-  const ort = await import("onnxruntime-web");
+  const ort = await import("onnxruntime-web/wasm");
   const session = await getSession();
   const { ctx } = drawToCanvas(source, MODEL_SIZE, MODEL_SIZE);
   const { data } = ctx.getImageData(0, 0, MODEL_SIZE, MODEL_SIZE);

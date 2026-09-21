@@ -12,11 +12,16 @@ export function ProductImage({
   alt,
   className,
   iconSize = 22,
+  priority = false,
 }: {
   src: string | null | undefined;
   alt: string;
   className?: string;
   iconSize?: number;
+  /** For the one image likely to be the page's LCP (a product's main photo,
+   * the first card above the fold): loads eagerly and at high priority
+   * instead of the lazy-loading default. */
+  priority?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
 
@@ -29,6 +34,13 @@ export function ProductImage({
   }
 
   return (
-    <img src={src} alt={alt} loading="lazy" onError={() => setFailed(true)} className={className} />
+    <img
+      src={src}
+      alt={alt}
+      loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : "auto"}
+      onError={() => setFailed(true)}
+      className={className}
+    />
   );
 }

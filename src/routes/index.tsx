@@ -124,8 +124,8 @@ function Index() {
           <ProductGridSkeleton />
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            {(featured.length ? featured : active.slice(0, 4)).map((p) => (
-              <ProductCard key={p.id} product={p} currency={currency} />
+            {(featured.length ? featured : active.slice(0, 4)).map((p, i) => (
+              <ProductCard key={p.id} product={p} currency={currency} priority={i === 0} />
             ))}
           </div>
         )}

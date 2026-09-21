@@ -282,6 +282,7 @@ function ProductPage() {
                 alt={`${product.brand} ${product.name}`}
                 className="h-full w-full object-contain p-8"
                 iconSize={40}
+                priority
               />
               <span className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-background/80 px-2 py-1 text-xs font-medium text-muted-foreground opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
                 <ZoomIn size={14} />
