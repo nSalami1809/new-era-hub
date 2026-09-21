@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { formatDate, formatPrice } from "@/lib/format";
-import { useProducts } from "@/lib/api/products";
+import { useAdminProducts } from "@/lib/api/products";
 import { useAdminOrders } from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
 import { effectivePrice } from "@/lib/types";
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/nehub-53ff1f11/")({
 });
 
 function Dashboard() {
-  const { data: products = [] } = useProducts();
+  const { data: products = [] } = useAdminProducts();
   const { data: orders = [] } = useAdminOrders();
   const { data: settings } = useSettings();
   const currency = settings?.currency ?? "FCFA";

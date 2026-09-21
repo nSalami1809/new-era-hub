@@ -62,36 +62,56 @@ function toUpdateRow(input: Partial<ProductInput>): ProductUpdateRow {
   return row;
 }
 
-async function fetchProducts(): Promise<Product[]> {
+// `cost_price` is deliberately not GRANTed to the `anon` Postgres role (see
+// migration 20260920000010) so guests can never read margin data even via a
+// crafted request — only `authenticated` (admin) has it. A plain `select("*")`
+// asks for every column indiscriminately, and Postgres rejects the *entire*
+// query when any one requested column isn't granted — so the storefront's
+// guest-facing fetch must name its columns explicitly and leave cost_price
+// out, while the admin-only variant below adds it back in for the
+// authenticated session that's allowed to see it.
+const PUBLIC_PRODUCT_COLUMNS =
+  "id, name, brand, category, description, price, promotional_price, bundle_quantity, bundle_price, bundle_active, stock, low_stock_threshold, sold, sku, images, is_active, is_featured, created_at, updated_at, product_variants(*)";
+const ADMIN_PRODUCT_COLUMNS = `${PUBLIC_PRODUCT_COLUMNS}, cost_price`;
+
+async function fetchProducts(columns: string): Promise<Product[]> {
+  // A dynamic (non-literal) column string can't be statically matched against
+  // the generated schema, so supabase-js falls back to a generic error-shaped
+  // type here — cast back to what these two fixed column sets actually
+  // return (verified against the schema, both include product_variants(*)).
   const { data, error } = await supabase
     .from("products")
-    .select("*, product_variants(*)")
+    .select(columns)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []).map(mapProduct);
+  return ((data ?? []) as unknown as ProductRow[]).map(mapProduct);
 }
 
-async function fetchProduct(id: string): Promise<Product | null> {
+async function fetchProduct(id: string, columns: string): Promise<Product | null> {
   const { data, error } = await supabase
     .from("products")
-    .select("*, product_variants(*)")
+    .select(columns)
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;
-  return data ? mapProduct(data) : null;
+  return data ? mapProduct(data as unknown as ProductRow) : null;
 }
 
 // Shared with route loaders (see e.g. routes/index.tsx, routes/boutique.tsx)
 // so a loader's ensureQueryData(productsQueryOptions) and this hook's
 // useQuery hit the exact same cache entry — the SSR-prefetched data renders
-// immediately instead of the hook re-fetching after hydration.
+// immediately instead of the hook re-fetching after hydration. Storefront-
+// facing: never requests cost_price, so it works for anonymous visitors.
 export const productsQueryOptions = queryOptions({
   queryKey: ["products"],
-  queryFn: fetchProducts,
+  queryFn: () => fetchProducts(PUBLIC_PRODUCT_COLUMNS),
 });
 
 export function productQueryOptions(id: string) {
-  return queryOptions({ queryKey: ["products", id], queryFn: () => fetchProduct(id) });
+  return queryOptions({
+    queryKey: ["products", id],
+    queryFn: () => fetchProduct(id, PUBLIC_PRODUCT_COLUMNS),
+  });
 }
 
 export function useProducts() {
@@ -100,6 +120,29 @@ export function useProducts() {
 
 export function useProduct(id: string | undefined) {
   return useQuery({ ...productQueryOptions(id ?? ""), enabled: !!id });
+}
+
+// Admin-only: includes cost_price for profit-margin displays. Only ever
+// rendered inside the authenticated admin shell, whose session has the
+// authenticated role's grant on that column.
+export const adminProductsQueryOptions = queryOptions({
+  queryKey: ["products", "admin"],
+  queryFn: () => fetchProducts(ADMIN_PRODUCT_COLUMNS),
+});
+
+export function adminProductQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: ["products", id, "admin"],
+    queryFn: () => fetchProduct(id, ADMIN_PRODUCT_COLUMNS),
+  });
+}
+
+export function useAdminProducts() {
+  return useQuery(adminProductsQueryOptions);
+}
+
+export function useAdminProduct(id: string | undefined) {
+  return useQuery({ ...adminProductQueryOptions(id ?? ""), enabled: !!id });
 }
 
 export function useCreateProduct() {

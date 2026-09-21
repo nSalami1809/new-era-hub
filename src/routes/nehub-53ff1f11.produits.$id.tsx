@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { ProductForm } from "@/components/ProductForm";
 import { Skeleton } from "@/components/Skeleton";
-import { useProduct, useUpdateProduct, type ProductInput } from "@/lib/api/products";
+import { useAdminProduct, useUpdateProduct, type ProductInput } from "@/lib/api/products";
 import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute("/nehub-53ff1f11/produits/$id")({
@@ -11,7 +11,7 @@ export const Route = createFileRoute("/nehub-53ff1f11/produits/$id")({
 
 function EditProduct() {
   const { id } = Route.useParams();
-  const { data: product, isLoading } = useProduct(id);
+  const { data: product, isLoading } = useAdminProduct(id);
   const updateProduct = useUpdateProduct();
   const navigate = useNavigate();
 

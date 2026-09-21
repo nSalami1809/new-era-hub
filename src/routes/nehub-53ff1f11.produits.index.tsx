@@ -6,7 +6,7 @@ import { ViewToggle } from "@/components/ViewToggle";
 import { AdminCardGridSkeleton, AdminTableSkeleton } from "@/components/Skeleton";
 import { formatPrice } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
-import { useProducts, useDeleteProduct, useUpdateProduct } from "@/lib/api/products";
+import { useAdminProducts, useDeleteProduct, useUpdateProduct } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
 import { useViewMode } from "@/lib/use-view-mode";
 import { stockStatus, unitProfit, profitMargin, type Product } from "@/lib/types";
@@ -35,7 +35,7 @@ function statusMeta(p: Product, status: "in" | "low" | "out") {
 }
 
 function AdminProducts() {
-  const { data: products = [], isLoading } = useProducts();
+  const { data: products = [], isLoading } = useAdminProducts();
   const { data: settings } = useSettings();
   const currency = settings?.currency ?? "FCFA";
   const deleteProduct = useDeleteProduct();
