@@ -3,10 +3,13 @@ import { ArrowLeft } from "lucide-react";
 import { ProductImage } from "@/components/ProductImage";
 import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
 import { Skeleton } from "@/components/Skeleton";
+import { Spinner } from "@/components/Spinner";
 import { formatDate, formatPrice } from "@/lib/format";
 import { useAdminOrder, useUpdateOrderStatus } from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
-import { ORDER_STATUSES, type OrderStatus } from "@/lib/types";
+import { ORDER_STATUSES, variantLabel, type OrderStatus } from "@/lib/types";
+import { orderStatusWhatsappUrl } from "@/lib/whatsapp";
+import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute("/nehub-53ff1f11/commandes/$id")({
   component: AdminOrderDetail,
@@ -55,29 +58,48 @@ function AdminOrderDetail() {
       </Link>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl">Commande #{order.orderNumber}</h1>
-        <select
-          className="field !min-h-[38px] w-auto"
-          value={order.status}
-          disabled={updateStatus.isPending}
-          onChange={(e) => {
-            const status = e.target.value as OrderStatus;
-            if (
-              status === "Annulée" &&
-              !window.confirm(
-                "Annuler cette commande ? Le stock des articles sera automatiquement remis à jour.",
-              )
-            ) {
-              return;
-            }
-            updateStatus.mutate({ id: order.id, status });
-          }}
-        >
-          {ORDER_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          {updateStatus.isPending && <Spinner size={16} />}
+          <select
+            className="field !min-h-[38px] w-auto"
+            value={order.status}
+            disabled={updateStatus.isPending}
+            onChange={(e) => {
+              const status = e.target.value as OrderStatus;
+              if (
+                status === "Annulée" &&
+                !window.confirm(
+                  "Annuler cette commande ? Le stock des articles sera automatiquement remis à jour.",
+                )
+              ) {
+                return;
+              }
+              updateStatus.mutate(
+                { id: order.id, status },
+                {
+                  onSuccess: () => {
+                    if (!settings) return;
+                    // No server-side WhatsApp API is configured — this opens a
+                    // prefilled message to the customer's number, one tap from
+                    // being sent, instead of a silent server-side send.
+                    window.open(
+                      orderStatusWhatsappUrl({ ...order, status }, settings),
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
+                    toast("Statut mis à jour. Message WhatsApp prêt à envoyer au client.");
+                  },
+                },
+              );
+            }}
+          >
+            {ORDER_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">{formatDate(order.createdAt)}</p>
 
@@ -137,7 +159,9 @@ function AdminOrderDetail() {
                       </div>
                       <div className="font-medium">
                         {item.name}
-                        {item.variantSize ? ` — Taille ${item.variantSize}` : ""}
+                        {variantLabel(item.variantColor, item.variantSize)
+                          ? ` — ${variantLabel(item.variantColor, item.variantSize)}`
+                          : ""}
                       </div>
                       <div className="text-xs text-muted-foreground">{item.sku}</div>
                     </div>

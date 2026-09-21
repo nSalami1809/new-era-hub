@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { SiteLayout } from "@/components/site";
+import { Spinner } from "@/components/Spinner";
 import { formatPrice, isValidPhone } from "@/lib/format";
 import { cartTotals, clearCart, useCart } from "@/lib/cart";
 import { toast } from "@/lib/toast";
@@ -8,6 +9,7 @@ import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
 import { useCreateOrder } from "@/lib/api/orders";
 import { usePreviewPromoCode, type PromoPreview } from "@/lib/api/promo-codes";
+import { variantLabel } from "@/lib/types";
 
 export const Route = createFileRoute("/commande")({
   head: () => ({
@@ -206,6 +208,10 @@ function CheckoutPage() {
                 const variant = item.variantId
                   ? (p.variants.find((v) => v.id === item.variantId) ?? null)
                   : null;
+                const color = variant?.colorId
+                  ? (p.colors.find((c) => c.id === variant.colorId) ?? null)
+                  : null;
+                const label = variant ? variantLabel(color?.name ?? null, variant.size) : "";
                 return (
                   <li
                     key={`${p.id}-${item.variantId ?? "base"}`}
@@ -213,7 +219,7 @@ function CheckoutPage() {
                   >
                     <span className="text-muted-foreground">
                       {p.brand} {p.name}
-                      {variant ? ` (${variant.size})` : ""} × {item.quantity}
+                      {label ? ` (${label})` : ""} × {item.quantity}
                     </span>
                   </li>
                 );
@@ -279,6 +285,7 @@ function CheckoutPage() {
               disabled={createOrder.isPending}
               className="btn-base btn-success mt-5 w-full"
             >
+              {createOrder.isPending && <Spinner size={16} />}
               Valider ma commande
             </button>
             <Link to="/panier" className="btn-base btn-outline mt-2 w-full">

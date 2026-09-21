@@ -1,5 +1,12 @@
 import { formatPrice } from "./format";
-import { effectivePrice, type Order, type Product, type StoreSettings } from "./types";
+import {
+  effectivePrice,
+  variantLabel,
+  type Order,
+  type OrderStatus,
+  type Product,
+  type StoreSettings,
+} from "./types";
 
 // WhatsApp's own markdown uses a single asterisk for bold (not **), and
 // renders on every client (mobile/desktop) without any HTML — this string is
@@ -23,7 +30,8 @@ export function buildWhatsappMessage(order: Order, settings: StoreSettings): str
   lines.push("");
   lines.push("🛒 *Ma commande*");
   for (const item of order.items) {
-    const variant = item.variantSize ? ` (Taille ${item.variantSize})` : "";
+    const label = variantLabel(item.variantColor, item.variantSize);
+    const variant = label ? ` (${label})` : "";
     lines.push(
       `• ${item.brand} ${item.name}${variant} × ${item.quantity} — ${formatPrice(
         item.unitPrice * item.quantity,
@@ -54,4 +62,42 @@ export function productShareText(product: Product, currency: string, url: string
 
 export function productShareUrl(product: Product, currency: string, url: string): string {
   return `https://wa.me/?text=${encodeURIComponent(productShareText(product, currency, url))}`;
+}
+
+// Shown to the customer alongside the raw status name, one line of plain-
+// language context per step of the order lifecycle.
+const STATUS_DETAIL: Partial<Record<OrderStatus, string>> = {
+  Contacté: "Nous vous avons contacté au sujet de votre commande.",
+  "Paiement en attente": "Nous attendons votre paiement pour finaliser votre commande.",
+  Payée: "Nous avons bien reçu votre paiement, merci !",
+  "En préparation": "Votre commande est en cours de préparation.",
+  Expédiée: "Votre commande a été expédiée, elle arrive bientôt.",
+  Livrée: "Votre commande a été livrée. Merci pour votre confiance !",
+  Annulée: "Votre commande a été annulée. N'hésitez pas à nous contacter pour plus d'informations.",
+};
+
+/** Sent to the CUSTOMER (not the store) every time an admin advances an order's status. */
+export function buildOrderStatusMessage(order: Order, settings: StoreSettings): string {
+  const storeName = settings.storeName || "New Era Hub 241";
+  const detail = STATUS_DETAIL[order.status];
+  const lines: string[] = [];
+  lines.push(`👋 Bonjour ${order.customer.firstName},`);
+  lines.push("");
+  lines.push(`Mise à jour de votre commande *#${order.orderNumber}* chez *${storeName}* :`);
+  lines.push("");
+  lines.push(`📦 Nouveau statut : *${order.status}*`);
+  if (detail) {
+    lines.push("");
+    lines.push(detail);
+  }
+  lines.push("");
+  lines.push(`💰 Total : ${formatPrice(order.total, settings.currency)}`);
+  lines.push("");
+  lines.push(`Merci pour votre confiance ! 🙏`);
+  return lines.join("\n");
+}
+
+export function orderStatusWhatsappUrl(order: Order, settings: StoreSettings): string {
+  const number = order.customer.phone.replace(/\D/g, "");
+  return `https://wa.me/${number}?text=${encodeURIComponent(buildOrderStatusMessage(order, settings))}`;
 }

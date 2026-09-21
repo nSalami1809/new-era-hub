@@ -43,13 +43,14 @@ join public.user_roles r on r.user_id = u.id;
 
 ## Ce que fait chaque migration
 
-| Fichier | Contenu |
-|---|---|
-| `20260920000001_extensions_and_helpers.sql` | Extension `pgcrypto`, enum `order_status`, trigger générique `updated_at` |
-| `20260920000002_products.sql` | Table `products` |
-| `20260920000003_store_settings.sql` | Table `store_settings` (ligne unique) |
-| `20260920000004_orders.sql` | `orders`, `order_items`, `order_status_history` + trigger de traçabilité automatique des statuts |
-| `20260920000005_stock_movements.sql` | Historique des mouvements de stock |
-| `20260920000006_roles_and_rls.sql` | `user_roles`, fonction `is_admin()`, activation RLS + policies sur toutes les tables |
-| `20260920000007_order_functions.sql` | `create_order()` (seul chemin de création de commande, prix/stock revérifiés serveur), `get_order_receipt()` (lecture facture invité par id), `adjust_stock()` (ajustement stock admin tracé) |
-| `20260920000008_product_images_storage.sql` | Bucket Storage `product-images` (public en lecture, écriture admin uniquement) pour l'upload réel des photos produit |
+| Fichier                                     | Contenu                                                                                                                                                                                                                                               |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20260920000001_extensions_and_helpers.sql` | Extension `pgcrypto`, enum `order_status`, trigger générique `updated_at`                                                                                                                                                                             |
+| `20260920000002_products.sql`               | Table `products`                                                                                                                                                                                                                                      |
+| `20260920000003_store_settings.sql`         | Table `store_settings` (ligne unique)                                                                                                                                                                                                                 |
+| `20260920000004_orders.sql`                 | `orders`, `order_items`, `order_status_history` + trigger de traçabilité automatique des statuts                                                                                                                                                      |
+| `20260920000005_stock_movements.sql`        | Historique des mouvements de stock                                                                                                                                                                                                                    |
+| `20260920000006_roles_and_rls.sql`          | `user_roles`, fonction `is_admin()`, activation RLS + policies sur toutes les tables                                                                                                                                                                  |
+| `20260920000007_order_functions.sql`        | `create_order()` (seul chemin de création de commande, prix/stock revérifiés serveur), `get_order_receipt()` (lecture facture invité par id), `adjust_stock()` (ajustement stock admin tracé)                                                         |
+| `20260920000008_product_images_storage.sql` | Bucket Storage `product-images` (public en lecture, écriture admin uniquement) pour l'upload réel des photos produit                                                                                                                                  |
+| `20260921000007_product_colors.sql`         | Table `product_colors` (nom, teinte, photos par couleur), `product_variants.color_id` (taille et/ou couleur), `order_items.variant_color`, fonctions couleur (`add/update/remove_product_color`) et mise à jour de `create_order`/`get_order_receipt` |

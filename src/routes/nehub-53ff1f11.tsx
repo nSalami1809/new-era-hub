@@ -21,6 +21,7 @@ import { useIsAdmin, signInAdmin, signOutAdmin, requestPasswordReset } from "@/l
 import { useSettings } from "@/lib/api/settings";
 import { Toaster } from "@/components/Toaster";
 import { toast } from "@/lib/toast";
+import { Spinner, FullscreenSpinner } from "@/components/Spinner";
 import logo from "@/assets/logo-new-era-hub-241.jpeg";
 
 export const Route = createFileRoute("/nehub-53ff1f11")({
@@ -118,11 +119,7 @@ function AdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   if (loading) {
-    return (
-      <div className="grid min-h-screen place-items-center text-sm text-muted-foreground">
-        Chargement...
-      </div>
-    );
+    return <FullscreenSpinner label="Chargement..." />;
   }
 
   if (!session) return <LoginScreen />;
@@ -288,6 +285,7 @@ function LoginScreen() {
         </div>
         {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
         <button type="submit" disabled={submitting} className="btn-base btn-success mt-4 w-full">
+          {submitting && <Spinner size={16} />}
           Se connecter
         </button>
         <Link
@@ -359,6 +357,7 @@ function ResetRequestScreen({
               disabled={submitting}
               className="btn-base btn-success mt-4 w-full"
             >
+              {submitting && <Spinner size={16} />}
               Envoyer le lien
             </button>
           </>

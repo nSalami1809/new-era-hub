@@ -24,6 +24,7 @@ export type Database = {
           quantity: number;
           sku: string;
           unit_price: number;
+          variant_color: string | null;
           variant_id: string | null;
           variant_size: string | null;
         };
@@ -39,6 +40,7 @@ export type Database = {
           quantity: number;
           sku: string;
           unit_price: number;
+          variant_color?: string | null;
           variant_id?: string | null;
           variant_size?: string | null;
         };
@@ -54,6 +56,7 @@ export type Database = {
           quantity?: number;
           sku?: string;
           unit_price?: number;
+          variant_color?: string | null;
           variant_id?: string | null;
           variant_size?: string | null;
         };
@@ -182,6 +185,44 @@ export type Database = {
         };
         Relationships: [];
       };
+      product_colors: {
+        Row: {
+          created_at: string;
+          hex_color: string | null;
+          id: string;
+          images: string[];
+          name: string;
+          product_id: string;
+          sort_order: number;
+        };
+        Insert: {
+          created_at?: string;
+          hex_color?: string | null;
+          id?: string;
+          images?: string[];
+          name: string;
+          product_id: string;
+          sort_order?: number;
+        };
+        Update: {
+          created_at?: string;
+          hex_color?: string | null;
+          id?: string;
+          images?: string[];
+          name?: string;
+          product_id?: string;
+          sort_order?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "product_colors_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       product_reviews: {
         Row: {
           author_name: string;
@@ -222,27 +263,37 @@ export type Database = {
       };
       product_variants: {
         Row: {
+          color_id: string | null;
           created_at: string;
           id: string;
           product_id: string;
-          size: string;
+          size: string | null;
           stock: number;
         };
         Insert: {
+          color_id?: string | null;
           created_at?: string;
           id?: string;
           product_id: string;
-          size: string;
+          size?: string | null;
           stock?: number;
         };
         Update: {
+          color_id?: string | null;
           created_at?: string;
           id?: string;
           product_id?: string;
-          size?: string;
+          size?: string | null;
           stock?: number;
         };
         Relationships: [
+          {
+            foreignKeyName: "product_variants_color_id_fkey";
+            columns: ["color_id"];
+            isOneToOne: false;
+            referencedRelation: "product_colors";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "product_variants_product_id_fkey";
             columns: ["product_id"];
@@ -512,8 +563,27 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      add_product_color: {
+        Args: {
+          // Nullable at the DB level (no NOT NULL on this function param) —
+          // the generator can't see that, so this is hand-adjusted.
+          p_hex_color: string | null;
+          p_images: string[];
+          p_name: string;
+          p_product_id: string;
+          p_sort_order?: number;
+        };
+        Returns: string;
+      };
       add_product_variant: {
-        Args: { p_initial_stock: number; p_product_id: string; p_size: string };
+        Args: {
+          // Both nullable at the DB level (a variant needs only one of
+          // size/color) — hand-adjusted, see add_product_color above.
+          p_color_id: string | null;
+          p_initial_stock: number;
+          p_product_id: string;
+          p_size: string | null;
+        };
         Returns: string;
       };
       adjust_stock: {
@@ -547,8 +617,19 @@ export type Database = {
         Args: { p_code: string; p_subtotal: number };
         Returns: Json;
       };
+      remove_product_color: { Args: { p_color_id: string }; Returns: undefined };
       remove_product_variant: {
         Args: { p_variant_id: string };
+        Returns: undefined;
+      };
+      update_product_color: {
+        Args: {
+          p_color_id: string;
+          // Nullable at the DB level, see add_product_color above.
+          p_hex_color: string | null;
+          p_images: string[];
+          p_name: string;
+        };
         Returns: undefined;
       };
     };

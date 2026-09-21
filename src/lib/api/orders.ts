@@ -13,6 +13,7 @@ type OrderItemRow = {
   base_price: number;
   cost_price?: number;
   variant_size?: string | null;
+  variant_color?: string | null;
   quantity: number;
 };
 
@@ -47,6 +48,7 @@ function mapOrderItem(row: OrderItemRow): OrderItem {
     basePrice: Number(row.base_price),
     costPrice: row.cost_price !== undefined ? Number(row.cost_price) : 0,
     variantSize: row.variant_size ?? null,
+    variantColor: row.variant_color ?? null,
     quantity: row.quantity,
   };
 }

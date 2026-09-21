@@ -78,7 +78,12 @@ function Boutique() {
   const sizes = useMemo(
     () =>
       Array.from(
-        new Set(products.filter((p) => p.isActive).flatMap((p) => p.variants.map((v) => v.size))),
+        new Set(
+          products
+            .filter((p) => p.isActive)
+            .flatMap((p) => p.variants.map((v) => v.size))
+            .filter((s): s is string => s !== null),
+        ),
       ).sort(),
     [products],
   );

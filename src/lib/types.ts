@@ -2,9 +2,21 @@
 // fixed list — any non-empty string the admin has created is valid.
 export type ProductCategory = string;
 
+export type ProductColor = {
+  id: string;
+  name: string;
+  hexColor: string | null;
+  /** This color's own photos — selecting the color swaps the gallery to these. Empty = fall back to Product.images. */
+  images: string[];
+  sortOrder: number;
+};
+
 export type ProductVariant = {
   id: string;
-  size: string;
+  /** null when this product doesn't use sizes (color-only variant). */
+  size: string | null;
+  /** null when this product doesn't use colors (size-only variant). */
+  colorId: string | null;
   stock: number;
 };
 
@@ -27,7 +39,9 @@ export type Product = {
   images: string[];
   isActive: boolean;
   isFeatured: boolean;
-  /** Optional per-size stock. Empty = this product doesn't use sizes. */
+  /** Optional colors, each with its own photos. Empty = this product doesn't use colors. */
+  colors: ProductColor[];
+  /** Optional per-size and/or per-color stock. Empty = this product doesn't use variants. */
   variants: ProductVariant[];
   createdAt: string;
   updatedAt: string;
@@ -54,6 +68,7 @@ export type OrderItem = {
   basePrice: number;
   costPrice: number;
   variantSize: string | null;
+  variantColor: string | null;
   quantity: number;
 };
 
@@ -156,4 +171,9 @@ export function stockStatus(p: Product): "in" | "low" | "out" {
   if (p.stock <= 0) return "out";
   if (p.stock <= p.lowStockThreshold) return "low";
   return "in";
+}
+
+/** "Noir, Taille M" / "Noir" / "Taille M" / "" — combines a variant's color and size for display. */
+export function variantLabel(color: string | null, size: string | null): string {
+  return [color, size ? `Taille ${size}` : null].filter((x): x is string => !!x).join(", ");
 }

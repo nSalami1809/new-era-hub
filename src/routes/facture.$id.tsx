@@ -7,6 +7,7 @@ import { formatDate, formatPrice } from "@/lib/format";
 import { useOrderReceipt } from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
 import { whatsappUrl } from "@/lib/whatsapp";
+import { variantLabel } from "@/lib/types";
 import logo from "@/assets/logo-new-era-hub-241.jpeg";
 
 export const Route = createFileRoute("/facture/$id")({
@@ -177,7 +178,9 @@ function InvoicePage() {
                           </div>
                           <div className="font-medium">
                             {item.name}
-                            {item.variantSize ? ` — Taille ${item.variantSize}` : ""}
+                            {variantLabel(item.variantColor, item.variantSize)
+                              ? ` — ${variantLabel(item.variantColor, item.variantSize)}`
+                              : ""}
                           </div>
                           <div className="text-xs text-muted-foreground">{item.sku}</div>
                         </div>

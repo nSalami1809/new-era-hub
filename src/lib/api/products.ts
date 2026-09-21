@@ -4,8 +4,10 @@ import type { Database } from "@/integrations/supabase/types";
 import type { Product } from "@/lib/types";
 
 type ProductVariantRow = Database["public"]["Tables"]["product_variants"]["Row"];
+type ProductColorRow = Database["public"]["Tables"]["product_colors"]["Row"];
 type ProductRow = Database["public"]["Tables"]["products"]["Row"] & {
   product_variants?: ProductVariantRow[];
+  product_colors?: ProductColorRow[];
 };
 type ProductUpdateRow = Database["public"]["Tables"]["products"]["Update"];
 
@@ -30,17 +32,35 @@ function mapProduct(row: ProductRow): Product {
     images: row.images ?? [],
     isActive: row.is_active,
     isFeatured: row.is_featured,
-    variants: (row.product_variants ?? []).map((v) => ({ id: v.id, size: v.size, stock: v.stock })),
+    colors: (row.product_colors ?? [])
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        hexColor: c.hex_color,
+        images: c.images ?? [],
+        sortOrder: c.sort_order,
+      }))
+      .sort((a, b) => a.sortOrder - b.sortOrder),
+    variants: (row.product_variants ?? []).map((v) => ({
+      id: v.id,
+      size: v.size,
+      colorId: v.color_id,
+      stock: v.stock,
+    })),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
-// Variants are managed through their own dedicated mutations (useAddVariant /
-// useRemoveVariant / useAdjustVariantStock in stock-variants.ts), not through
-// the generic product create/update path — there's no `variants` column on
-// `products` to map here.
-export type ProductInput = Omit<Product, "id" | "createdAt" | "updatedAt" | "sold" | "variants">;
+// Variants and colors are managed through their own dedicated mutations
+// (useAddVariant / useRemoveVariant / useAdjustVariantStock and
+// useAddColor / useUpdateColor / useRemoveColor in stock-variants.ts), not
+// through the generic product create/update path — there's no `variants` or
+// `colors` column on `products` to map here.
+export type ProductInput = Omit<
+  Product,
+  "id" | "createdAt" | "updatedAt" | "sold" | "variants" | "colors"
+>;
 
 function toUpdateRow(input: Partial<ProductInput>): ProductUpdateRow {
   const row: ProductUpdateRow = {};
@@ -71,7 +91,7 @@ function toUpdateRow(input: Partial<ProductInput>): ProductUpdateRow {
 // out, while the admin-only variant below adds it back in for the
 // authenticated session that's allowed to see it.
 const PUBLIC_PRODUCT_COLUMNS =
-  "id, name, brand, category, description, price, promotional_price, bundle_quantity, bundle_price, bundle_active, stock, low_stock_threshold, sold, sku, images, is_active, is_featured, created_at, updated_at, product_variants(*)";
+  "id, name, brand, category, description, price, promotional_price, bundle_quantity, bundle_price, bundle_active, stock, low_stock_threshold, sold, sku, images, is_active, is_featured, created_at, updated_at, product_variants(*), product_colors(*)";
 const ADMIN_PRODUCT_COLUMNS = `${PUBLIC_PRODUCT_COLUMNS}, cost_price`;
 
 async function fetchProducts(columns: string): Promise<Product[]> {

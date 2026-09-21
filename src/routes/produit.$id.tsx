@@ -214,18 +214,53 @@ function ProductPage() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [zoomOpen]);
-  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+
+  const hasColors = (product?.colors.length ?? 0) > 0;
+  // Variants narrowed to the selected color — or every variant, for a
+  // product that doesn't use colors at all.
+  const variantsForColor = product
+    ? hasColors
+      ? product.variants.filter((v) => v.colorId === selectedColorId)
+      : product.variants
+    : [];
+  const hasSizes = variantsForColor.some((v) => v.size !== null);
+  const selectedVariant = hasSizes
+    ? (variantsForColor.find((v) => v.size === selectedSize) ?? null)
+    : (variantsForColor[0] ?? null);
+
+  // Default the color to the first one with stock (falling back to simply
+  // the first one) whenever the product loads or the current pick becomes
+  // invalid — mirrors the equivalent size-only logic below.
+  useEffect(() => {
+    if (!product || !hasColors) return;
+    if (product.colors.some((c) => c.id === selectedColorId)) return;
+    const firstWithStock = product.colors.find((c) =>
+      product.variants.some((v) => v.colorId === c.id && v.stock > 0),
+    );
+    setSelectedColorId(firstWithStock?.id ?? product.colors[0]!.id);
+  }, [product, hasColors, selectedColorId]);
 
   useEffect(() => {
-    if (!product || product.variants.length === 0) return;
-    if (product.variants.some((v) => v.id === selectedVariantId)) return;
-    const firstInStock = product.variants.find((v) => v.stock > 0);
-    setSelectedVariantId(firstInStock?.id ?? null);
-  }, [product, selectedVariantId]);
+    setImageIndex(0);
+  }, [selectedColorId]);
+
+  useEffect(() => {
+    if (!hasSizes) {
+      if (selectedSize !== null) setSelectedSize(null);
+      return;
+    }
+    if (variantsForColor.some((v) => v.size === selectedSize)) return;
+    const firstInStock = variantsForColor.find((v) => v.stock > 0);
+    setSelectedSize(firstInStock?.size ?? variantsForColor[0]?.size ?? null);
+    // variantsForColor is derived from product + selectedColorId, both already listed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product, selectedColorId, hasSizes]);
 
   useEffect(() => {
     setQuantity(1);
-  }, [selectedVariantId]);
+  }, [selectedVariant?.id]);
 
   if (isLoading) {
     return (
@@ -261,14 +296,16 @@ function ProductPage() {
     );
   }
 
-  const hasSizes = product.variants.length > 0;
-  const selectedVariant = hasSizes
-    ? (product.variants.find((v) => v.id === selectedVariantId) ?? null)
-    : null;
-  const anySizeInStock = hasSizes ? product.variants.some((v) => v.stock > 0) : true;
-  const availableStock = hasSizes ? (selectedVariant?.stock ?? 0) : product.stock;
-  const out = hasSizes ? !anySizeInStock : product.stock <= 0;
+  const hasVariants = product.variants.length > 0;
+  const anyVariantInStock = hasVariants ? product.variants.some((v) => v.stock > 0) : true;
+  const availableStock = hasVariants ? (selectedVariant?.stock ?? 0) : product.stock;
+  const out = hasVariants ? !anyVariantInStock : product.stock <= 0;
   const max = Math.max(1, availableStock);
+  const selectedColor = hasColors
+    ? (product.colors.find((c) => c.id === selectedColorId) ?? null)
+    : null;
+  const galleryImages =
+    selectedColor && selectedColor.images.length > 0 ? selectedColor.images : product.images;
   const currency = settings?.currency ?? "FCFA";
   const bundle = activeBundle(product);
   const total = quantityTotal(product, quantity);
@@ -318,7 +355,7 @@ function ProductPage() {
               className="group relative block aspect-square w-full overflow-hidden rounded-3xl border border-border bg-white shadow-sm"
             >
               <ProductImage
-                src={product.images[imageIndex] ?? product.images[0]}
+                src={galleryImages[imageIndex] ?? galleryImages[0]}
                 alt={`${product.brand} ${product.name}`}
                 className="h-full w-full object-contain p-8"
                 iconSize={40}
@@ -330,9 +367,9 @@ function ProductPage() {
                 Agrandir
               </span>
             </button>
-            {product.images.length > 1 && (
+            {galleryImages.length > 1 && (
               <div className="mt-3 flex gap-3">
-                {product.images.map((img, i) => (
+                {galleryImages.map((img, i) => (
                   <ImageThumbnail
                     key={img + i}
                     src={img}
@@ -397,7 +434,7 @@ function ProductPage() {
               <dt className="text-muted-foreground">Référence</dt>
               <dd className="font-medium">{product.sku}</dd>
               <dt className="text-muted-foreground">Stock disponible</dt>
-              <dd className="font-medium">{hasSizes ? availableStock : product.stock}</dd>
+              <dd className="font-medium">{hasVariants ? availableStock : product.stock}</dd>
               <dt className="text-muted-foreground">Marque</dt>
               <dd className="font-medium">{product.brand}</dd>
             </dl>
@@ -412,18 +449,58 @@ function ProductPage() {
               </div>
             ) : (
               <div className="mt-6">
+                {hasColors && (
+                  <div className="mb-4">
+                    <span className="mb-2 block text-sm font-medium">
+                      Couleur{selectedColor ? ` : ${selectedColor.name}` : ""}
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {product.colors.map((c) => {
+                        const colorInStock = product.variants.some(
+                          (v) => v.colorId === c.id && v.stock > 0,
+                        );
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            disabled={!colorInStock}
+                            onClick={() => setSelectedColorId(c.id)}
+                            aria-label={c.name}
+                            aria-pressed={selectedColorId === c.id}
+                            title={c.name}
+                            className={`h-10 w-10 overflow-hidden rounded-full border-2 bg-white transition-colors ${
+                              selectedColorId === c.id
+                                ? "border-foreground"
+                                : "border-border hover:border-border-strong"
+                            } ${!colorInStock ? "opacity-40" : ""}`}
+                            style={c.hexColor ? { backgroundColor: c.hexColor } : undefined}
+                          >
+                            {!c.hexColor && (c.images[0] || product.images[0]) && (
+                              <ProductImage
+                                src={c.images[0] ?? product.images[0]}
+                                alt=""
+                                width={40}
+                                className="h-full w-full object-cover"
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 {hasSizes && (
                   <div className="mb-4">
                     <span className="mb-2 block text-sm font-medium">Taille</span>
                     <div className="flex flex-wrap gap-2">
-                      {product.variants.map((v) => (
+                      {variantsForColor.map((v) => (
                         <button
                           key={v.id}
                           type="button"
                           disabled={v.stock <= 0}
-                          onClick={() => setSelectedVariantId(v.id)}
+                          onClick={() => setSelectedSize(v.size)}
                           className={`btn-base !min-h-9 !px-3 !py-1.5 text-sm ${
-                            selectedVariantId === v.id ? "btn-dark" : "btn-outline"
+                            selectedSize === v.size ? "btn-dark" : "btn-outline"
                           } ${v.stock <= 0 ? "opacity-40 line-through" : ""}`}
                         >
                           {v.size}
@@ -454,7 +531,7 @@ function ProductPage() {
                       type="button"
                       className="h-11 w-11 text-lg"
                       aria-label="Augmenter la quantité"
-                      disabled={hasSizes && !selectedVariant}
+                      disabled={hasVariants && !selectedVariant}
                       onClick={() => setQuantity((q) => Math.min(max, q + 1))}
                     >
                       +
@@ -462,12 +539,12 @@ function ProductPage() {
                   </div>
                   <button
                     type="button"
-                    disabled={hasSizes && !selectedVariant}
+                    disabled={hasVariants && !selectedVariant}
                     className="btn-base btn-success flex-1 sm:flex-none sm:px-8"
                     onClick={() =>
                       addToCart(
                         product.id,
-                        hasSizes ? selectedVariantId : null,
+                        hasVariants ? (selectedVariant?.id ?? null) : null,
                         quantity,
                         availableStock,
                       )
@@ -546,13 +623,13 @@ function ProductPage() {
             <X size={28} />
           </button>
           <ProductImage
-            src={product.images[imageIndex] ?? product.images[0]}
+            src={galleryImages[imageIndex] ?? galleryImages[0]}
             alt={`${product.brand} ${product.name}`}
             className="max-h-[85vh] max-w-[90vw] object-contain"
           />
-          {product.images.length > 1 && (
+          {galleryImages.length > 1 && (
             <div className="absolute bottom-6 flex gap-2">
-              {product.images.map((img, i) => (
+              {galleryImages.map((img, i) => (
                 <button
                   key={img + i}
                   type="button"

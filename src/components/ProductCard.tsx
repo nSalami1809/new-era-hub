@@ -73,7 +73,7 @@ export function ProductCard({
   priority?: boolean;
 }) {
   const out = product.stock <= 0;
-  const hasSizes = product.variants.length > 0;
+  const hasVariants = product.variants.length > 0;
   useCart(); // subscribe so this card re-renders when its own quantity changes
   useFavorites(); // subscribe so this card re-renders when its own favorite state changes
   const qty = cartQuantity(product.id, null);
@@ -123,13 +123,13 @@ export function ProductCard({
         </Link>
         <PriceTag product={product} currency={currency} />
         <StockBadge product={product} />
-        {hasSizes ? (
+        {hasVariants ? (
           <Link
             to="/produit/$id"
             params={{ id: product.id }}
             className="btn-base btn-outline mt-auto w-full"
           >
-            {out ? "Indisponible" : "Choisir une taille"}
+            {out ? "Indisponible" : "Choisir une option"}
           </Link>
         ) : qty > 0 ? (
           <div className="btn-base btn-success mt-auto w-full !justify-between !px-0">

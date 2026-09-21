@@ -6,7 +6,7 @@ import { formatPrice } from "@/lib/format";
 import { cartTotals, removeFromCart, setCartQuantity, useCart } from "@/lib/cart";
 import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
-import { activeBundle, effectivePrice, quantityTotal } from "@/lib/types";
+import { activeBundle, effectivePrice, quantityTotal, variantLabel } from "@/lib/types";
 
 function CartLineImage({ src, alt, productId }: { src: string; alt: string; productId: string }) {
   return (
@@ -90,6 +90,10 @@ function CartPage() {
               const variant = item.variantId
                 ? (p.variants.find((v) => v.id === item.variantId) ?? null)
                 : null;
+              const color = variant?.colorId
+                ? (p.colors.find((c) => c.id === variant.colorId) ?? null)
+                : null;
+              const label = variant ? variantLabel(color?.name ?? null, variant.size) : "";
               const availableStock = variant ? variant.stock : p.stock;
               const unit = effectivePrice(p);
               const bundle = activeBundle(p);
@@ -97,7 +101,7 @@ function CartPage() {
               return (
                 <div key={`${p.id}-${item.variantId ?? "base"}`} className="flex gap-4 py-4">
                   <CartLineImage
-                    src={p.images[0] ?? ""}
+                    src={color?.images[0] || p.images[0] || ""}
                     alt={`${p.brand} ${p.name}`}
                     productId={p.id}
                   />
@@ -112,9 +116,7 @@ function CartPage() {
                     >
                       {p.name}
                     </Link>
-                    {variant && (
-                      <span className="text-xs text-muted-foreground">Taille : {variant.size}</span>
-                    )}
+                    {label && <span className="text-xs text-muted-foreground">{label}</span>}
                     <span className="text-sm text-muted-foreground">
                       {formatPrice(unit, currency)} l'unité
                     </span>

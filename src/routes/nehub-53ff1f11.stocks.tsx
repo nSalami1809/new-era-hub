@@ -10,7 +10,7 @@ import { useAdjustStock, useStockMovements } from "@/lib/api/stock";
 import { useAdjustVariantStock } from "@/lib/api/stock-variants";
 import { useStockAlerts, useDeleteStockAlert } from "@/lib/api/stock-alerts";
 import { useViewMode } from "@/lib/use-view-mode";
-import { stockStatus, type ProductVariant } from "@/lib/types";
+import { stockStatus, variantLabel, type ProductVariant } from "@/lib/types";
 
 export const Route = createFileRoute("/nehub-53ff1f11/stocks")({
   component: AdminStocks,
@@ -23,9 +23,16 @@ function statusMeta(status: "in" | "low" | "out") {
   return { className, label };
 }
 
-function VariantStockRow({ variant }: { variant: ProductVariant }) {
+function VariantStockRow({
+  variant,
+  colorName,
+}: {
+  variant: ProductVariant;
+  colorName: string | null;
+}) {
   const [draft, setDraft] = useState("");
   const adjustVariant = useAdjustVariantStock();
+  const label = variantLabel(colorName, variant.size) || "Variante";
 
   function apply() {
     const newStock = draft === "" ? variant.stock : Math.max(0, Math.round(Number(draft)));
@@ -35,7 +42,9 @@ function VariantStockRow({ variant }: { variant: ProductVariant }) {
 
   return (
     <div className="flex items-center gap-1.5 text-xs">
-      <span className="w-10 shrink-0 font-medium">{variant.size}</span>
+      <span className="w-20 shrink-0 truncate font-medium" title={label}>
+        {label}
+      </span>
       <span className="w-6 shrink-0 text-muted-foreground">{variant.stock}</span>
       <input
         type="number"
@@ -149,7 +158,11 @@ function AdminStocks() {
                 {p.variants.length > 0 ? (
                   <div className="mt-3 space-y-1.5 border-t border-border pt-3">
                     {p.variants.map((v) => (
-                      <VariantStockRow key={v.id} variant={v} />
+                      <VariantStockRow
+                        key={v.id}
+                        variant={v}
+                        colorName={p.colors.find((c) => c.id === v.colorId)?.name ?? null}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -224,7 +237,11 @@ function AdminStocks() {
                       <td className="p-3" colSpan={3}>
                         <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                           {p.variants.map((v) => (
-                            <VariantStockRow key={v.id} variant={v} />
+                            <VariantStockRow
+                              key={v.id}
+                              variant={v}
+                              colorName={p.colors.find((c) => c.id === v.colorId)?.name ?? null}
+                            />
                           ))}
                         </div>
                       </td>
