@@ -136,7 +136,7 @@ export function SiteHeader() {
           className="group relative py-2 text-sm font-bold uppercase tracking-wide text-foreground"
         >
           {item.label}
-          <span className="absolute inset-x-0 -bottom-0.5 h-[2px] w-full origin-left scale-x-0 bg-brand transition-transform duration-300 ease-out group-hover:scale-x-100" />
+          <span className="absolute inset-x-0 -bottom-0.5 h-[2px] w-full origin-left scale-x-0 bg-foreground transition-transform duration-300 ease-out group-hover:scale-x-100" />
         </Link>
       ))}
     </>
@@ -214,7 +214,7 @@ export function SiteHeader() {
             aria-label={`Panier, ${count} article(s)`}
           >
             <ShoppingBag size={20} />
-            <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand px-1 text-[11px] font-semibold text-brand-foreground">
+            <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-foreground px-1 text-[11px] font-semibold text-background">
               {count}
             </span>
           </Link>

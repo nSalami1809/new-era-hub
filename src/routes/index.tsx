@@ -71,8 +71,8 @@ function Index() {
       <section className="overflow-hidden border-b border-border bg-muted/30">
         <div className="container-page grid items-center gap-8 py-10 sm:py-14 lg:grid-cols-2 lg:py-20">
           <div className="flex flex-col gap-4">
-            <span className="inline-flex w-fit items-center rounded-full bg-brand px-3 py-1 text-xs font-semibold uppercase tracking-widest text-brand-foreground">
-              Nouvelle sélection disponible
+            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              — Nouvelle sélection disponible
             </span>
             <h1 className="max-w-xl text-4xl leading-[1.05] sm:text-5xl">
               Des produits pensés pour votre style.
@@ -95,16 +95,14 @@ function Index() {
             <Link
               to="/produit/$id"
               params={{ id: heroProduct.id }}
-              className="group relative mx-auto block aspect-square w-full max-w-md"
+              className="group relative mx-auto block aspect-square w-full max-w-md overflow-hidden rounded-3xl border border-border bg-white shadow-sm"
               aria-label={`Voir ${heroProduct.brand} ${heroProduct.name}`}
             >
-              <span className="absolute inset-6 rounded-full bg-brand/25 blur-2xl" aria-hidden />
-              <span className="absolute inset-0 rounded-[2.5rem] bg-background shadow-xl" />
               <ProductImage
                 src={heroProduct.images[0]}
                 alt={`${heroProduct.brand} ${heroProduct.name}`}
                 priority
-                className="relative h-full w-full object-contain p-10 transition-transform duration-300 ease-out group-hover:scale-105 sm:p-14"
+                className="h-full w-full object-contain p-10 transition-transform duration-300 ease-out group-hover:scale-105 sm:p-14"
               />
             </Link>
           )}
@@ -115,7 +113,7 @@ function Index() {
         <div className="container-page grid gap-6 py-8 sm:grid-cols-3">
           {TRUST_POINTS.map(({ icon: Icon, title, body }) => (
             <div key={title} className="flex items-start gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand/15 text-foreground">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-foreground text-background">
                 <Icon size={20} />
               </span>
               <div>

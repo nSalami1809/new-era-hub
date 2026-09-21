@@ -5,7 +5,8 @@
 /*
  * Design system — New Era Hub 241.
  * Blanc, noir, gris; vert pour les actions positives, rouge pour les
- * actions destructives; ambre comme accent de marque. Typographie Ranade.
+ * actions destructives. Pas de couleur d'accent ajoutée — le noir/blanc
+ * fait le travail (cf. Nike/Adidas/Dior). Typographie Ranade.
  *
  * L'admin (nehub-53ff1f11.*) reste anguleux/sans ombre par choix — c'est un
  * outil, pas une vitrine. La boutique (tout ce qui passe par <SiteLayout>,
@@ -66,8 +67,6 @@
   --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-brand: var(--brand);
-  --color-brand-foreground: var(--brand-foreground);
 }
 
 :root {
@@ -95,10 +94,6 @@
   --border-strong: oklch(0.82 0 0);
   --input: oklch(0.88 0 0);
   --ring: oklch(0.17 0 0);
-  /* Warm amber — the one brand accent, used sparingly on the storefront
-     (kicker badges, hover accents) so it stays a highlight, not noise. */
-  --brand: oklch(0.75 0.15 75);
-  --brand-foreground: oklch(0.22 0.04 75);
 }
 
 /*
