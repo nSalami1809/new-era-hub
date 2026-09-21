@@ -6,10 +6,15 @@ import { ProductCard, PriceTag, StockBadge } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 import { addToCart } from "@/lib/cart";
 import { isFavorite, toggleFavorite, useFavorites } from "@/lib/favorites";
-import { useProduct, useProducts } from "@/lib/api/products";
+import {
+  productQueryOptions,
+  productsQueryOptions,
+  useProduct,
+  useProducts,
+} from "@/lib/api/products";
 import { useCreateStockAlert } from "@/lib/api/stock-alerts";
 import { useCreateReview, useProductReviews } from "@/lib/api/reviews";
-import { useSettings } from "@/lib/api/settings";
+import { settingsQueryOptions, useSettings } from "@/lib/api/settings";
 import { formatDate, formatPrice, isValidPhone } from "@/lib/format";
 import { Skeleton } from "@/components/Skeleton";
 import { StarRating, StarRatingInput } from "@/components/StarRating";
@@ -17,6 +22,13 @@ import { productShareText, productShareUrl } from "@/lib/whatsapp";
 import { activeBundle, quantityTotal } from "@/lib/types";
 
 export const Route = createFileRoute("/produit/$id")({
+  loader: async ({ context, params }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(productQueryOptions(params.id)),
+      context.queryClient.ensureQueryData(productsQueryOptions),
+      context.queryClient.ensureQueryData(settingsQueryOptions),
+    ]);
+  },
   head: () => ({
     meta: [
       { title: "Fiche produit | New Era Hub 241" },

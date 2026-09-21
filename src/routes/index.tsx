@@ -3,8 +3,8 @@ import { SiteLayout } from "@/components/site";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductGridSkeleton, Skeleton } from "@/components/Skeleton";
-import { useProducts } from "@/lib/api/products";
-import { useSettings } from "@/lib/api/settings";
+import { productsQueryOptions, useProducts } from "@/lib/api/products";
+import { settingsQueryOptions, useSettings } from "@/lib/api/settings";
 import type { Product } from "@/lib/types";
 
 function CategoryTile({
@@ -40,6 +40,12 @@ function CategoryTile({
 }
 
 export const Route = createFileRoute("/")({
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(productsQueryOptions),
+      context.queryClient.ensureQueryData(settingsQueryOptions),
+    ]);
+  },
   head: () => ({
     meta: [
       { title: "New Era Hub 241 — Casquettes, vêtements, chaussures, accessoires" },

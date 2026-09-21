@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { StoreSettings } from "@/lib/types";
@@ -42,8 +42,15 @@ async function fetchSettings(): Promise<StoreSettings> {
   return mapSettings(data);
 }
 
+// Shared with route loaders — see the productsQueryOptions comment in
+// lib/api/products.ts for why.
+export const settingsQueryOptions = queryOptions({
+  queryKey: ["settings"],
+  queryFn: fetchSettings,
+});
+
 export function useSettings() {
-  return useQuery({ queryKey: ["settings"], queryFn: fetchSettings, staleTime: 60_000 });
+  return useQuery(settingsQueryOptions);
 }
 
 export function useUpdateSettings() {

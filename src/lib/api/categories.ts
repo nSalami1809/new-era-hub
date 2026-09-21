@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type ProductCategoryRow = { id: string; name: string; createdAt: string };
@@ -12,8 +12,15 @@ async function fetchCategories(): Promise<ProductCategoryRow[]> {
   return (data ?? []).map((row) => ({ id: row.id, name: row.name, createdAt: row.created_at }));
 }
 
+// Shared with route loaders — see the productsQueryOptions comment in
+// lib/api/products.ts for why.
+export const categoriesQueryOptions = queryOptions({
+  queryKey: ["categories"],
+  queryFn: fetchCategories,
+});
+
 export function useCategories() {
-  return useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
+  return useQuery(categoriesQueryOptions);
 }
 
 export function useCreateCategory() {

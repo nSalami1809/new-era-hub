@@ -1,5 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
+import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { routeTree } from "./routeTree.gen";
 
 export const getRouter = () => {
@@ -31,6 +32,16 @@ export const getRouter = () => {
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,
   });
+
+  // Without this, useQuery() has no data during SSR (nothing has been
+  // fetched into this fresh queryClient yet), so the server ships skeleton
+  // HTML for every page and real content only appears after the client
+  // re-fetches post-hydration — a full extra round trip to Supabase on
+  // every load. This wires route loaders' ensureQueryData() calls to
+  // dehydrate into the SSR payload and rehydrate client-side automatically,
+  // so a route that prefetches its data (see e.g. routes/index.tsx) renders
+  // real content on the very first response.
+  setupRouterSsrQueryIntegration({ router, queryClient });
 
   return router;
 };

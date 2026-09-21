@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient, type UseQueryOptions } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { Product } from "@/lib/types";
@@ -81,16 +81,25 @@ async function fetchProduct(id: string): Promise<Product | null> {
   return data ? mapProduct(data) : null;
 }
 
-export function useProducts(options?: Partial<UseQueryOptions<Product[]>>) {
-  return useQuery({ queryKey: ["products"], queryFn: fetchProducts, ...options });
+// Shared with route loaders (see e.g. routes/index.tsx, routes/boutique.tsx)
+// so a loader's ensureQueryData(productsQueryOptions) and this hook's
+// useQuery hit the exact same cache entry — the SSR-prefetched data renders
+// immediately instead of the hook re-fetching after hydration.
+export const productsQueryOptions = queryOptions({
+  queryKey: ["products"],
+  queryFn: fetchProducts,
+});
+
+export function productQueryOptions(id: string) {
+  return queryOptions({ queryKey: ["products", id], queryFn: () => fetchProduct(id) });
+}
+
+export function useProducts() {
+  return useQuery(productsQueryOptions);
 }
 
 export function useProduct(id: string | undefined) {
-  return useQuery({
-    queryKey: ["products", id],
-    queryFn: () => fetchProduct(id as string),
-    enabled: !!id,
-  });
+  return useQuery({ ...productQueryOptions(id ?? ""), enabled: !!id });
 }
 
 export function useCreateProduct() {

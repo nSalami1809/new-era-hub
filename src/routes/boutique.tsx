@@ -3,9 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { SiteLayout } from "@/components/site";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductGridSkeleton } from "@/components/Skeleton";
-import { useProducts } from "@/lib/api/products";
-import { useSettings } from "@/lib/api/settings";
-import { useCategories } from "@/lib/api/categories";
+import { productsQueryOptions, useProducts } from "@/lib/api/products";
+import { settingsQueryOptions, useSettings } from "@/lib/api/settings";
+import { categoriesQueryOptions, useCategories } from "@/lib/api/categories";
 import { effectivePrice, type ProductCategory } from "@/lib/types";
 
 type SortKey = "recent" | "price-asc" | "price-desc" | "name";
@@ -23,6 +23,13 @@ type BoutiqueSearch = {
 };
 
 export const Route = createFileRoute("/boutique")({
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(productsQueryOptions),
+      context.queryClient.ensureQueryData(settingsQueryOptions),
+      context.queryClient.ensureQueryData(categoriesQueryOptions),
+    ]);
+  },
   validateSearch: (search: Record<string, unknown>): BoutiqueSearch => ({
     q: typeof search["q"] === "string" && search["q"] ? search["q"] : undefined,
     promo: search["promo"] === true || search["promo"] === "true" ? true : undefined,
