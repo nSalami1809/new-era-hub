@@ -24,6 +24,8 @@ import { Route as Nehub53ff1f11IndexRouteImport } from './routes/nehub-53ff1f11.
 import { Route as Nehub53ff1f11AvisRouteImport } from './routes/nehub-53ff1f11.avis'
 import { Route as Nehub53ff1f11CategoriesRouteImport } from './routes/nehub-53ff1f11.categories'
 import { Route as Nehub53ff1f11CodesPromoRouteImport } from './routes/nehub-53ff1f11.codes-promo'
+import { Route as Nehub53ff1f11ComptabiliteRouteImport } from './routes/nehub-53ff1f11.comptabilite'
+import { Route as Nehub53ff1f11DepensesRouteImport } from './routes/nehub-53ff1f11.depenses'
 import { Route as Nehub53ff1f11ParametresRouteImport } from './routes/nehub-53ff1f11.parametres'
 import { Route as Nehub53ff1f11PromotionsRouteImport } from './routes/nehub-53ff1f11.promotions'
 import { Route as Nehub53ff1f11StocksRouteImport } from './routes/nehub-53ff1f11.stocks'
@@ -109,6 +111,17 @@ const Nehub53ff1f11CodesPromoRoute = Nehub53ff1f11CodesPromoRouteImport.update({
   path: '/codes-promo',
   getParentRoute: () => Nehub53ff1f11Route,
 } as any)
+const Nehub53ff1f11ComptabiliteRoute =
+  Nehub53ff1f11ComptabiliteRouteImport.update({
+    id: '/comptabilite',
+    path: '/comptabilite',
+    getParentRoute: () => Nehub53ff1f11Route,
+  } as any)
+const Nehub53ff1f11DepensesRoute = Nehub53ff1f11DepensesRouteImport.update({
+  id: '/depenses',
+  path: '/depenses',
+  getParentRoute: () => Nehub53ff1f11Route,
+} as any)
 const Nehub53ff1f11ParametresRoute = Nehub53ff1f11ParametresRouteImport.update({
   id: '/parametres',
   path: '/parametres',
@@ -174,6 +187,8 @@ export interface FileRoutesByFullPath {
   '/nehub-53ff1f11/avis': typeof Nehub53ff1f11AvisRoute
   '/nehub-53ff1f11/categories': typeof Nehub53ff1f11CategoriesRoute
   '/nehub-53ff1f11/codes-promo': typeof Nehub53ff1f11CodesPromoRoute
+  '/nehub-53ff1f11/comptabilite': typeof Nehub53ff1f11ComptabiliteRoute
+  '/nehub-53ff1f11/depenses': typeof Nehub53ff1f11DepensesRoute
   '/nehub-53ff1f11/parametres': typeof Nehub53ff1f11ParametresRoute
   '/nehub-53ff1f11/promotions': typeof Nehub53ff1f11PromotionsRoute
   '/nehub-53ff1f11/stocks': typeof Nehub53ff1f11StocksRoute
@@ -199,6 +214,8 @@ export interface FileRoutesByTo {
   '/nehub-53ff1f11/avis': typeof Nehub53ff1f11AvisRoute
   '/nehub-53ff1f11/categories': typeof Nehub53ff1f11CategoriesRoute
   '/nehub-53ff1f11/codes-promo': typeof Nehub53ff1f11CodesPromoRoute
+  '/nehub-53ff1f11/comptabilite': typeof Nehub53ff1f11ComptabiliteRoute
+  '/nehub-53ff1f11/depenses': typeof Nehub53ff1f11DepensesRoute
   '/nehub-53ff1f11/parametres': typeof Nehub53ff1f11ParametresRoute
   '/nehub-53ff1f11/promotions': typeof Nehub53ff1f11PromotionsRoute
   '/nehub-53ff1f11/stocks': typeof Nehub53ff1f11StocksRoute
@@ -226,6 +243,8 @@ export interface FileRoutesById {
   '/nehub-53ff1f11/avis': typeof Nehub53ff1f11AvisRoute
   '/nehub-53ff1f11/categories': typeof Nehub53ff1f11CategoriesRoute
   '/nehub-53ff1f11/codes-promo': typeof Nehub53ff1f11CodesPromoRoute
+  '/nehub-53ff1f11/comptabilite': typeof Nehub53ff1f11ComptabiliteRoute
+  '/nehub-53ff1f11/depenses': typeof Nehub53ff1f11DepensesRoute
   '/nehub-53ff1f11/parametres': typeof Nehub53ff1f11ParametresRoute
   '/nehub-53ff1f11/promotions': typeof Nehub53ff1f11PromotionsRoute
   '/nehub-53ff1f11/stocks': typeof Nehub53ff1f11StocksRoute
@@ -254,6 +273,8 @@ export interface FileRouteTypes {
     | '/nehub-53ff1f11/avis'
     | '/nehub-53ff1f11/categories'
     | '/nehub-53ff1f11/codes-promo'
+    | '/nehub-53ff1f11/comptabilite'
+    | '/nehub-53ff1f11/depenses'
     | '/nehub-53ff1f11/parametres'
     | '/nehub-53ff1f11/promotions'
     | '/nehub-53ff1f11/stocks'
@@ -279,6 +300,8 @@ export interface FileRouteTypes {
     | '/nehub-53ff1f11/avis'
     | '/nehub-53ff1f11/categories'
     | '/nehub-53ff1f11/codes-promo'
+    | '/nehub-53ff1f11/comptabilite'
+    | '/nehub-53ff1f11/depenses'
     | '/nehub-53ff1f11/parametres'
     | '/nehub-53ff1f11/promotions'
     | '/nehub-53ff1f11/stocks'
@@ -305,6 +328,8 @@ export interface FileRouteTypes {
     | '/nehub-53ff1f11/avis'
     | '/nehub-53ff1f11/categories'
     | '/nehub-53ff1f11/codes-promo'
+    | '/nehub-53ff1f11/comptabilite'
+    | '/nehub-53ff1f11/depenses'
     | '/nehub-53ff1f11/parametres'
     | '/nehub-53ff1f11/promotions'
     | '/nehub-53ff1f11/stocks'
@@ -439,6 +464,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Nehub53ff1f11CodesPromoRouteImport
       parentRoute: typeof Nehub53ff1f11Route
     }
+    '/nehub-53ff1f11/comptabilite': {
+      id: '/nehub-53ff1f11/comptabilite'
+      path: '/comptabilite'
+      fullPath: '/nehub-53ff1f11/comptabilite'
+      preLoaderRoute: typeof Nehub53ff1f11ComptabiliteRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
+    }
+    '/nehub-53ff1f11/depenses': {
+      id: '/nehub-53ff1f11/depenses'
+      path: '/depenses'
+      fullPath: '/nehub-53ff1f11/depenses'
+      preLoaderRoute: typeof Nehub53ff1f11DepensesRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
+    }
     '/nehub-53ff1f11/parametres': {
       id: '/nehub-53ff1f11/parametres'
       path: '/parametres'
@@ -509,6 +548,8 @@ interface Nehub53ff1f11RouteChildren {
   Nehub53ff1f11AvisRoute: typeof Nehub53ff1f11AvisRoute
   Nehub53ff1f11CategoriesRoute: typeof Nehub53ff1f11CategoriesRoute
   Nehub53ff1f11CodesPromoRoute: typeof Nehub53ff1f11CodesPromoRoute
+  Nehub53ff1f11ComptabiliteRoute: typeof Nehub53ff1f11ComptabiliteRoute
+  Nehub53ff1f11DepensesRoute: typeof Nehub53ff1f11DepensesRoute
   Nehub53ff1f11ParametresRoute: typeof Nehub53ff1f11ParametresRoute
   Nehub53ff1f11PromotionsRoute: typeof Nehub53ff1f11PromotionsRoute
   Nehub53ff1f11StocksRoute: typeof Nehub53ff1f11StocksRoute
@@ -524,6 +565,8 @@ const Nehub53ff1f11RouteChildren: Nehub53ff1f11RouteChildren = {
   Nehub53ff1f11AvisRoute: Nehub53ff1f11AvisRoute,
   Nehub53ff1f11CategoriesRoute: Nehub53ff1f11CategoriesRoute,
   Nehub53ff1f11CodesPromoRoute: Nehub53ff1f11CodesPromoRoute,
+  Nehub53ff1f11ComptabiliteRoute: Nehub53ff1f11ComptabiliteRoute,
+  Nehub53ff1f11DepensesRoute: Nehub53ff1f11DepensesRoute,
   Nehub53ff1f11ParametresRoute: Nehub53ff1f11ParametresRoute,
   Nehub53ff1f11PromotionsRoute: Nehub53ff1f11PromotionsRoute,
   Nehub53ff1f11StocksRoute: Nehub53ff1f11StocksRoute,

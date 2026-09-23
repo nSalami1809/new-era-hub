@@ -16,12 +16,16 @@ import {
   Settings,
   Star,
   Ticket,
+  Wallet,
+  Receipt,
+  Bell,
 } from "lucide-react";
 import { useIsAdmin, signInAdmin, signOutAdmin, requestPasswordReset } from "@/lib/api/auth";
 import { useSettings } from "@/lib/api/settings";
 import { Toaster } from "@/components/Toaster";
 import { toast } from "@/lib/toast";
 import { Spinner, FullscreenSpinner } from "@/components/Spinner";
+import { AdminNotificationBell } from "@/components/AdminNotificationBell";
 import logo from "@/assets/logo-new-era-hub-241.jpeg";
 
 export const Route = createFileRoute("/nehub-53ff1f11")({
@@ -46,6 +50,8 @@ const ADMIN_ROOT = "/nehub-53ff1f11";
 
 const NAV: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
   { to: ADMIN_ROOT, label: "Tableau de bord", icon: LayoutDashboard, exact: true },
+  { to: `${ADMIN_ROOT}/comptabilite`, label: "Comptabilité", icon: Wallet },
+  { to: `${ADMIN_ROOT}/depenses`, label: "Dépenses", icon: Receipt },
   { to: `${ADMIN_ROOT}/produits`, label: "Produits", icon: Package },
   { to: `${ADMIN_ROOT}/categories`, label: "Catégories", icon: Tags },
   { to: `${ADMIN_ROOT}/stocks`, label: "Stocks", icon: Archive },
@@ -197,6 +203,9 @@ function AdminLayout() {
               </>
             )}
           </nav>
+          <div className="ml-auto">
+            <AdminNotificationBell />
+          </div>
         </header>
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <Outlet />

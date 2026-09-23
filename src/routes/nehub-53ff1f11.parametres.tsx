@@ -86,6 +86,25 @@ function AdminSettings() {
         ))}
 
         <div className="sm:col-span-2">
+          <label htmlFor="lowMarginThreshold" className="mb-1 block text-sm font-medium">
+            Seuil d'alerte marge basse (%)
+          </label>
+          <input
+            id="lowMarginThreshold"
+            type="number"
+            min={0}
+            max={100}
+            className="field max-w-[160px]"
+            value={form.lowMarginThreshold ?? ""}
+            onChange={(e) => set("lowMarginThreshold", Number(e.target.value))}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            La cloche de notification (admin) signale les catégories dont la marge (30 derniers
+            jours) tombe sous ce seuil.
+          </p>
+        </div>
+
+        <div className="sm:col-span-2">
           <button
             type="submit"
             disabled={updateSettings.isPending}

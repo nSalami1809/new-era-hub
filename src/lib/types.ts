@@ -141,6 +141,8 @@ export type StoreSettings = {
   address: string;
   instagram: string;
   facebook: string;
+  /** % — a category's margin on Comptabilité is flagged once it drops below this. */
+  lowMarginThreshold: number;
 };
 
 export function effectivePrice(p: Product): number {

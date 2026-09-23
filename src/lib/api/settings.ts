@@ -18,6 +18,7 @@ function mapSettings(row: SettingsRow): StoreSettings {
     address: row.address ?? "",
     instagram: row.instagram ?? "",
     facebook: row.facebook ?? "",
+    lowMarginThreshold: Number(row.low_margin_threshold),
   };
 }
 
@@ -33,6 +34,7 @@ function toRow(patch: Partial<StoreSettings>): SettingsUpdateRow {
   if (patch.address !== undefined) row.address = patch.address;
   if (patch.instagram !== undefined) row.instagram = patch.instagram;
   if (patch.facebook !== undefined) row.facebook = patch.facebook;
+  if (patch.lowMarginThreshold !== undefined) row.low_margin_threshold = patch.lowMarginThreshold;
   return row;
 }
 

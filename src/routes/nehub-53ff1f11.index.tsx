@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { formatDate, formatPrice } from "@/lib/format";
+import { PAID_STATUSES } from "@/lib/accounting";
 import { useAdminProducts } from "@/lib/api/products";
 import { useAdminOrders } from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
@@ -18,8 +19,7 @@ function Dashboard() {
   const inStock = products.filter((p) => p.stock > 0).length;
   const outOfStock = products.filter((p) => p.stock <= 0).length;
   const promos = products.filter((p) => p.promotionalPrice && p.promotionalPrice < p.price).length;
-  const paidStatuses = ["Payée", "En préparation", "Expédiée", "Livrée"];
-  const paidOrders = orders.filter((o) => paidStatuses.includes(o.status));
+  const paidOrders = orders.filter((o) => PAID_STATUSES.includes(o.status));
   const revenue = paidOrders.reduce((n, o) => n + o.total, 0);
   const cogs = paidOrders.reduce(
     (n, o) => n + o.items.reduce((s, it) => s + it.costPrice * it.quantity, 0),
@@ -77,7 +77,15 @@ function Dashboard() {
         ))}
       </div>
 
-      <h2 className="mt-8 text-lg">Comptabilité</h2>
+      <div className="mt-8 flex items-center justify-between gap-3">
+        <h2 className="text-lg">Comptabilité</h2>
+        <Link
+          to="/nehub-53ff1f11/comptabilite"
+          className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+        >
+          Voir le détail complet →
+        </Link>
+      </div>
       <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
         {profitStats.map((s) => (
           <div key={s.label} className="border border-border p-4">

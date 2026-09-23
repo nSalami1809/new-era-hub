@@ -11,6 +11,42 @@ export type Database = {
   };
   public: {
     Tables: {
+      expenses: {
+        Row: {
+          amount: number;
+          category: string;
+          created_at: string;
+          created_by: string | null;
+          expense_date: string;
+          id: string;
+          label: string;
+          note: string;
+          updated_at: string;
+        };
+        Insert: {
+          amount: number;
+          category: string;
+          created_at?: string;
+          created_by?: string | null;
+          expense_date?: string;
+          id?: string;
+          label: string;
+          note?: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount?: number;
+          category?: string;
+          created_at?: string;
+          created_by?: string | null;
+          expense_date?: string;
+          id?: string;
+          label?: string;
+          note?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       order_items: {
         Row: {
           base_price: number;
@@ -508,6 +544,7 @@ export type Database = {
           instagram: string | null;
           logo_text: string;
           logo_url: string | null;
+          low_margin_threshold: number;
           phone: string | null;
           store_name: string;
           updated_at: string;
@@ -522,6 +559,7 @@ export type Database = {
           instagram?: string | null;
           logo_text?: string;
           logo_url?: string | null;
+          low_margin_threshold?: number;
           phone?: string | null;
           store_name?: string;
           updated_at?: string;
@@ -536,6 +574,7 @@ export type Database = {
           instagram?: string | null;
           logo_text?: string;
           logo_url?: string | null;
+          low_margin_threshold?: number;
           phone?: string | null;
           store_name?: string;
           updated_at?: string;
