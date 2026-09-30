@@ -1,6 +1,6 @@
 # New Era Hub 241
 
-Boutique en ligne — casquettes, vêtements, chaussures, accessoires. Catalogue, panier, commande, paiement finalisé sur WhatsApp, et back-office complet pour l'administration.
+Boutique en ligne de streetwear — casquettes, vêtements, chaussures et accessoires. Catalogue, panier, tunnel de commande avec finalisation sur WhatsApp, et un back-office complet pour piloter tout le catalogue et l'activité commerciale sans toucher au code.
 
 ## Stack technique
 
@@ -9,6 +9,20 @@ Boutique en ligne — casquettes, vêtements, chaussures, accessoires. Catalogue
 - **Données** : [Supabase](https://supabase.com) (Postgres, Auth, Storage) — schéma versionné dans `supabase/migrations/`
 - **Données côté client** : [TanStack Query](https://tanstack.com/query)
 - **Build** : Vite 8 + Nitro (déploie sur Vercel, auto-détecté au build)
+
+## Fonctionnalités
+
+**Site public** — accueil, boutique avec filtres et favoris, fiche produit (variantes, couleurs, avis clients), panier, tunnel de commande, facture PDF, suivi de commande par code, pages légales.
+
+**Back-office** — interface d'administration protégée par authentification (Supabase Auth + RLS), accessible via une URL dédiée non indexée :
+- Produits, catégories, couleurs et variantes, avec upload de photos (compression et fond blanc automatiques)
+- Stocks et alertes de rupture
+- Commandes : suivi, statuts, historique de réception
+- Promotions et codes promo, avec règles de bundle
+- Comptabilité : dépenses, rentabilité, export PDF
+- Avis clients et notifications
+
+**Sécurité des données** — toute la logique métier sensible (prix, stock, création de commande) est vérifiée côté serveur par des fonctions Postgres (`create_order`, `adjust_stock`) : le client ne peut jamais imposer un prix ou une quantité, quoi qu'il envoie.
 
 ## Démarrer en local
 
