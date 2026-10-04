@@ -79,9 +79,18 @@ function AdminStocks() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [view, setView] = useViewMode("admin-stocks-view");
+  const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
 
   const outOfStock = products.filter((p) => stockStatus(p) === "out").length;
   const lowStock = products.filter((p) => stockStatus(p) === "low").length;
+
+  const filteredProducts = products.filter((p) => {
+    if (categoryFilter && p.category !== categoryFilter) return false;
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return [p.name, p.brand, p.sku].some((v) => v.toLowerCase().includes(q));
+  });
 
   function apply(productId: string, currentStock: number) {
     const raw = drafts[productId];
@@ -105,6 +114,35 @@ function AdminStocks() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl">Stocks</h1>
         <ViewToggle view={view} onChange={setView} />
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <label htmlFor="admin-stock-search" className="sr-only">
+          Rechercher un produit
+        </label>
+        <input
+          id="admin-stock-search"
+          className="field w-full sm:max-w-md"
+          placeholder="Rechercher un produit, une marque, une référence..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <label htmlFor="admin-stock-category" className="sr-only">
+          Filtrer par catégorie
+        </label>
+        <select
+          id="admin-stock-category"
+          className="field !min-h-[42px] w-full sm:w-auto"
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+        >
+          <option value="">Toutes les catégories</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.name}>
+              {c.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -142,9 +180,13 @@ function AdminStocks() {
             Nouveau produit
           </Link>
         </div>
+      ) : filteredProducts.length === 0 ? (
+        <p className="mt-6 border border-border p-6 text-sm text-muted-foreground">
+          Aucun produit ne correspond à ce filtre.
+        </p>
       ) : view === "grid" ? (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((p) => {
+          {filteredProducts.map((p) => {
             const status = stockStatus(p);
             const { className: statusClassName, label: statusLabel } = statusMeta(status);
             return (
@@ -223,7 +265,7 @@ function AdminStocks() {
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => {
+              {filteredProducts.map((p) => {
                 const status = stockStatus(p);
                 const { className: statusClassName, label: statusLabel } = statusMeta(status);
                 return (

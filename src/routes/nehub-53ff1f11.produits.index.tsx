@@ -7,6 +7,7 @@ import { AdminCardGridSkeleton, AdminTableSkeleton } from "@/components/Skeleton
 import { formatPrice } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
 import { useAdminProducts, useDeleteProduct, useUpdateProduct } from "@/lib/api/products";
+import { useCategories } from "@/lib/api/categories";
 import { useSettings } from "@/lib/api/settings";
 import { useViewMode } from "@/lib/use-view-mode";
 import { stockStatus, unitProfit, profitMargin, type Product } from "@/lib/types";
@@ -36,25 +37,30 @@ function statusMeta(p: Product, status: "in" | "low" | "out") {
 
 function AdminProducts() {
   const { data: products = [], isLoading } = useAdminProducts();
+  const { data: categories = [] } = useCategories();
   const { data: settings } = useSettings();
   const currency = settings?.currency ?? "FCFA";
   const deleteProduct = useDeleteProduct();
   const updateProduct = useUpdateProduct();
   const [toDelete, setToDelete] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [view, setView] = useViewMode("admin-products-view");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [bulkPending, setBulkPending] = useState(false);
 
-  const filtered = products.filter((p) =>
-    [p.name, p.brand, p.sku].some((v) => v.toLowerCase().includes(query.trim().toLowerCase())),
-  );
+  const filtered = products.filter((p) => {
+    if (categoryFilter && p.category !== categoryFilter) return false;
+    return [p.name, p.brand, p.sku].some((v) =>
+      v.toLowerCase().includes(query.trim().toLowerCase()),
+    );
+  });
   const target = products.find((p) => p.id === toDelete);
 
   useEffect(() => {
     setSelected(new Set());
-  }, [query]);
+  }, [query, categoryFilter]);
 
   function toggleSelected(id: string) {
     setSelected((s) => {
@@ -145,16 +151,34 @@ function AdminProducts() {
         </div>
       </div>
 
-      <label htmlFor="admin-product-search" className="sr-only">
-        Rechercher un produit
-      </label>
-      <input
-        id="admin-product-search"
-        className="field mt-4 w-full sm:max-w-md"
-        placeholder="Rechercher un produit, une marque, une référence..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <label htmlFor="admin-product-search" className="sr-only">
+          Rechercher un produit
+        </label>
+        <input
+          id="admin-product-search"
+          className="field w-full sm:max-w-md"
+          placeholder="Rechercher un produit, une marque, une référence..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <label htmlFor="admin-product-category" className="sr-only">
+          Filtrer par catégorie
+        </label>
+        <select
+          id="admin-product-category"
+          className="field !min-h-[42px] w-full sm:w-auto"
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+        >
+          <option value="">Toutes les catégories</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.name}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {selected.size > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-3 border border-border bg-muted p-3">
