@@ -4,6 +4,7 @@ import { formatPrice } from "@/lib/format";
 import { addToCart, cartQuantity, setCartQuantity, useCart } from "@/lib/cart";
 import { isFavorite, toggleFavorite, useFavorites } from "@/lib/favorites";
 import { ProductImage } from "@/components/ProductImage";
+import { transformImageUrl } from "@/lib/image-transform";
 import {
   activeBundle,
   discountPercent,
@@ -11,6 +12,18 @@ import {
   stockStatus,
   type Product,
 } from "@/lib/types";
+
+// The card shows this photo at width=300 (see below); the product page's own
+// gallery shows the exact same photo at width=600 (produit.$id.tsx). Without
+// this, clicking into a product is a guaranteed cache miss — same picture,
+// different resized URL — which is exactly the "image takes a moment to
+// appear" lag. Warming it on hover/touch (the same intent signal
+// `defaultPreload: "intent"` already preloads the route's data on) means
+// the browser usually already has it by the time navigation lands.
+function preloadDetailImage(src: string | undefined) {
+  if (!src) return;
+  new Image().src = transformImageUrl(src, 600);
+}
 
 export function StockBadge({ product }: { product: Product }) {
   const status = stockStatus(product);
@@ -79,7 +92,11 @@ export function ProductCard({
   const qty = cartQuantity(product.id, null);
   const favorite = isFavorite(product.id);
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+    <article
+      onPointerEnter={() => preloadDetailImage(product.images[0])}
+      onTouchStart={() => preloadDetailImage(product.images[0])}
+      className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+    >
       <div className="relative aspect-square overflow-hidden bg-white">
         <Link to="/produit/$id" params={{ id: product.id }} className="block h-full w-full">
           <ProductImage

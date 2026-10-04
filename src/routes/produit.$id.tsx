@@ -26,10 +26,16 @@ export const Route = createFileRoute("/produit/$id")({
   loader: async ({ context, params }) => {
     await Promise.all([
       context.queryClient.ensureQueryData(productQueryOptions(params.id)),
-      context.queryClient.ensureQueryData(productsQueryOptions),
       context.queryClient.ensureQueryData(settingsQueryOptions),
       context.queryClient.ensureQueryData(categoriesQueryOptions),
     ]);
+    // Deliberately not awaited: the full catalog is only needed for the
+    // below-the-fold "Produits similaires" section. Blocking the loader on
+    // it delayed everything above the fold (photo, price, add-to-cart) by
+    // however long that bigger query took — this way the product itself
+    // renders as soon as its own data is ready, and similar products pop
+    // in a moment later via the normal useProducts() loading state.
+    void context.queryClient.prefetchQuery(productsQueryOptions);
   },
   head: () => ({
     meta: [

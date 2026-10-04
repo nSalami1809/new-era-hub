@@ -11,6 +11,20 @@ import type { ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 
+// Every product photo (and its resized/transformed variants, see
+// lib/image-transform.ts) is served from this origin — a plain <img src>
+// only starts the DNS/TLS/connection handshake once the browser parses it,
+// but a preconnect hint lets that happen in parallel with the rest of the
+// page instead of in series in front of every image fetch.
+const SUPABASE_ORIGIN = (() => {
+  const url = import.meta.env.VITE_SUPABASE_URL || process.env["SUPABASE_URL"];
+  try {
+    return url ? new URL(url).origin : null;
+  } catch {
+    return null;
+  }
+})();
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -98,6 +112,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         type: "font/woff2",
         crossOrigin: "anonymous",
       },
+      ...(SUPABASE_ORIGIN
+        ? [{ rel: "preconnect", href: SUPABASE_ORIGIN, crossOrigin: "anonymous" as const }]
+        : []),
       {
         rel: "stylesheet",
         href: appCss,
