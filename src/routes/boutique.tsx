@@ -123,7 +123,7 @@ function Boutique() {
   const visible = results.slice(0, visibleCount);
 
   function update(patch: Partial<BoutiqueSearch>) {
-    navigate({ search: (prev) => ({ ...prev, ...patch }) });
+    navigate({ search: (prev: BoutiqueSearch) => ({ ...prev, ...patch }) });
   }
 
   return (
