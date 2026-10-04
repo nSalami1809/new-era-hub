@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Heart, Share2, X, ZoomIn } from "lucide-react";
 import { SiteLayout } from "@/components/site";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import { ProductCard, PriceTag, StockBadge } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 import { addToCart } from "@/lib/cart";
@@ -349,16 +350,14 @@ function ProductPage() {
   return (
     <SiteLayout>
       <div className="container-page py-6 sm:py-10">
-        <nav className="mb-5 text-sm text-muted-foreground">
-          <Link to="/" className="hover:underline">
-            Accueil
-          </Link>{" "}
-          /{" "}
-          <Link to="/boutique" className="hover:underline">
-            Boutique
-          </Link>{" "}
-          / <span className="text-foreground">{product.name}</span>
-        </nav>
+        <Breadcrumb
+          className="mb-5"
+          items={[
+            { label: "Accueil", to: "/" },
+            { label: "Boutique", to: "/boutique" },
+            { label: product.name },
+          ]}
+        />
 
         <div className="grid gap-8 lg:grid-cols-2">
           <div>

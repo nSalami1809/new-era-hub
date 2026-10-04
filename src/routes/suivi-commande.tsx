@@ -1,7 +1,8 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Search } from "lucide-react";
 import { SiteLayout } from "@/components/site";
+import { Breadcrumb } from "@/components/Breadcrumb";
 
 export const Route = createFileRoute("/suivi-commande")({
   head: () => ({
@@ -42,12 +43,7 @@ function OrderLookupPage() {
           onSubmit={submit}
           className="w-full max-w-sm rounded-3xl border border-border bg-card p-6 shadow-sm sm:p-8"
         >
-          <nav className="mb-4 text-sm text-muted-foreground">
-            <Link to="/" className="hover:underline">
-              Accueil
-            </Link>{" "}
-            / <span className="text-foreground">Suivre ma commande</span>
-          </nav>
+          <Breadcrumb items={[{ label: "Accueil", to: "/" }, { label: "Suivre ma commande" }]} />
           <h1 className="text-2xl">Suivre ma commande</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Entrez le numéro de commande reçu lors de votre achat (ex : CMD-2026-0001) pour voir son

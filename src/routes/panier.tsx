@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
 import { SiteLayout } from "@/components/site";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import { ProductImage } from "@/components/ProductImage";
 import { formatPrice } from "@/lib/format";
 import { cartTotals, removeFromCart, setCartQuantity, useCart } from "@/lib/cart";
@@ -77,12 +78,7 @@ function CartPage() {
   return (
     <SiteLayout>
       <div className="container-page py-8">
-        <nav className="mb-4 text-sm text-muted-foreground">
-          <Link to="/" className="hover:underline">
-            Accueil
-          </Link>{" "}
-          / <span className="text-foreground">Panier</span>
-        </nav>
+        <Breadcrumb items={[{ label: "Accueil", to: "/" }, { label: "Panier" }]} />
         <h1 className="text-2xl sm:text-3xl">Panier</h1>
 
         <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_340px]">

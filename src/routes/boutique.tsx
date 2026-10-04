@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { SiteLayout } from "@/components/site";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductGridSkeleton } from "@/components/Skeleton";
 import { productsQueryOptions, useProducts } from "@/lib/api/products";
@@ -129,12 +130,7 @@ function Boutique() {
   return (
     <SiteLayout>
       <div className="container-page py-8">
-        <nav className="mb-4 text-sm text-muted-foreground">
-          <Link to="/" className="hover:underline">
-            Accueil
-          </Link>{" "}
-          / <span className="text-foreground">Boutique</span>
-        </nav>
+        <Breadcrumb items={[{ label: "Accueil", to: "/" }, { label: "Boutique" }]} />
         <h1 className="text-2xl sm:text-3xl">Boutique</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {search.q ? (

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteLayout } from "@/components/site";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductGridSkeleton } from "@/components/Skeleton";
 import { useProducts } from "@/lib/api/products";
@@ -28,12 +29,7 @@ function FavoritesPage() {
   return (
     <SiteLayout>
       <div className="container-page py-8">
-        <nav className="mb-4 text-sm text-muted-foreground">
-          <Link to="/" className="hover:underline">
-            Accueil
-          </Link>{" "}
-          / <span className="text-foreground">Favoris</span>
-        </nav>
+        <Breadcrumb items={[{ label: "Accueil", to: "/" }, { label: "Favoris" }]} />
         <h1 className="text-2xl sm:text-3xl">Mes favoris</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {favorites.length} produit{favorites.length > 1 ? "s" : ""} mis de côté.

@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { SiteLayout } from "@/components/site";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import { Spinner } from "@/components/Spinner";
 import { formatPrice, isValidPhone } from "@/lib/format";
 import { cartTotals, clearCart, useCart } from "@/lib/cart";
@@ -128,16 +129,13 @@ function CheckoutPage() {
   return (
     <SiteLayout>
       <div className="container-page py-8">
-        <nav className="mb-4 text-sm text-muted-foreground">
-          <Link to="/" className="hover:underline">
-            Accueil
-          </Link>{" "}
-          /{" "}
-          <Link to="/panier" className="hover:underline">
-            Panier
-          </Link>{" "}
-          / <span className="text-foreground">Commande</span>
-        </nav>
+        <Breadcrumb
+          items={[
+            { label: "Accueil", to: "/" },
+            { label: "Panier", to: "/panier" },
+            { label: "Commande" },
+          ]}
+        />
         <h1 className="text-2xl sm:text-3xl">Vos informations</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Ces informations servent uniquement à préparer et livrer votre commande.
