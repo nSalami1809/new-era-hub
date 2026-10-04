@@ -154,6 +154,7 @@ export type Database = {
       };
       orders: {
         Row: {
+          channel: string;
           created_at: string;
           customer_address: string | null;
           customer_first_name: string;
@@ -171,6 +172,7 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          channel?: string;
           created_at?: string;
           customer_address?: string | null;
           customer_first_name: string;
@@ -188,6 +190,7 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          channel?: string;
           created_at?: string;
           customer_address?: string | null;
           customer_first_name?: string;
@@ -640,6 +643,13 @@ export type Database = {
         Returns: undefined;
       };
       cancel_order: { Args: { p_order_id: string }; Returns: undefined };
+      create_offline_sale: {
+        Args: { p_items: Json; p_note?: string };
+        Returns: {
+          order_id: string;
+          order_number: string;
+        }[];
+      };
       create_order: {
         Args: {
           p_address: string;

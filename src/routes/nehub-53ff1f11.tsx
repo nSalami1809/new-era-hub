@@ -19,6 +19,7 @@ import {
   Wallet,
   Receipt,
   Bell,
+  HandCoins,
 } from "lucide-react";
 import { useIsAdmin, signInAdmin, signOutAdmin, requestPasswordReset } from "@/lib/api/auth";
 import { useSettings } from "@/lib/api/settings";
@@ -58,6 +59,7 @@ const NAV: { to: string; label: string; icon: typeof LayoutDashboard; exact?: bo
   { to: `${ADMIN_ROOT}/promotions`, label: "Promotions", icon: Tag },
   { to: `${ADMIN_ROOT}/codes-promo`, label: "Codes promo", icon: Ticket },
   { to: `${ADMIN_ROOT}/commandes`, label: "Commandes", icon: ClipboardList },
+  { to: `${ADMIN_ROOT}/ventes-hors-site`, label: "Ventes hors site", icon: HandCoins },
   { to: `${ADMIN_ROOT}/avis`, label: "Avis", icon: Star },
   { to: `${ADMIN_ROOT}/parametres`, label: "Paramètres", icon: Settings },
 ];

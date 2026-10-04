@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { CartItem } from "@/lib/types";
-import type { Customer, Order, OrderItem, OrderStatus, SizeType } from "@/lib/types";
+import type { Customer, Order, OrderChannel, OrderItem, OrderStatus, SizeType } from "@/lib/types";
 
 type OrderItemRow = {
   product_id: string | null;
@@ -32,6 +32,7 @@ type OrderRow = {
   total: number;
   promo_code?: string | null;
   status: OrderStatus;
+  channel?: string | null;
   created_at: string;
   updated_at: string;
   order_items?: OrderItemRow[];
@@ -73,6 +74,7 @@ function mapOrder(row: OrderRow): Order {
     total: Number(row.total),
     promoCode: row.promo_code ?? null,
     status: row.status,
+    channel: (row.channel as OrderChannel | null | undefined) ?? "site",
     history: (row.order_status_history ?? [])
       .map((h) => ({ status: h.status, at: h.at }))
       .sort((a, b) => a.at.localeCompare(b.at)),
@@ -172,6 +174,47 @@ export function useCreateOrder() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
+export type OfflineSaleItem = {
+  productId: string;
+  variantId: string | null;
+  quantity: number;
+  /** Overrides the product's current price — an off-site sale may have been
+   * negotiated at a different price. Omit to use the product's price as-is. */
+  unitPrice?: number | null;
+};
+
+export function useCreateOfflineSale() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      items,
+      note,
+    }: {
+      items: OfflineSaleItem[];
+      note?: string | null;
+    }): Promise<CreateOrderResult> => {
+      const { data, error } = await supabase.rpc("create_offline_sale", {
+        p_items: items.map((i) => ({
+          product_id: i.productId,
+          variant_id: i.variantId,
+          quantity: i.quantity,
+          ...(i.unitPrice != null ? { unit_price: i.unitPrice } : {}),
+        })),
+        ...(note ? { p_note: note } : {}),
+      });
+      if (error) return { ok: false, error: error.message };
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row) return { ok: false, error: "La vente n'a pas pu être enregistrée." };
+      return { ok: true, orderId: row.order_id, orderNumber: row.order_number };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["orders"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["stock-movements"] });
     },
   });
 }

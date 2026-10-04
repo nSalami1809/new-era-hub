@@ -57,7 +57,14 @@ function AdminOrderDetail() {
         Retour aux commandes
       </Link>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl">Commande #{order.orderNumber}</h1>
+        <h1 className="flex items-center gap-2 text-2xl">
+          Commande #{order.orderNumber}
+          {order.channel === "offline" && (
+            <span className="bg-muted px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Hors site
+            </span>
+          )}
+        </h1>
         <div className="flex items-center gap-2">
           {updateStatus.isPending && <Spinner size={16} />}
           <select

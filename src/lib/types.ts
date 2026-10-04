@@ -103,6 +103,10 @@ export const ORDER_STATUSES = [
 
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
+/** 'offline' = recorded by an admin for a sale made outside the site
+ * (WhatsApp, in person...), never through checkout. */
+export type OrderChannel = "site" | "offline";
+
 export type Order = {
   id: string;
   orderNumber: string;
@@ -113,6 +117,7 @@ export type Order = {
   total: number;
   promoCode: string | null;
   status: OrderStatus;
+  channel: OrderChannel;
   history: { status: OrderStatus; at: string }[];
   createdAt: string;
   updatedAt: string;

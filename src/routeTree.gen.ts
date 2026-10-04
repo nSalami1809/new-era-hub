@@ -29,6 +29,7 @@ import { Route as Nehub53ff1f11DepensesRouteImport } from './routes/nehub-53ff1f
 import { Route as Nehub53ff1f11ParametresRouteImport } from './routes/nehub-53ff1f11.parametres'
 import { Route as Nehub53ff1f11PromotionsRouteImport } from './routes/nehub-53ff1f11.promotions'
 import { Route as Nehub53ff1f11StocksRouteImport } from './routes/nehub-53ff1f11.stocks'
+import { Route as Nehub53ff1f11VentesHorsSiteRouteImport } from './routes/nehub-53ff1f11.ventes-hors-site'
 import { Route as ProduitIdRouteImport } from './routes/produit.$id'
 import { Route as Nehub53ff1f11CommandesIndexRouteImport } from './routes/nehub-53ff1f11.commandes.index'
 import { Route as Nehub53ff1f11CommandesIdRouteImport } from './routes/nehub-53ff1f11.commandes.$id'
@@ -137,6 +138,12 @@ const Nehub53ff1f11StocksRoute = Nehub53ff1f11StocksRouteImport.update({
   path: '/stocks',
   getParentRoute: () => Nehub53ff1f11Route,
 } as any)
+const Nehub53ff1f11VentesHorsSiteRoute =
+  Nehub53ff1f11VentesHorsSiteRouteImport.update({
+    id: '/ventes-hors-site',
+    path: '/ventes-hors-site',
+    getParentRoute: () => Nehub53ff1f11Route,
+  } as any)
 const ProduitIdRoute = ProduitIdRouteImport.update({
   id: '/produit/$id',
   path: '/produit/$id',
@@ -192,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/nehub-53ff1f11/parametres': typeof Nehub53ff1f11ParametresRoute
   '/nehub-53ff1f11/promotions': typeof Nehub53ff1f11PromotionsRoute
   '/nehub-53ff1f11/stocks': typeof Nehub53ff1f11StocksRoute
+  '/nehub-53ff1f11/ventes-hors-site': typeof Nehub53ff1f11VentesHorsSiteRoute
   '/produit/$id': typeof ProduitIdRoute
   '/nehub-53ff1f11/': typeof Nehub53ff1f11IndexRoute
   '/nehub-53ff1f11/commandes/$id': typeof Nehub53ff1f11CommandesIdRoute
@@ -219,6 +227,7 @@ export interface FileRoutesByTo {
   '/nehub-53ff1f11/parametres': typeof Nehub53ff1f11ParametresRoute
   '/nehub-53ff1f11/promotions': typeof Nehub53ff1f11PromotionsRoute
   '/nehub-53ff1f11/stocks': typeof Nehub53ff1f11StocksRoute
+  '/nehub-53ff1f11/ventes-hors-site': typeof Nehub53ff1f11VentesHorsSiteRoute
   '/produit/$id': typeof ProduitIdRoute
   '/nehub-53ff1f11': typeof Nehub53ff1f11IndexRoute
   '/nehub-53ff1f11/commandes/$id': typeof Nehub53ff1f11CommandesIdRoute
@@ -248,6 +257,7 @@ export interface FileRoutesById {
   '/nehub-53ff1f11/parametres': typeof Nehub53ff1f11ParametresRoute
   '/nehub-53ff1f11/promotions': typeof Nehub53ff1f11PromotionsRoute
   '/nehub-53ff1f11/stocks': typeof Nehub53ff1f11StocksRoute
+  '/nehub-53ff1f11/ventes-hors-site': typeof Nehub53ff1f11VentesHorsSiteRoute
   '/produit/$id': typeof ProduitIdRoute
   '/nehub-53ff1f11/': typeof Nehub53ff1f11IndexRoute
   '/nehub-53ff1f11/commandes/$id': typeof Nehub53ff1f11CommandesIdRoute
@@ -278,6 +288,7 @@ export interface FileRouteTypes {
     | '/nehub-53ff1f11/parametres'
     | '/nehub-53ff1f11/promotions'
     | '/nehub-53ff1f11/stocks'
+    | '/nehub-53ff1f11/ventes-hors-site'
     | '/produit/$id'
     | '/nehub-53ff1f11/'
     | '/nehub-53ff1f11/commandes/$id'
@@ -305,6 +316,7 @@ export interface FileRouteTypes {
     | '/nehub-53ff1f11/parametres'
     | '/nehub-53ff1f11/promotions'
     | '/nehub-53ff1f11/stocks'
+    | '/nehub-53ff1f11/ventes-hors-site'
     | '/produit/$id'
     | '/nehub-53ff1f11'
     | '/nehub-53ff1f11/commandes/$id'
@@ -333,6 +345,7 @@ export interface FileRouteTypes {
     | '/nehub-53ff1f11/parametres'
     | '/nehub-53ff1f11/promotions'
     | '/nehub-53ff1f11/stocks'
+    | '/nehub-53ff1f11/ventes-hors-site'
     | '/produit/$id'
     | '/nehub-53ff1f11/'
     | '/nehub-53ff1f11/commandes/$id'
@@ -499,6 +512,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Nehub53ff1f11StocksRouteImport
       parentRoute: typeof Nehub53ff1f11Route
     }
+    '/nehub-53ff1f11/ventes-hors-site': {
+      id: '/nehub-53ff1f11/ventes-hors-site'
+      path: '/ventes-hors-site'
+      fullPath: '/nehub-53ff1f11/ventes-hors-site'
+      preLoaderRoute: typeof Nehub53ff1f11VentesHorsSiteRouteImport
+      parentRoute: typeof Nehub53ff1f11Route
+    }
     '/produit/$id': {
       id: '/produit/$id'
       path: '/produit/$id'
@@ -553,6 +573,7 @@ interface Nehub53ff1f11RouteChildren {
   Nehub53ff1f11ParametresRoute: typeof Nehub53ff1f11ParametresRoute
   Nehub53ff1f11PromotionsRoute: typeof Nehub53ff1f11PromotionsRoute
   Nehub53ff1f11StocksRoute: typeof Nehub53ff1f11StocksRoute
+  Nehub53ff1f11VentesHorsSiteRoute: typeof Nehub53ff1f11VentesHorsSiteRoute
   Nehub53ff1f11IndexRoute: typeof Nehub53ff1f11IndexRoute
   Nehub53ff1f11CommandesIdRoute: typeof Nehub53ff1f11CommandesIdRoute
   Nehub53ff1f11ProduitsIdRoute: typeof Nehub53ff1f11ProduitsIdRoute
@@ -570,6 +591,7 @@ const Nehub53ff1f11RouteChildren: Nehub53ff1f11RouteChildren = {
   Nehub53ff1f11ParametresRoute: Nehub53ff1f11ParametresRoute,
   Nehub53ff1f11PromotionsRoute: Nehub53ff1f11PromotionsRoute,
   Nehub53ff1f11StocksRoute: Nehub53ff1f11StocksRoute,
+  Nehub53ff1f11VentesHorsSiteRoute: Nehub53ff1f11VentesHorsSiteRoute,
   Nehub53ff1f11IndexRoute: Nehub53ff1f11IndexRoute,
   Nehub53ff1f11CommandesIdRoute: Nehub53ff1f11CommandesIdRoute,
   Nehub53ff1f11ProduitsIdRoute: Nehub53ff1f11ProduitsIdRoute,

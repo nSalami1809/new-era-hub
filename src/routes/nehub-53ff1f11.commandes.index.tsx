@@ -118,6 +118,11 @@ function AdminOrders() {
                 <span className="font-semibold">{formatPrice(o.total, currency)}</span>
                 <span>{o.status}</span>
               </div>
+              {o.channel === "offline" && (
+                <span className="mt-1 inline-block w-fit bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Hors site
+                </span>
+              )}
               <Link
                 to="/nehub-53ff1f11/commandes/$id"
                 params={{ id: o.id }}
@@ -152,7 +157,14 @@ function AdminOrders() {
                   </td>
                   <td className="p-3">{o.customer.phone}</td>
                   <td className="p-3 text-right font-semibold">{formatPrice(o.total, currency)}</td>
-                  <td className="p-3">{o.status}</td>
+                  <td className="p-3">
+                    {o.status}
+                    {o.channel === "offline" && (
+                      <span className="ml-1.5 bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Hors site
+                      </span>
+                    )}
+                  </td>
                   <td className="p-3 text-right">
                     <Link
                       to="/nehub-53ff1f11/commandes/$id"

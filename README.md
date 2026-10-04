@@ -17,7 +17,7 @@ Boutique en ligne de streetwear — casquettes, vêtements, chaussures et access
 **Back-office** — interface d'administration protégée par authentification (Supabase Auth + RLS), accessible via une URL dédiée non indexée :
 - Produits, catégories, couleurs et variantes, avec upload de photos (compression et fond blanc automatiques)
 - Stocks et alertes de rupture
-- Commandes : suivi, statuts, historique de réception
+- Commandes : suivi, statuts, historique de réception, et ventes hors site (WhatsApp, en personne) enregistrées manuellement
 - Promotions et codes promo, avec règles de bundle
 - Comptabilité : dépenses, rentabilité, export PDF
 - Avis clients et notifications
