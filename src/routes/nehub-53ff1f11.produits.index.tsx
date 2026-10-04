@@ -10,6 +10,7 @@ import { useAdminProducts, useDeleteProduct, useUpdateProduct } from "@/lib/api/
 import { useCategories } from "@/lib/api/categories";
 import { useSettings } from "@/lib/api/settings";
 import { useViewMode } from "@/lib/use-view-mode";
+import { usePersistedState } from "@/lib/use-persisted-state";
 import { stockStatus, unitProfit, profitMargin, type Product } from "@/lib/types";
 
 export const Route = createFileRoute("/nehub-53ff1f11/produits/")({
@@ -44,7 +45,7 @@ function AdminProducts() {
   const updateProduct = useUpdateProduct();
   const [toDelete, setToDelete] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = usePersistedState("admin-products-category-filter");
   const [view, setView] = useViewMode("admin-products-view");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);

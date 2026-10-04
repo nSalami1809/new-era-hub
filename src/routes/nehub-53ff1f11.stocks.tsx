@@ -10,6 +10,7 @@ import { useAdjustStock, useStockMovements } from "@/lib/api/stock";
 import { useAdjustVariantStock } from "@/lib/api/stock-variants";
 import { useStockAlerts, useDeleteStockAlert } from "@/lib/api/stock-alerts";
 import { useViewMode } from "@/lib/use-view-mode";
+import { usePersistedState } from "@/lib/use-persisted-state";
 import { useCategories } from "@/lib/api/categories";
 import { stockStatus, variantLabel, type ProductVariant, type SizeType } from "@/lib/types";
 
@@ -80,7 +81,7 @@ function AdminStocks() {
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [view, setView] = useViewMode("admin-stocks-view");
   const [query, setQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = usePersistedState("admin-stocks-category-filter");
 
   const outOfStock = products.filter((p) => stockStatus(p) === "out").length;
   const lowStock = products.filter((p) => stockStatus(p) === "low").length;
