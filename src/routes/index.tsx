@@ -5,6 +5,7 @@ import { ProductImage } from "@/components/ProductImage";
 import { ProductGridSkeleton, Skeleton } from "@/components/Skeleton";
 import { productsQueryOptions, useProducts } from "@/lib/api/products";
 import { settingsQueryOptions, useSettings } from "@/lib/api/settings";
+import { categoriesQueryOptions, useCategories } from "@/lib/api/categories";
 import type { Product } from "@/lib/types";
 
 function CategoryTile({
@@ -45,6 +46,7 @@ export const Route = createFileRoute("/")({
     await Promise.all([
       context.queryClient.ensureQueryData(productsQueryOptions),
       context.queryClient.ensureQueryData(settingsQueryOptions),
+      context.queryClient.ensureQueryData(categoriesQueryOptions),
     ]);
   },
   head: () => ({
@@ -70,6 +72,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const { data: products = [], isLoading } = useProducts();
   const { data: settings } = useSettings();
+  const { data: categories = [] } = useCategories();
   const active = products.filter((p) => p.isActive);
   const featured = active.filter((p) => p.isFeatured).slice(0, 4);
   const promos = active
@@ -77,13 +80,16 @@ function Index() {
     .slice(0, 4);
   const currency = settings?.currency ?? "FCFA";
 
-  const categories = Array.from(new Set(active.map((p) => p.category)))
+  const categoryTiles = Array.from(new Set(active.map((p) => p.category)))
     .map((category) => {
       const inCategory = active.filter((p) => p.category === category);
       const cover = inCategory.find((p) => p.isFeatured) ?? inCategory[0];
       return { category, count: inCategory.length, cover };
     })
-    .filter((c) => c.count > 0 && c.cover);
+    .filter((c) => c.count > 0 && c.cover)
+    // A hidden category still sells (its products keep their own isActive
+    // flag) — it just doesn't get a discovery tile on the homepage.
+    .filter((c) => categories.find((cat) => cat.name === c.category)?.isVisible !== false);
 
   const heroProduct = featured[0] ?? active[0];
 
@@ -144,12 +150,12 @@ function Index() {
         </section>
       )}
 
-      {!isLoading && categories.length > 0 && (
+      {!isLoading && categoryTiles.length > 0 && (
         <section className="container-page py-10">
           <span className="eyebrow">Catalogue</span>
           <h2 className="mt-1 mb-4 text-2xl sm:text-3xl">Découvrir par catégorie</h2>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            {categories.map(({ category, count, cover }) => (
+            {categoryTiles.map(({ category, count, cover }) => (
               <CategoryTile key={category} category={category} count={count} cover={cover!} />
             ))}
           </div>

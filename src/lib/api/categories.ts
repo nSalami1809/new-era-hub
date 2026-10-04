@@ -6,6 +6,10 @@ export type ProductCategoryRow = {
   id: string;
   name: string;
   sizeType: SizeType;
+  /** false = hidden from the storefront (boutique filter, homepage category
+   * tiles) — products already in it are untouched and the admin still sees
+   * and can assign it like any other category. */
+  isVisible: boolean;
   createdAt: string;
 };
 
@@ -19,6 +23,7 @@ async function fetchCategories(): Promise<ProductCategoryRow[]> {
     id: row.id,
     name: row.name,
     sizeType: (row.size_type as SizeType) ?? "none",
+    isVisible: row.is_visible,
     createdAt: row.created_at,
   }));
 }
@@ -56,6 +61,41 @@ export function useSetCategorySizeType() {
         p_category_id: categoryId,
         p_size_type: sizeType,
       });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
+  });
+}
+
+/** Renames a category — `products.category` cascades automatically (FK on
+ * update cascade), so every product in it follows without any extra write. */
+export function useRenameCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ categoryId, name }: { categoryId: string; name: string }) => {
+      const { error } = await supabase
+        .from("product_categories")
+        .update({ name: name.trim() })
+        .eq("id", categoryId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["categories"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
+/** Hides/shows a category on the storefront (boutique filter, homepage
+ * tiles) — admin screens and existing products are never affected. */
+export function useSetCategoryVisible() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ categoryId, isVisible }: { categoryId: string; isVisible: boolean }) => {
+      const { error } = await supabase
+        .from("product_categories")
+        .update({ is_visible: isVisible })
+        .eq("id", categoryId);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),

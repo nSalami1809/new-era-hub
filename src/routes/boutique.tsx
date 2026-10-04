@@ -159,11 +159,13 @@ function Boutique() {
               }
             >
               <option value="">Toutes</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
+              {categories
+                .filter((c) => c.isVisible)
+                .map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
             </select>
           </div>
 
