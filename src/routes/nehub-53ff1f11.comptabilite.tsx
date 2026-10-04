@@ -6,7 +6,14 @@ import { downloadCsv } from "@/lib/csv";
 import { PeriodPicker } from "@/components/PeriodPicker";
 import { periodRange, parseDateOnly, PERIODS, type PeriodKey } from "@/lib/period";
 import { Spinner } from "@/components/Spinner";
-import { PAID_STATUSES, itemProfit, itemRevenue, computeCategoryRows } from "@/lib/accounting";
+import {
+  PAID_STATUSES,
+  itemProfit,
+  itemRevenue,
+  computeCategoryRows,
+  computeCategoryStockRows,
+  mergeCategoryFinancials,
+} from "@/lib/accounting";
 import { useAdminOrders } from "@/lib/api/orders";
 import { useAdminProducts } from "@/lib/api/products";
 import { useAdminExpenses } from "@/lib/api/expenses";
@@ -139,7 +146,14 @@ function Accounting() {
     [paidOrders, categoryByProductId],
   );
 
-  const categoryMaxRevenue = Math.max(1, ...categoryRows.map((r) => r.revenue));
+  const categoryStockRows = useMemo(() => computeCategoryStockRows(products), [products]);
+
+  const categoryFinancials = useMemo(
+    () => mergeCategoryFinancials(categoryRows, categoryStockRows),
+    [categoryRows, categoryStockRows],
+  );
+
+  const categoryMaxRevenue = Math.max(1, ...categoryFinancials.map((r) => r.revenue));
 
   const productRows: ProductRow[] = useMemo(() => {
     const map = new Map<string, ProductRow>();
@@ -208,8 +222,28 @@ function Accounting() {
   function exportCategoryCsv() {
     downloadCsv(
       `compta-categories-${new Date().toISOString().slice(0, 10)}.csv`,
-      ["Catégorie", "CA", "CMV", "Bénéfice", "Marge %", "Unités"],
-      categoryRows.map((r) => [r.name, r.revenue, r.cogs, r.profit, r.margin, r.units]),
+      [
+        "Catégorie",
+        "CA",
+        "CMV",
+        "Bénéfice",
+        "Marge %",
+        "Unités vendues",
+        "Valeur stock (achat)",
+        "Bénéfice potentiel (stock)",
+        "Unités en stock",
+      ],
+      categoryFinancials.map((r) => [
+        r.name,
+        r.revenue,
+        r.cogs,
+        r.profit,
+        r.margin,
+        r.units,
+        r.stockValue,
+        r.potentialProfit,
+        r.stockUnits,
+      ]),
     );
   }
 
@@ -266,19 +300,19 @@ function Accounting() {
       let cursorY =
         (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
 
-      if (categoryRows.length > 0) {
+      if (categoryFinancials.length > 0) {
         doc.setFontSize(11);
-        doc.text("Marges par catégorie", 14, cursorY);
+        doc.text("Marges et stock par catégorie", 14, cursorY);
         autoTable(doc, {
           startY: cursorY + 4,
-          head: [["Catégorie", "CA", "CMV", "Bénéfice", "Marge", "Unités"]],
-          body: categoryRows.map((r) => [
+          head: [["Catégorie", "CA", "Bénéfice", "Marge", "Valeur stock", "Bénéfice potentiel"]],
+          body: categoryFinancials.map((r) => [
             r.name,
             formatPrice(r.revenue, currency),
-            formatPrice(r.cogs, currency),
             formatPrice(r.profit, currency),
             `${r.margin}%`,
-            String(r.units),
+            formatPrice(r.stockValue, currency),
+            formatPrice(r.potentialProfit, currency),
           ]),
           styles: { fontSize: 9 },
           headStyles: { fillColor: [23, 23, 23] },
@@ -399,7 +433,7 @@ function Accounting() {
 
           <section className="mt-6 border border-border">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-4">
-              <h2 className="text-base">Marges par catégorie</h2>
+              <h2 className="text-base">Marges et stock par catégorie</h2>
               <button
                 type="button"
                 onClick={exportCategoryCsv}
@@ -409,11 +443,13 @@ function Accounting() {
                 Exporter CSV
               </button>
             </div>
-            {categoryRows.length === 0 ? (
-              <p className="p-4 text-sm text-muted-foreground">Aucune vente sur la période.</p>
+            {categoryFinancials.length === 0 ? (
+              <p className="p-4 text-sm text-muted-foreground">
+                Aucune vente ni stock sur la période.
+              </p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-sm">
+                <table className="w-full min-w-[920px] text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted text-left text-xs uppercase text-muted-foreground">
                       <th className="p-3">Catégorie</th>
@@ -422,11 +458,13 @@ function Accounting() {
                       <th className="p-3 text-right">CMV</th>
                       <th className="p-3 text-right">Bénéfice</th>
                       <th className="p-3 text-right">Marge</th>
-                      <th className="p-3 text-right">Unités</th>
+                      <th className="p-3 text-right">Unités vendues</th>
+                      <th className="p-3 text-right">Valeur stock</th>
+                      <th className="p-3 text-right">Bénéfice potentiel (stock)</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {categoryRows.map((r) => (
+                    {categoryFinancials.map((r) => (
                       <tr key={r.name} className="border-b border-border last:border-0">
                         <td className="p-3 font-medium">{r.name}</td>
                         <td className="p-3">
@@ -454,6 +492,17 @@ function Accounting() {
                           {r.margin}%
                         </td>
                         <td className="p-3 text-right">{r.units}</td>
+                        <td className="p-3 text-right">
+                          {formatPrice(r.stockValue, currency)}
+                          <div className="text-xs text-muted-foreground">
+                            {r.stockUnits} unité(s)
+                          </div>
+                        </td>
+                        <td
+                          className={`p-3 text-right ${r.potentialProfit >= 0 ? "text-success" : "text-destructive"}`}
+                        >
+                          {formatPrice(r.potentialProfit, currency)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -461,8 +510,10 @@ function Accounting() {
               </div>
             )}
             <p className="border-t border-border p-3 text-xs text-muted-foreground">
-              CA par catégorie calculé au prix unitaire brut (hors répartition des codes promo). Le
-              CA encaissé ci-dessus (après remises) fait foi pour le total.
+              CA/CMV/bénéfice par catégorie calculés au prix unitaire brut sur la période
+              sélectionnée (hors répartition des codes promo) — le CA encaissé ci-dessus (après
+              remises) fait foi pour le total. La valeur du stock et le bénéfice potentiel sont un
+              instantané de l'inventaire actuel (prix d'achat), indépendant de la période.
             </p>
           </section>
 

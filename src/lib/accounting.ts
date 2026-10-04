@@ -1,4 +1,4 @@
-import type { Order, OrderItem } from "@/lib/types";
+import { effectivePrice, type Order, type OrderItem, type Product } from "@/lib/types";
 
 // An order only counts as revenue once money has actually changed hands, not
 // while it's still being negotiated. Shared by the dashboard, Comptabilité,
@@ -46,4 +46,55 @@ export function computeCategoryRows(
       margin: r.revenue > 0 ? Math.round(((r.revenue - r.cogs) / r.revenue) * 100) : 0,
     }))
     .sort((a, b) => b.revenue - a.revenue);
+}
+
+export type CategoryStockRow = {
+  name: string;
+  stockUnits: number;
+  stockValue: number;
+  potentialProfit: number;
+};
+
+/** Current inventory value (at cost) and potential profit per category —
+ * a point-in-time balance, not tied to the reporting period. */
+export function computeCategoryStockRows(products: Product[]): CategoryStockRow[] {
+  const map = new Map<string, CategoryStockRow>();
+  for (const p of products) {
+    const row = map.get(p.category) ?? {
+      name: p.category,
+      stockUnits: 0,
+      stockValue: 0,
+      potentialProfit: 0,
+    };
+    row.stockUnits += p.stock;
+    row.stockValue += p.stock * p.costPrice;
+    row.potentialProfit += p.stock * (effectivePrice(p) - p.costPrice);
+    map.set(p.category, row);
+  }
+  return [...map.values()].sort((a, b) => b.stockValue - a.stockValue);
+}
+
+export type CategoryFinancials = CategoryRow & CategoryStockRow;
+
+/** Joins per-category sales (period-scoped) with per-category current stock
+ * value (not period-scoped) into one row per category seen in either. */
+export function mergeCategoryFinancials(
+  salesRows: CategoryRow[],
+  stockRows: CategoryStockRow[],
+): CategoryFinancials[] {
+  const map = new Map<string, CategoryFinancials>();
+  for (const r of salesRows) {
+    map.set(r.name, { ...r, stockUnits: 0, stockValue: 0, potentialProfit: 0 });
+  }
+  for (const s of stockRows) {
+    const existing = map.get(s.name);
+    if (existing) {
+      existing.stockUnits = s.stockUnits;
+      existing.stockValue = s.stockValue;
+      existing.potentialProfit = s.potentialProfit;
+    } else {
+      map.set(s.name, { revenue: 0, cogs: 0, profit: 0, margin: 0, units: 0, ...s });
+    }
+  }
+  return [...map.values()].sort((a, b) => b.revenue - a.revenue || b.stockValue - a.stockValue);
 }
