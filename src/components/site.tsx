@@ -8,6 +8,7 @@ import { useProducts } from "@/lib/api/products";
 import { formatPrice } from "@/lib/format";
 import { effectivePrice, type Product } from "@/lib/types";
 import { Toaster } from "@/components/Toaster";
+import { MobileHistoryNav } from "@/components/MobileHistoryNav";
 import { ProductImage } from "@/components/ProductImage";
 import logo from "@/assets/logo-new-era-hub-241.jpeg";
 
@@ -385,6 +386,7 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1">{children}</main>
       <SiteFooter />
       <Toaster />
+      <MobileHistoryNav />
     </div>
   );
 }
