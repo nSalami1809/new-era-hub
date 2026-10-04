@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ImageOff } from "lucide-react";
 import { transformImageUrl } from "@/lib/image-transform";
 
@@ -7,6 +7,9 @@ import { transformImageUrl } from "@/lib/image-transform";
  * image fails to decode, shows a clean placeholder instead of the browser's
  * broken-image icon. `className` is applied identically to whichever one
  * renders, so callers size/border/background it exactly like a plain <img>.
+ * Fades in once decoded instead of popping in abruptly — a plain <img> left
+ * to its own devices either shows nothing then suddenly the full photo, or
+ * (worse, on a slow connection) a half-rendered one.
  */
 export function ProductImage({
   src,
@@ -32,6 +35,26 @@ export function ProductImage({
   width?: number;
 }) {
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const url = src ? transformImageUrl(src, width) : null;
+
+  // A color swap on the product page (or any caller passing a new `src`)
+  // swaps the url prop on the same mounted component — reset for the new
+  // photo instead of keeping the previous one's state.
+  useEffect(() => {
+    setFailed(false);
+    setLoaded(false);
+    // SSR renders this at `loaded: false`; by the time React hydrates and
+    // attaches onLoad below, a fast (e.g. already browser-cached — exactly
+    // what the hover/touch preload on product cards sets up) image may well
+    // have already finished loading, firing its native load event before
+    // any listener existed to catch it. `.complete` is the browser's own
+    // record of that, independent of whether our handler was attached in
+    // time, so this catches the race instead of leaving the image stuck
+    // invisible.
+    if (imgRef.current?.complete) setLoaded(true);
+  }, [url]);
 
   if (!src || failed) {
     return (
@@ -43,12 +66,14 @@ export function ProductImage({
 
   return (
     <img
-      src={transformImageUrl(src, width)}
+      ref={imgRef}
+      src={url ?? undefined}
       alt={alt}
       loading={priority ? "eager" : "lazy"}
       fetchPriority={priority ? "high" : "auto"}
       onError={() => setFailed(true)}
-      className={className}
+      onLoad={() => setLoaded(true)}
+      className={`${className ?? ""} transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
     />
   );
 }

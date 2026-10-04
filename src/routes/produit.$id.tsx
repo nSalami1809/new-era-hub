@@ -198,7 +198,11 @@ function ImageThumbnail({
         active ? "border-foreground" : "border-border hover:border-border-strong"
       }`}
     >
-      <ProductImage src={src} alt="" width={80} className="h-full w-full object-contain p-1.5" />
+      {/* Requested at the cart's width (96), not this button's own 80px box:
+          a visitor who clicks through color/photo thumbnails here and then
+          adds to cart gets the exact same cached image in both places,
+          instead of two near-identical resized copies. */}
+      <ProductImage src={src} alt="" width={96} className="h-full w-full object-contain p-1.5" />
     </button>
   );
 }
