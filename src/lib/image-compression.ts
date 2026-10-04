@@ -15,17 +15,16 @@ const MIN_CONTENT_FRACTION = 0.015; // a row/column needs at least this much of 
 const CROP_PADDING_RATIO = 0.06;
 const MIN_TRIM_RATIO = 0.03; // skip trimming if there's less than 3% margin to remove on a side
 
+type RGB = { r: number; g: number; b: number };
+
 function colorDistance(r1: number, g1: number, b1: number, r2: number, g2: number, b2: number) {
   return Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2);
 }
 
-/** Bounding box of non-background content in the given ImageData, or null if
- * nothing confidently different from the backdrop was found. */
-function findContentBox(
-  data: Uint8ClampedArray,
-  width: number,
-  height: number,
-): { x0: number; y0: number; x1: number; y1: number } | null {
+/** Averages the 4 corner pixels — assumed to be backdrop, never product
+ * (a product photo frames the item with margin on every side). Shared by
+ * the crop-box detection below and the background-whitening pass. */
+function sampleBackgroundColor(data: Uint8ClampedArray, width: number, height: number): RGB {
   const corner = (x: number, y: number) => {
     const i = (y * width + x) * 4;
     return [data[i]!, data[i + 1]!, data[i + 2]!] as const;
@@ -36,14 +35,25 @@ function findContentBox(
     corner(0, height - 1),
     corner(width - 1, height - 1),
   ];
-  const bgR = corners.reduce((s, c) => s + c[0], 0) / corners.length;
-  const bgG = corners.reduce((s, c) => s + c[1], 0) / corners.length;
-  const bgB = corners.reduce((s, c) => s + c[2], 0) / corners.length;
+  return {
+    r: corners.reduce((s, c) => s + c[0], 0) / corners.length,
+    g: corners.reduce((s, c) => s + c[1], 0) / corners.length,
+    b: corners.reduce((s, c) => s + c[2], 0) / corners.length,
+  };
+}
 
+/** Bounding box of non-background content in the given ImageData, or null if
+ * nothing confidently different from the backdrop was found. */
+function findContentBox(
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+  bg: RGB,
+): { x0: number; y0: number; x1: number; y1: number } | null {
   const isContent = (x: number, y: number) => {
     const i = (y * width + x) * 4;
     return (
-      colorDistance(data[i]!, data[i + 1]!, data[i + 2]!, bgR, bgG, bgB) > BG_DISTANCE_THRESHOLD
+      colorDistance(data[i]!, data[i + 1]!, data[i + 2]!, bg.r, bg.g, bg.b) > BG_DISTANCE_THRESHOLD
     );
   };
 
@@ -117,14 +127,17 @@ function resolveCropRect(
 }
 
 /**
- * Finds the product's bounding box against its own backdrop and returns the
- * crop rect (in the source image's own pixel coordinates) to apply — or
- * null if nothing worth trimming was found (already tightly framed, or
- * detection wasn't confident).
+ * Finds the product's bounding box against its own backdrop. Returns the
+ * crop rect to apply (in the source image's own pixel coordinates — null if
+ * nothing worth trimming was found: already tightly framed, or detection
+ * wasn't confident) alongside the sampled backdrop color, reused by the
+ * background-whitening pass below. Returns null only if the canvas itself
+ * couldn't be read (tainted, cross-origin without CORS) — not fatal, the
+ * caller just skips both crop and whitening for that photo.
  */
 function detectCropRect(
   img: HTMLImageElement,
-): { x: number; y: number; width: number; height: number } | null {
+): { rect: { x: number; y: number; width: number; height: number } | null; bg: RGB } | null {
   const { naturalWidth: fullW, naturalHeight: fullH } = img;
   if (!fullW || !fullH) return null;
 
@@ -146,12 +159,48 @@ function detectCropRect(
     return null; // tainted canvas (cross-origin without CORS) — skip trimming, not fatal
   }
 
-  const box = findContentBox(imageData.data, scanW, scanH);
-  if (!box) return null;
+  const bg = sampleBackgroundColor(imageData.data, scanW, scanH);
+  const box = findContentBox(imageData.data, scanW, scanH, bg);
+  if (!box) return { rect: null, bg };
 
   const rect = resolveCropRect(box, scanW, scanH, fullW, fullH);
-  if (rect.width >= fullW && rect.height >= fullH) return null; // nothing to trim
-  return rect;
+  if (rect.width >= fullW && rect.height >= fullH) return { rect: null, bg }; // nothing to trim
+  return { rect, bg };
+}
+
+const WHITEN_LUMINANCE_MIN = 200; // only whiten photos shot on a light/white backdrop — leaves a deliberately colored/dark backdrop untouched
+const WHITEN_DISTANCE_THRESHOLD = 70; // 0-441 — pixels at this distance from the backdrop color or further keep their original color unchanged
+
+/**
+ * Pushes every pixel toward pure white, proportionally to how close it
+ * already is to the sampled backdrop color — a pixel identical to the
+ * backdrop becomes white, a pixel confidently part of the product (far from
+ * that color, same test family as findContentBox above) is left alone, and
+ * the soft shadow/halo in between is blended smoothly. No hard edge, so it
+ * can't leave a visible seam, and a photo that's already clean (uniform
+ * white, no shadow) is a no-op — every pixel is already at distance ~0.
+ */
+function whitenBackground(ctx: CanvasRenderingContext2D, width: number, height: number, bg: RGB) {
+  if ((bg.r + bg.g + bg.b) / 3 < WHITEN_LUMINANCE_MIN) return; // not a white/light backdrop — leave it alone
+  let imageData: ImageData;
+  try {
+    imageData = ctx.getImageData(0, 0, width, height);
+  } catch {
+    return; // shouldn't happen for a same-origin canvas we just drew to, but never worth failing the whole upload over
+  }
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i]!;
+    const g = data[i + 1]!;
+    const b = data[i + 2]!;
+    const distance = colorDistance(r, g, b, bg.r, bg.g, bg.b);
+    if (distance >= WHITEN_DISTANCE_THRESHOLD) continue;
+    const t = 1 - distance / WHITEN_DISTANCE_THRESHOLD;
+    data[i] = r + (255 - r) * t;
+    data[i + 1] = g + (255 - g) * t;
+    data[i + 2] = b + (255 - b) * t;
+  }
+  ctx.putImageData(imageData, 0, 0);
 }
 
 /**
@@ -169,7 +218,8 @@ export function compressImage(file: File): Promise<File> {
     img.onload = () => {
       URL.revokeObjectURL(url);
 
-      const crop = detectCropRect(img);
+      const detected = detectCropRect(img);
+      const crop = detected?.rect ?? null;
       const sourceX = crop?.x ?? 0;
       const sourceY = crop?.y ?? 0;
       const sourceWidth = crop?.width ?? img.naturalWidth;
@@ -200,6 +250,11 @@ export function compressImage(file: File): Promise<File> {
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, width, height);
       ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, height);
+
+      // Clean up a light/white backdrop (soft shadows, slight tint) without
+      // touching the product itself — see whitenBackground. A no-op on a
+      // photo that's already uniformly white.
+      if (detected?.bg) whitenBackground(ctx, width, height, detected.bg);
 
       canvas.toBlob(
         (blob) => {
