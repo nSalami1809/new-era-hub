@@ -55,6 +55,11 @@ export type Product = {
   images: string[];
   isActive: boolean;
   isFeatured: boolean;
+  /** Per-product override of the category's size tracking — false makes a
+   * clothing/shoes-category product behave like sizeType "none" (one stock
+   * number per color, no size required). Irrelevant for a category that
+   * already has no sizes. */
+  trackBySize: boolean;
   /** Optional colors, each with its own photos. Empty = this product doesn't use colors. */
   colors: ProductColor[];
   /** Optional per-size and/or per-color stock. Empty = this product doesn't use variants. */

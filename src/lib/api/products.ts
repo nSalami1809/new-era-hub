@@ -32,6 +32,7 @@ function mapProduct(row: ProductRow): Product {
     images: row.images ?? [],
     isActive: row.is_active,
     isFeatured: row.is_featured,
+    trackBySize: row.track_by_size,
     colors: (row.product_colors ?? [])
       .map((c) => ({
         id: c.id,
@@ -79,6 +80,7 @@ function toUpdateRow(input: Partial<ProductInput>): ProductUpdateRow {
   if (input.images !== undefined) row.images = input.images;
   if (input.isActive !== undefined) row.is_active = input.isActive;
   if (input.isFeatured !== undefined) row.is_featured = input.isFeatured;
+  if (input.trackBySize !== undefined) row.track_by_size = input.trackBySize;
   return row;
 }
 
@@ -91,7 +93,7 @@ function toUpdateRow(input: Partial<ProductInput>): ProductUpdateRow {
 // out, while the admin-only variant below adds it back in for the
 // authenticated session that's allowed to see it.
 const PUBLIC_PRODUCT_COLUMNS =
-  "id, name, brand, category, description, price, promotional_price, bundle_quantity, bundle_price, bundle_active, stock, low_stock_threshold, sold, sku, images, is_active, is_featured, created_at, updated_at, product_variants(*), product_colors(*)";
+  "id, name, brand, category, description, price, promotional_price, bundle_quantity, bundle_price, bundle_active, stock, low_stock_threshold, sold, sku, images, is_active, is_featured, track_by_size, created_at, updated_at, product_variants(*), product_colors(*)";
 const ADMIN_PRODUCT_COLUMNS = `${PUBLIC_PRODUCT_COLUMNS}, cost_price`;
 
 async function fetchProducts(columns: string): Promise<Product[]> {
@@ -190,6 +192,7 @@ export function useCreateProduct() {
           images: input.images,
           is_active: input.isActive,
           is_featured: input.isFeatured,
+          track_by_size: input.trackBySize,
         })
         .select()
         .single();

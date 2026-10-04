@@ -369,6 +369,7 @@ export type Database = {
           sku: string;
           sold: number;
           stock: number;
+          track_by_size: boolean;
           updated_at: string;
         };
         Insert: {
@@ -391,6 +392,7 @@ export type Database = {
           sku: string;
           sold?: number;
           stock?: number;
+          track_by_size?: boolean;
           updated_at?: string;
         };
         Update: {
@@ -413,6 +415,7 @@ export type Database = {
           sku?: string;
           sold?: number;
           stock?: number;
+          track_by_size?: boolean;
           updated_at?: string;
         };
         Relationships: [

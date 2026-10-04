@@ -36,6 +36,7 @@ const BLANK = {
   images: [] as string[],
   isActive: true,
   isFeatured: false,
+  trackBySize: true,
 };
 
 type Errors = Partial<
@@ -70,6 +71,7 @@ export function ProductForm({
           images: product.images,
           isActive: product.isActive,
           isFeatured: product.isFeatured,
+          trackBySize: product.trackBySize,
         }
       : BLANK,
   );
@@ -88,6 +90,10 @@ export function ProductForm({
     set("category", firstCategory);
   }
   const sizeType: SizeType = categories.find((c) => c.name === form.category)?.sizeType ?? "none";
+  // A product can opt out of its category's size tracking (e.g. a T-shirt
+  // sold by color only) — everything downstream (the color/size editor)
+  // just sees "none" in that case, same as a category with no sizes at all.
+  const effectiveSizeType: SizeType = form.trackBySize ? sizeType : "none";
 
   const priceNum = Number(form.price);
   const promoNum = form.promotionalPrice ? Number(form.promotionalPrice) : null;
@@ -136,6 +142,7 @@ export function ProductForm({
       images: form.images,
       isActive: form.isActive,
       isFeatured: form.isFeatured,
+      trackBySize: form.trackBySize,
     });
   }
 
@@ -257,14 +264,36 @@ export function ProductForm({
 
       <div>
         <label className="mb-1 block text-sm font-medium">
-          {sizeType === "none" ? "Couleurs" : `Couleurs et ${sizeWord(sizeType).toLowerCase()}s`}
+          {effectiveSizeType === "none"
+            ? "Couleurs"
+            : `Couleurs et ${sizeWord(effectiveSizeType).toLowerCase()}s`}
         </label>
+
+        {sizeType !== "none" && (
+          <label className="mb-2 flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.trackBySize}
+              onChange={(e) => set("trackBySize", e.target.checked)}
+            />
+            Suivre le stock par {sizeWord(sizeType).toLowerCase()}
+          </label>
+        )}
+        {sizeType !== "none" && !form.trackBySize && (
+          <p className="mb-2 text-xs text-muted-foreground">
+            Désactivé : une seule quantité par couleur, sans {sizeWord(sizeType).toLowerCase()}.
+          </p>
+        )}
+
         {product ? (
-          <VariantsEditor product={product} sizeType={sizeType} />
+          <VariantsEditor product={product} sizeType={effectiveSizeType} />
         ) : (
           <p className="text-xs text-muted-foreground">
-            Enregistrez d'abord le produit pour pouvoir ajouter des couleurs et des{" "}
-            {sizeWord(sizeType).toLowerCase()}s.
+            Enregistrez d'abord le produit pour pouvoir ajouter des couleurs
+            {effectiveSizeType !== "none"
+              ? ` et des ${sizeWord(effectiveSizeType).toLowerCase()}s`
+              : ""}
+            .
           </p>
         )}
       </div>
