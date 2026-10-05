@@ -58,8 +58,8 @@ function OrderLookupPage() {
           <Breadcrumb items={[{ label: "Accueil", to: "/" }, { label: "Suivre ma commande" }]} />
           <h1 className="text-2xl">Suivre ma commande</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Entrez le numéro de commande reçu lors de votre achat (ex : CMD-2026-0001) et le numéro
-            de téléphone utilisé à la commande pour voir son statut.
+            Entrez le numéro de commande reçu lors de votre achat (ex : New Era Hub 241 - Achat
+            0001) et le numéro de téléphone utilisé à la commande pour voir son statut.
           </p>
 
           <label htmlFor="order-number" className="mt-5 mb-1 block text-sm font-medium">
@@ -77,7 +77,7 @@ function OrderLookupPage() {
                 setOrderNumber(e.target.value);
                 setError("");
               }}
-              placeholder="CMD-2026-0001"
+              placeholder="New Era Hub 241 - Achat 0001"
               className={`field pl-9 ${error ? "border-destructive" : ""}`}
               aria-invalid={!!error}
             />
