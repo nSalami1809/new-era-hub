@@ -668,6 +668,7 @@ export type Database = {
           p_address: string;
           p_delivery_location: string;
           p_first_name: string;
+          p_idempotency_key?: string;
           p_items: Json;
           p_last_name: string;
           p_note: string;

@@ -44,6 +44,13 @@ function CheckoutPage() {
   const previewPromo = usePreviewPromoCode();
   const navigate = useNavigate();
   const totals = cartTotals(cart, products);
+  // Generated once when the checkout page mounts and reused for every submit
+  // attempt during this visit (double-click, or clicking submit again after
+  // an error) — a double-submit or a response lost in transit after the
+  // order actually committed both resend this SAME key, so create_order
+  // returns the already-created order instead of creating a second one. A
+  // full page reload starts a fresh checkout attempt and gets a new key.
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -115,6 +122,7 @@ function CheckoutPage() {
       },
       items: cart,
       promoCode: promo?.valid ? promo.code : null,
+      idempotencyKey,
     });
     if (!result.ok) {
       toast(result.error, "error");

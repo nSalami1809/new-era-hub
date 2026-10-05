@@ -223,10 +223,15 @@ export function useCreateOrder() {
       customer,
       items,
       promoCode,
+      idempotencyKey,
     }: {
       customer: Customer;
       items: CartItem[];
       promoCode?: string | null;
+      // Generated once by the caller (commande.tsx) per checkout attempt and
+      // reused across retries of that same attempt — never generated here,
+      // or a retry would get a fresh key and lose the protection.
+      idempotencyKey: string;
     }): Promise<CreateOrderResult> => {
       const { data, error } = await supabase.rpc("create_order", {
         p_first_name: customer.firstName,
@@ -240,6 +245,7 @@ export function useCreateOrder() {
           variant_id: i.variantId,
           quantity: i.quantity,
         })),
+        p_idempotency_key: idempotencyKey,
         ...(promoCode ? { p_promo_code: promoCode } : {}),
       });
       if (error) return { ok: false, error: error.message };
