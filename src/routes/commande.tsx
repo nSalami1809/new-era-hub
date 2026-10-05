@@ -121,7 +121,7 @@ function CheckoutPage() {
       return;
     }
     clearCart();
-    navigate({ to: "/facture/$id", params: { id: result.orderId } });
+    navigate({ to: "/facture/$id", params: { id: result.accessToken } });
   }
 
   const currency = settings?.currency ?? "FCFA";

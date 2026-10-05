@@ -154,6 +154,7 @@ export type Database = {
       };
       orders: {
         Row: {
+          access_token: string;
           channel: string;
           created_at: string;
           customer_address: string | null;
@@ -172,6 +173,7 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          access_token?: string;
           channel?: string;
           created_at?: string;
           customer_address?: string | null;
@@ -190,6 +192,7 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          access_token?: string;
           channel?: string;
           created_at?: string;
           customer_address?: string | null;
@@ -670,9 +673,14 @@ export type Database = {
         Returns: {
           order_id: string;
           order_number: string;
+          access_token: string;
         }[];
       };
       get_order_receipt: { Args: { p_ref: string }; Returns: Json };
+      get_order_receipt_by_number: {
+        Args: { p_order_number: string; p_phone: string };
+        Returns: Json;
+      };
       is_admin: { Args: never; Returns: boolean };
       preview_promo_code: {
         Args: { p_code: string; p_subtotal: number };

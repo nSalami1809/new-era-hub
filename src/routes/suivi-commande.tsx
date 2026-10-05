@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Phone } from "lucide-react";
 import { SiteLayout } from "@/components/site";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { useOrderAccessToken } from "@/lib/api/orders";
 
 export const Route = createFileRoute("/suivi-commande")({
   head: () => ({
@@ -23,17 +24,28 @@ export const Route = createFileRoute("/suivi-commande")({
 
 function OrderLookupPage() {
   const [orderNumber, setOrderNumber] = useState("");
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const getAccessToken = useOrderAccessToken();
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     const ref = orderNumber.trim();
-    if (!ref) {
-      setError("Merci d'indiquer votre numéro de commande.");
+    const phoneRef = phone.trim();
+    if (!ref || !phoneRef) {
+      setError("Merci d'indiquer votre numéro de commande et votre téléphone.");
       return;
     }
-    navigate({ to: "/facture/$id", params: { id: ref } });
+    setError("");
+    const token = await getAccessToken.mutateAsync({ orderNumber: ref, phone: phoneRef });
+    if (!token) {
+      // Same message whether the number or the phone is wrong, so this can
+      // never be used to confirm a guessed order number.
+      setError("Aucune commande ne correspond à ces informations.");
+      return;
+    }
+    navigate({ to: "/facture/$id", params: { id: token } });
   }
 
   return (
@@ -46,8 +58,8 @@ function OrderLookupPage() {
           <Breadcrumb items={[{ label: "Accueil", to: "/" }, { label: "Suivre ma commande" }]} />
           <h1 className="text-2xl">Suivre ma commande</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Entrez le numéro de commande reçu lors de votre achat (ex : CMD-2026-0001) pour voir son
-            statut.
+            Entrez le numéro de commande reçu lors de votre achat (ex : CMD-2026-0001) et le numéro
+            de téléphone utilisé à la commande pour voir son statut.
           </p>
 
           <label htmlFor="order-number" className="mt-5 mb-1 block text-sm font-medium">
@@ -70,9 +82,34 @@ function OrderLookupPage() {
               aria-invalid={!!error}
             />
           </div>
+
+          <label htmlFor="order-phone" className="mt-4 mb-1 block text-sm font-medium">
+            Téléphone utilisé à la commande
+          </label>
+          <div className="relative">
+            <Phone
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+            <input
+              id="order-phone"
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                setError("");
+              }}
+              placeholder="074 00 00 00"
+              className={`field pl-9 ${error ? "border-destructive" : ""}`}
+              aria-invalid={!!error}
+            />
+          </div>
           {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
 
-          <button type="submit" className="btn-base btn-success mt-4 w-full">
+          <button
+            type="submit"
+            disabled={getAccessToken.isPending}
+            className="btn-base btn-success mt-4 w-full"
+          >
             Voir ma commande
           </button>
         </form>

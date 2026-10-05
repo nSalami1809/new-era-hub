@@ -139,7 +139,8 @@ export function useUpdateOrderStatus() {
 }
 
 export type CreateOrderResult =
-  { ok: true; orderId: string; orderNumber: string } | { ok: false; error: string };
+  | { ok: true; orderId: string; orderNumber: string; accessToken: string }
+  | { ok: false; error: string };
 
 export function useCreateOrder() {
   const qc = useQueryClient();
@@ -170,7 +171,12 @@ export function useCreateOrder() {
       if (error) return { ok: false, error: error.message };
       const row = Array.isArray(data) ? data[0] : data;
       if (!row) return { ok: false, error: "La commande n'a pas pu être créée." };
-      return { ok: true, orderId: row.order_id, orderNumber: row.order_number };
+      return {
+        ok: true,
+        orderId: row.order_id,
+        orderNumber: row.order_number,
+        accessToken: row.access_token,
+      };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["products"] });
@@ -187,6 +193,9 @@ export type OfflineSaleItem = {
   unitPrice?: number | null;
 };
 
+export type CreateOfflineSaleResult =
+  { ok: true; orderId: string; orderNumber: string } | { ok: false; error: string };
+
 export function useCreateOfflineSale() {
   const qc = useQueryClient();
   return useMutation({
@@ -196,7 +205,7 @@ export function useCreateOfflineSale() {
     }: {
       items: OfflineSaleItem[];
       note?: string | null;
-    }): Promise<CreateOrderResult> => {
+    }): Promise<CreateOfflineSaleResult> => {
       const { data, error } = await supabase.rpc("create_offline_sale", {
         p_items: items.map((i) => ({
           product_id: i.productId,
@@ -231,5 +240,27 @@ export function useOrderReceipt(ref: string | undefined) {
     queryKey: ["order-receipt", ref],
     queryFn: () => fetchOrderReceipt(ref as string),
     enabled: !!ref,
+  });
+}
+
+// Dedicated to the manual "Suivre ma commande" form: order_number alone is
+// sequential/guessable, so this also requires the checkout phone and only
+// ever returns the access_token (never the order content directly) — the
+// caller then re-fetches via fetchOrderReceipt/useOrderReceipt like any
+// other token-based lookup.
+async function fetchOrderAccessToken(orderNumber: string, phone: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc("get_order_receipt_by_number", {
+    p_order_number: orderNumber,
+    p_phone: phone,
+  });
+  if (error) throw error;
+  const token = (data as { access_token?: string } | null)?.access_token;
+  return token ?? null;
+}
+
+export function useOrderAccessToken() {
+  return useMutation({
+    mutationFn: ({ orderNumber, phone }: { orderNumber: string; phone: string }) =>
+      fetchOrderAccessToken(orderNumber, phone),
   });
 }
