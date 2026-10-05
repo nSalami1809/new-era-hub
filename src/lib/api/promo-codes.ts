@@ -112,6 +112,27 @@ export function useCreatePromoCode() {
   });
 }
 
+export function useUpdatePromoCode() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: string; input: PromoCodeInput }) => {
+      const { error } = await supabase
+        .from("promo_codes")
+        .update({
+          code: input.code.toUpperCase(),
+          discount_type: input.discountType,
+          discount_value: input.discountValue,
+          min_order_total: input.minOrderTotal,
+          max_uses: input.maxUses,
+          expires_at: input.expiresAt,
+        })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["promo-codes"] }),
+  });
+}
+
 export function useSetPromoCodeActive() {
   const qc = useQueryClient();
   return useMutation({
