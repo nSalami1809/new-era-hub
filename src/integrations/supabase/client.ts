@@ -54,6 +54,25 @@ function createSupabaseClient() {
     global: {
       fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
     },
+    // postgrest-js's own request layer (used by every .from()/.rpc() call —
+    // all product/order/stock/promo-code/etc. reads and writes in this app).
+    // `timeout` wraps each individual attempt in an AbortController so a
+    // hung request fails after 15s instead of indefinitely. `retry` (true is
+    // already postgrest-js's own default when unset — stated explicitly here
+    // so the intent isn't implicit) retries ONLY GET/HEAD/OPTIONS on a
+    // network error or a 503/520 response, with exponential backoff; POST/
+    // PATCH/DELETE (every write, including RPC calls like create_order) and
+    // any 4xx are never retried, so a flaky connection can't double-submit a
+    // write. A failure here still resolves as the normal { data: null, error
+    // } shape every existing call site already checks (`if (error) throw
+    // error`) — nothing needed to change at the call sites. Verified against
+    // the live project: a 1ms timeout surfaces a clear, non-swallowed
+    // AbortError; a simulated network failure on a GET is retried and
+    // recovers; the same failure on an RPC is not retried.
+    db: {
+      timeout: 15000,
+      retry: true,
+    },
     auth: {
       storage: typeof window === "undefined" ? undefined : window.localStorage,
       persistSession: true,
