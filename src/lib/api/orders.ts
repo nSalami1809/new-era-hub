@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { CartItem } from "@/lib/types";
 import type { Customer, Order, OrderChannel, OrderItem, OrderStatus, SizeType } from "@/lib/types";
@@ -112,6 +112,80 @@ export function useAdminOrder(id: string | undefined) {
     queryFn: () => fetchOrder(id as string),
     enabled: !!id,
   });
+}
+
+// ---------------------------------------------------------------------------
+// Server-side pagination (ID-2): separate from useAdminOrders above, which
+// stays a full-scan fetch for the consumers that need every order
+// (comptabilité, dashboard, notification bell). Only the admin Commandes
+// list — which renders one page at a time — uses this. Deliberately doesn't
+// embed order_items (the list screen never displays it); fetchOrders keeps
+// doing so unchanged for the screens that do.
+// ---------------------------------------------------------------------------
+
+export type AdminOrderFilters = { q?: string | undefined; status?: OrderStatus | undefined };
+
+export const ADMIN_ORDERS_PAGE_SIZE = 20;
+const EXHAUSTIVE_ORDERS_BATCH_SIZE = 1000;
+
+function escapeOrValue(v: string): string {
+  return v.replace(/[,()]/g, (c) => `\\${c}`);
+}
+
+function buildAdminOrdersQuery(filters: AdminOrderFilters) {
+  let query = supabase.from("orders").select("*", { count: "exact" });
+  const q = filters.q?.trim();
+  if (q) {
+    const esc = escapeOrValue(q);
+    // customer_full_name (generated column) reproduces the previous
+    // client-side "firstName lastName" combined search — matching
+    // customer_first_name/customer_last_name separately with OR couldn't,
+    // since a two-word search term never appears whole in either column.
+    query = query.or(
+      `order_number.ilike.%${esc}%,customer_full_name.ilike.%${esc}%,customer_phone.ilike.%${esc}%`,
+    );
+  }
+  if (filters.status) query = query.eq("status", filters.status);
+  return query.order("created_at", { ascending: false }).order("id", { ascending: true });
+}
+
+async function fetchAdminOrdersPage(
+  filters: AdminOrderFilters,
+  page: number,
+  pageSize: number,
+): Promise<{ rows: Order[]; total: number }> {
+  const from = page * pageSize;
+  const { data, error, count } = await buildAdminOrdersQuery(filters).range(
+    from,
+    from + pageSize - 1,
+  );
+  if (error) throw error;
+  return { rows: (data ?? []).map(mapOrder), total: count ?? 0 };
+}
+
+/** Admin Commandes list: page-number pagination (Précédent/Suivant). */
+export function usePaginatedAdminOrders(filters: AdminOrderFilters, page: number) {
+  return useQuery({
+    queryKey: ["orders", "admin", "paginated", filters, page],
+    queryFn: () => fetchAdminOrdersPage(filters, page, ADMIN_ORDERS_PAGE_SIZE),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** "Sélectionner tout le filtré" / export CSV — see the equivalent products
+ * helper (fetchAllMatchingAdminProducts) for the exhaustive-batching
+ * rationale; identical approach here. */
+export async function fetchAllMatchingAdminOrders(filters: AdminOrderFilters): Promise<Order[]> {
+  const all: Order[] = [];
+  let page = 0;
+
+  while (true) {
+    const { rows } = await fetchAdminOrdersPage(filters, page, EXHAUSTIVE_ORDERS_BATCH_SIZE);
+    all.push(...rows);
+    if (rows.length < EXHAUSTIVE_ORDERS_BATCH_SIZE) break;
+    page += 1;
+  }
+  return all;
 }
 
 export function useUpdateOrderStatus() {

@@ -160,6 +160,7 @@ export type Database = {
           customer_address: string | null;
           customer_first_name: string;
           customer_last_name: string;
+          customer_full_name: string;
           customer_note: string | null;
           customer_phone: string;
           delivery_location: string;
@@ -356,6 +357,7 @@ export type Database = {
       };
       products: {
         Row: {
+          available_sizes: string[];
           brand: string;
           bundle_active: boolean;
           bundle_price: number | null;
@@ -364,6 +366,8 @@ export type Database = {
           cost_price: number;
           created_at: string;
           description: string;
+          effective_price: number;
+          has_promo: boolean;
           id: string;
           images: string[];
           is_active: boolean;

@@ -1,4 +1,12 @@
-import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  infiniteQueryOptions,
+  keepPreviousData,
+  queryOptions,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { Product } from "@/lib/types";
@@ -165,6 +173,198 @@ export function useAdminProducts() {
 
 export function useAdminProduct(id: string | undefined) {
   return useQuery({ ...adminProductQueryOptions(id ?? ""), enabled: !!id });
+}
+
+// ---------------------------------------------------------------------------
+// Server-side pagination (ID-2): a deliberately SEPARATE set of hooks from
+// useProducts/useAdminProducts above, which stay full-scan fetches for the
+// many consumers that need the whole catalog (cart/checkout resolving an
+// arbitrary id, header search suggestions, dashboard/comptabilité/alerts
+// aggregations, "pick any product" selectors...). Only the boutique and the
+// admin Produits list — the two screens that actually render one page at a
+// time — use these.
+// ---------------------------------------------------------------------------
+
+export type ProductSortKey = "recent" | "price-asc" | "price-desc" | "name";
+
+// PostgREST's `.or()` takes a raw filter-expression string, where `,` `(` `)`
+// are syntax, not data — escape them so a search term containing one can't
+// corrupt or break the filter (it would otherwise either 400 or silently
+// change what's matched).
+function escapeOrValue(v: string): string {
+  return v.replace(/[,()]/g, (c) => `\\${c}`);
+}
+
+export type PublicProductFilters = {
+  q?: string | undefined;
+  category?: string | undefined;
+  brand?: string | undefined;
+  size?: string | undefined;
+  promo?: boolean | undefined;
+  dispo?: boolean | undefined;
+  sort?: ProductSortKey | undefined;
+};
+
+const PUBLIC_PAGE_SIZE = 24;
+
+function buildPublicProductsQuery(filters: PublicProductFilters) {
+  let query = supabase
+    .from("products")
+    .select(PUBLIC_PRODUCT_COLUMNS, { count: "exact" })
+    .eq("is_active", true);
+
+  const q = filters.q?.trim();
+  if (q) {
+    const esc = escapeOrValue(q);
+    query = query.or(`name.ilike.%${esc}%,brand.ilike.%${esc}%,sku.ilike.%${esc}%`);
+  }
+  if (filters.category) query = query.eq("category", filters.category);
+  if (filters.brand) query = query.eq("brand", filters.brand);
+  if (filters.size) query = query.contains("available_sizes", [filters.size]);
+  if (filters.promo) query = query.eq("has_promo", true);
+  if (filters.dispo) query = query.gt("stock", 0);
+
+  switch (filters.sort) {
+    case "price-asc":
+      query = query.order("effective_price", { ascending: true });
+      break;
+    case "price-desc":
+      query = query.order("effective_price", { ascending: false });
+      break;
+    case "name":
+      query = query.order("name", { ascending: true });
+      break;
+    default:
+      query = query.order("created_at", { ascending: false });
+  }
+  // Tie-break so rows have a fully deterministic order — without it, two
+  // products sharing the same sort value could appear twice or never as the
+  // user pages through (Postgres doesn't guarantee a stable order otherwise).
+  return query.order("id", { ascending: true });
+}
+
+async function fetchPublicProductsPage(
+  filters: PublicProductFilters,
+  page: number,
+): Promise<{ rows: Product[]; total: number }> {
+  const from = page * PUBLIC_PAGE_SIZE;
+  const { data, error, count } = await buildPublicProductsQuery(filters).range(
+    from,
+    from + PUBLIC_PAGE_SIZE - 1,
+  );
+  if (error) throw error;
+  return { rows: ((data ?? []) as unknown as ProductRow[]).map(mapProduct), total: count ?? 0 };
+}
+
+// Shared between the boutique route's SSR loader (ensureInfiniteQueryData)
+// and usePaginatedPublicProducts below, same reasoning as productsQueryOptions
+// above (identical cache entry, no re-fetch after hydration).
+export function publicProductsInfiniteQueryOptions(filters: PublicProductFilters) {
+  return infiniteQueryOptions({
+    queryKey: ["products", "public", "paginated", filters],
+    queryFn: ({ pageParam }: { pageParam: number }) => fetchPublicProductsPage(filters, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((n, p) => n + p.rows.length, 0);
+      return loaded < lastPage.total ? allPages.length : undefined;
+    },
+  });
+}
+
+/** Boutique: "Charger plus" accumulates pages, so this is an infinite query
+ * (not a plain page-replace useQuery) — same UX as today's client-side
+ * slice, now backed by real server pagination. */
+export function usePaginatedPublicProducts(filters: PublicProductFilters) {
+  return useInfiniteQuery(publicProductsInfiniteQueryOptions(filters));
+}
+
+// Options for the boutique's brand/size filter dropdowns — lightweight
+// (two columns, active products only) compared to the full catalog fetch
+// useProducts() used to do just to compute these two lists.
+async function fetchProductFilterOptions(): Promise<{ brands: string[]; sizes: string[] }> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("brand, available_sizes")
+    .eq("is_active", true);
+  if (error) throw error;
+  const brands = new Set<string>();
+  const sizes = new Set<string>();
+  for (const row of data ?? []) {
+    brands.add(row.brand);
+    for (const s of row.available_sizes ?? []) sizes.add(s);
+  }
+  return { brands: [...brands].sort(), sizes: [...sizes].sort() };
+}
+
+export const productFilterOptionsQueryOptions = queryOptions({
+  queryKey: ["products", "public", "filter-options"],
+  queryFn: fetchProductFilterOptions,
+});
+
+export function useProductFilterOptions() {
+  return useQuery(productFilterOptionsQueryOptions);
+}
+
+export type AdminProductFilters = { q?: string | undefined; category?: string | undefined };
+
+export const ADMIN_PRODUCTS_PAGE_SIZE = 20;
+// Cap PostgREST accepts per request; the exhaustive fetch below loops this
+// to cover any result-set size, never truncating silently.
+const EXHAUSTIVE_BATCH_SIZE = 1000;
+
+function buildAdminProductsQuery(filters: AdminProductFilters) {
+  let query = supabase.from("products").select(ADMIN_PRODUCT_COLUMNS, { count: "exact" });
+  const q = filters.q?.trim();
+  if (q) {
+    const esc = escapeOrValue(q);
+    query = query.or(`name.ilike.%${esc}%,brand.ilike.%${esc}%,sku.ilike.%${esc}%`);
+  }
+  if (filters.category) query = query.eq("category", filters.category);
+  return query.order("created_at", { ascending: false }).order("id", { ascending: true });
+}
+
+async function fetchAdminProductsPage(
+  filters: AdminProductFilters,
+  page: number,
+  pageSize: number,
+): Promise<{ rows: Product[]; total: number }> {
+  const from = page * pageSize;
+  const { data, error, count } = await buildAdminProductsQuery(filters).range(
+    from,
+    from + pageSize - 1,
+  );
+  if (error) throw error;
+  return { rows: ((data ?? []) as unknown as ProductRow[]).map(mapProduct), total: count ?? 0 };
+}
+
+/** Admin Produits list: classic page-number pagination (Précédent/Suivant),
+ * replacing the page on each navigation rather than accumulating. */
+export function usePaginatedAdminProducts(filters: AdminProductFilters, page: number) {
+  return useQuery({
+    queryKey: ["products", "admin", "paginated", filters, page],
+    queryFn: () => fetchAdminProductsPage(filters, page, ADMIN_PRODUCTS_PAGE_SIZE),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** "Sélectionner tout le filtré" / export CSV: fetches every row matching
+ * the current filters, not just the visible page — triggered explicitly by
+ * the caller (never automatically), and exhaustive by construction (loops
+ * in batches until a batch comes back short) rather than capped at an
+ * arbitrary number, so it stays correct how ever large the result set grows. */
+export async function fetchAllMatchingAdminProducts(
+  filters: AdminProductFilters,
+): Promise<Product[]> {
+  const all: Product[] = [];
+  let page = 0;
+
+  while (true) {
+    const { rows } = await fetchAdminProductsPage(filters, page, EXHAUSTIVE_BATCH_SIZE);
+    all.push(...rows);
+    if (rows.length < EXHAUSTIVE_BATCH_SIZE) break;
+    page += 1;
+  }
+  return all;
 }
 
 export function useCreateProduct() {

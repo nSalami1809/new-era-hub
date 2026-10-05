@@ -3,14 +3,23 @@ import { useEffect, useState } from "react";
 import { Download, Pencil, Trash2 } from "lucide-react";
 import { ProductImage } from "@/components/ProductImage";
 import { ViewToggle } from "@/components/ViewToggle";
+import { Pager } from "@/components/Pager";
 import { AdminCardGridSkeleton, AdminTableSkeleton } from "@/components/Skeleton";
 import { formatPrice } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
-import { useAdminProducts, useDeleteProduct, useUpdateProduct } from "@/lib/api/products";
+import {
+  ADMIN_PRODUCTS_PAGE_SIZE,
+  fetchAllMatchingAdminProducts,
+  usePaginatedAdminProducts,
+  useDeleteProduct,
+  useUpdateProduct,
+  type AdminProductFilters,
+} from "@/lib/api/products";
 import { useCategories } from "@/lib/api/categories";
 import { useSettings } from "@/lib/api/settings";
 import { useViewMode } from "@/lib/use-view-mode";
 import { usePersistedState } from "@/lib/use-persisted-state";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { stockStatus, unitProfit, profitMargin, type Product } from "@/lib/types";
 
 export const Route = createFileRoute("/nehub-53ff1f11/produits/")({
@@ -37,7 +46,6 @@ function statusMeta(p: Product, status: "in" | "low" | "out") {
 }
 
 function AdminProducts() {
-  const { data: products = [], isLoading } = useAdminProducts();
   const { data: categories = [] } = useCategories();
   const { data: settings } = useSettings();
   const currency = settings?.currency ?? "FCFA";
@@ -45,23 +53,33 @@ function AdminProducts() {
   const updateProduct = useUpdateProduct();
   const [toDelete, setToDelete] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query, 300);
   const [categoryFilter, setCategoryFilter] = usePersistedState("admin-products-category-filter");
   const [view, setView] = useViewMode("admin-products-view");
+  const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [bulkPending, setBulkPending] = useState(false);
+  const [selectingAll, setSelectingAll] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
 
-  const filtered = products.filter((p) => {
-    if (categoryFilter && p.category !== categoryFilter) return false;
-    return [p.name, p.brand, p.sku].some((v) =>
-      v.toLowerCase().includes(query.trim().toLowerCase()),
-    );
-  });
+  const filters: AdminProductFilters = {
+    q: debouncedQuery || undefined,
+    category: categoryFilter || undefined,
+  };
+
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedQuery, categoryFilter]);
+
+  const { data, isLoading, isFetching } = usePaginatedAdminProducts(filters, page);
+  const products = data?.rows ?? [];
+  const total = data?.total ?? 0;
   const target = products.find((p) => p.id === toDelete);
 
   useEffect(() => {
     setSelected(new Set());
-  }, [query, categoryFilter]);
+  }, [debouncedQuery, categoryFilter]);
 
   function toggleSelected(id: string) {
     setSelected((s) => {
@@ -72,10 +90,20 @@ function AdminProducts() {
     });
   }
 
-  function toggleSelectAll() {
+  function toggleSelectPage() {
     setSelected((s) =>
-      filtered.every((p) => s.has(p.id)) ? new Set() : new Set(filtered.map((p) => p.id)),
+      products.every((p) => s.has(p.id)) ? new Set() : new Set(products.map((p) => p.id)),
     );
+  }
+
+  async function selectAllFiltered() {
+    setSelectingAll(true);
+    try {
+      const all = await fetchAllMatchingAdminProducts(filters);
+      setSelected(new Set(all.map((p) => p.id)));
+    } finally {
+      setSelectingAll(false);
+    }
   }
 
   async function bulkSetActive(isActive: boolean) {
@@ -95,41 +123,47 @@ function AdminProducts() {
     setBulkDeleteConfirm(false);
   }
 
-  function exportCsv() {
-    downloadCsv(
-      `produits-${new Date().toISOString().slice(0, 10)}.csv`,
-      [
-        "Nom",
-        "Marque",
-        "Catégorie",
-        "Référence",
-        "Prix",
-        "Prix promo",
-        "Prix d'achat",
-        "Stock",
-        "Statut",
-      ],
-      filtered.map((p) => {
-        const status = stockStatus(p);
-        return [
-          p.name,
-          p.brand,
-          p.category,
-          p.sku,
-          p.price,
-          p.promotionalPrice ?? "",
-          p.costPrice,
-          p.stock,
-          !p.isActive
-            ? "Masqué"
-            : status === "out"
-              ? "Rupture"
-              : status === "low"
-                ? "Stock faible"
-                : "En stock",
-        ];
-      }),
-    );
+  async function exportCsv() {
+    setExportingCsv(true);
+    try {
+      const all = await fetchAllMatchingAdminProducts(filters);
+      downloadCsv(
+        `produits-${new Date().toISOString().slice(0, 10)}.csv`,
+        [
+          "Nom",
+          "Marque",
+          "Catégorie",
+          "Référence",
+          "Prix",
+          "Prix promo",
+          "Prix d'achat",
+          "Stock",
+          "Statut",
+        ],
+        all.map((p) => {
+          const status = stockStatus(p);
+          return [
+            p.name,
+            p.brand,
+            p.category,
+            p.sku,
+            p.price,
+            p.promotionalPrice ?? "",
+            p.costPrice,
+            p.stock,
+            !p.isActive
+              ? "Masqué"
+              : status === "out"
+                ? "Rupture"
+                : status === "low"
+                  ? "Stock faible"
+                  : "En stock",
+          ];
+        }),
+      );
+    } finally {
+      setExportingCsv(false);
+    }
   }
 
   return (
@@ -140,11 +174,12 @@ function AdminProducts() {
           <ViewToggle view={view} onChange={setView} />
           <button
             type="button"
-            onClick={exportCsv}
+            onClick={() => void exportCsv()}
+            disabled={exportingCsv}
             className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
           >
             <Download size={14} />
-            Exporter CSV
+            {exportingCsv ? "Export..." : "Exporter CSV"}
           </button>
           <Link to="/nehub-53ff1f11/produits/nouveau" className="btn-base btn-success">
             Nouveau produit
@@ -181,46 +216,59 @@ function AdminProducts() {
         </select>
       </div>
 
-      {selected.size > 0 && (
+      {(selected.size > 0 || total > products.length) && (
         <div className="mt-3 flex flex-wrap items-center gap-3 border border-border bg-muted p-3">
           <span className="text-sm font-medium">
-            {selected.size} produit{selected.size > 1 ? "s" : ""} sélectionné
-            {selected.size > 1 ? "s" : ""}
+            {selected.size > 0
+              ? `${selected.size} produit${selected.size > 1 ? "s" : ""} sélectionné${selected.size > 1 ? "s" : ""}`
+              : null}
           </span>
-          <div className="ml-auto flex flex-wrap gap-2">
+          {total > products.length && (
             <button
               type="button"
-              disabled={bulkPending}
-              className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
-              onClick={() => void bulkSetActive(true)}
+              disabled={selectingAll}
+              className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+              onClick={() => void selectAllFiltered()}
             >
-              Activer
+              {selectingAll ? "Récupération..." : `Sélectionner les ${total} résultats du filtre`}
             </button>
-            <button
-              type="button"
-              disabled={bulkPending}
-              className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
-              onClick={() => void bulkSetActive(false)}
-            >
-              Désactiver
-            </button>
-            <button
-              type="button"
-              disabled={bulkPending}
-              className="btn-base btn-danger !min-h-9 !px-3 !py-1.5 text-xs"
-              onClick={() => setBulkDeleteConfirm(true)}
-            >
-              <Trash2 size={14} />
-              Supprimer
-            </button>
-            <button
-              type="button"
-              className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
-              onClick={() => setSelected(new Set())}
-            >
-              Annuler
-            </button>
-          </div>
+          )}
+          {selected.size > 0 && (
+            <div className="ml-auto flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={bulkPending}
+                className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+                onClick={() => void bulkSetActive(true)}
+              >
+                Activer
+              </button>
+              <button
+                type="button"
+                disabled={bulkPending}
+                className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+                onClick={() => void bulkSetActive(false)}
+              >
+                Désactiver
+              </button>
+              <button
+                type="button"
+                disabled={bulkPending}
+                className="btn-base btn-danger !min-h-9 !px-3 !py-1.5 text-xs"
+                onClick={() => setBulkDeleteConfirm(true)}
+              >
+                <Trash2 size={14} />
+                Supprimer
+              </button>
+              <button
+                type="button"
+                className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+                onClick={() => setSelected(new Set())}
+              >
+                Annuler
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -234,13 +282,15 @@ function AdminProducts() {
             </div>
           )}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : products.length === 0 ? (
         <p className="mt-6 border border-border p-6 text-sm text-muted-foreground">
           Aucun produit trouvé.
         </p>
       ) : view === "grid" ? (
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((p) => {
+        <div
+          className={`mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${isFetching ? "opacity-60" : ""}`}
+        >
+          {products.map((p) => {
             const status = stockStatus(p);
             const { className: statusClassName, label: statusLabel } = statusMeta(p, status);
             return (
@@ -330,16 +380,18 @@ function AdminProducts() {
           })}
         </div>
       ) : (
-        <div className="mt-4 overflow-x-auto border border-border">
+        <div
+          className={`mt-4 overflow-x-auto border border-border ${isFetching ? "opacity-60" : ""}`}
+        >
           <table className="w-full min-w-[1050px] text-sm">
             <thead>
               <tr className="border-b border-border bg-muted text-left text-xs uppercase text-muted-foreground">
                 <th className="p-3">
                   <input
                     type="checkbox"
-                    checked={filtered.length > 0 && filtered.every((p) => selected.has(p.id))}
-                    onChange={toggleSelectAll}
-                    aria-label="Tout sélectionner"
+                    checked={products.length > 0 && products.every((p) => selected.has(p.id))}
+                    onChange={toggleSelectPage}
+                    aria-label="Tout sélectionner (page affichée)"
                   />
                 </th>
                 <th className="p-3">Image</th>
@@ -355,7 +407,7 @@ function AdminProducts() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => {
+              {products.map((p) => {
                 const status = stockStatus(p);
                 const { className: statusClassName, label: statusLabel } = statusMeta(p, status);
                 return (
@@ -441,6 +493,15 @@ function AdminProducts() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {!isLoading && products.length > 0 && (
+        <Pager
+          page={page}
+          pageSize={ADMIN_PRODUCTS_PAGE_SIZE}
+          total={total}
+          onPageChange={setPage}
+        />
       )}
 
       {target && (

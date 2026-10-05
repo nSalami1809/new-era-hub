@@ -1,17 +1,20 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { SiteLayout } from "@/components/site";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductGridSkeleton } from "@/components/Skeleton";
-import { productsQueryOptions, useProducts } from "@/lib/api/products";
+import {
+  publicProductsInfiniteQueryOptions,
+  productFilterOptionsQueryOptions,
+  usePaginatedPublicProducts,
+  useProductFilterOptions,
+  type ProductSortKey,
+  type PublicProductFilters,
+} from "@/lib/api/products";
 import { settingsQueryOptions, useSettings } from "@/lib/api/settings";
 import { categoriesQueryOptions, useCategories } from "@/lib/api/categories";
-import { effectivePrice, type ProductCategory } from "@/lib/types";
-
-type SortKey = "recent" | "price-asc" | "price-desc" | "name";
-
-const PAGE_SIZE = 24;
+import type { ProductCategory } from "@/lib/types";
 
 type BoutiqueSearch = {
   q?: string | undefined;
@@ -19,18 +22,27 @@ type BoutiqueSearch = {
   brand?: string | undefined;
   category?: ProductCategory | undefined;
   size?: string | undefined;
-  sort?: SortKey | undefined;
+  sort?: ProductSortKey | undefined;
   dispo?: boolean | undefined;
 };
 
+// Shared by loaderDeps (SSR prefetch) and the component (client query) so
+// both build the exact same filters object — if they didn't match, the
+// SSR-prefetched page and the client's query key would diverge and the
+// prefetch would be wasted (a silent re-fetch after hydration).
+function toProductFilters(search: BoutiqueSearch): PublicProductFilters {
+  return {
+    q: search.q,
+    category: search.category,
+    brand: search.brand,
+    size: search.size,
+    promo: search.promo,
+    dispo: search.dispo,
+    sort: search.sort,
+  };
+}
+
 export const Route = createFileRoute("/boutique")({
-  loader: async ({ context }) => {
-    await Promise.all([
-      context.queryClient.ensureQueryData(productsQueryOptions),
-      context.queryClient.ensureQueryData(settingsQueryOptions),
-      context.queryClient.ensureQueryData(categoriesQueryOptions),
-    ]);
-  },
   validateSearch: (search: Record<string, unknown>): BoutiqueSearch => ({
     q: typeof search["q"] === "string" && search["q"] ? search["q"] : undefined,
     promo: search["promo"] === true || search["promo"] === "true" ? true : undefined,
@@ -42,11 +54,20 @@ export const Route = createFileRoute("/boutique")({
         ? (search["category"] as ProductCategory)
         : undefined,
     sort: (["recent", "price-asc", "price-desc", "name"] as const).includes(
-      search["sort"] as SortKey,
+      search["sort"] as ProductSortKey,
     )
-      ? (search["sort"] as SortKey)
+      ? (search["sort"] as ProductSortKey)
       : undefined,
   }),
+  loaderDeps: ({ search }) => toProductFilters(search),
+  loader: async ({ context, deps }) => {
+    await Promise.all([
+      context.queryClient.ensureInfiniteQueryData(publicProductsInfiniteQueryOptions(deps)),
+      context.queryClient.ensureQueryData(productFilterOptionsQueryOptions),
+      context.queryClient.ensureQueryData(settingsQueryOptions),
+      context.queryClient.ensureQueryData(categoriesQueryOptions),
+    ]);
+  },
   head: () => ({
     meta: [
       { title: "Boutique — tous nos produits | New Era Hub 241" },
@@ -65,63 +86,20 @@ export const Route = createFileRoute("/boutique")({
 });
 
 function Boutique() {
-  const { data: products = [], isLoading } = useProducts();
   const { data: settings } = useSettings();
   const { data: categories = [] } = useCategories();
+  const { data: filterOptions } = useProductFilterOptions();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/boutique" });
 
-  const brands = useMemo(
-    () => Array.from(new Set(products.filter((p) => p.isActive).map((p) => p.brand))).sort(),
-    [products],
-  );
+  const filters = useMemo(() => toProductFilters(search), [search]);
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } =
+    usePaginatedPublicProducts(filters);
 
-  const sizes = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          products
-            .filter((p) => p.isActive)
-            .flatMap((p) => p.variants.map((v) => v.size))
-            .filter((s): s is string => s !== null),
-        ),
-      ).sort(),
-    [products],
-  );
-
-  const results = useMemo(() => {
-    const q = (search.q ?? "").trim().toLowerCase();
-    let list = products.filter((p) => p.isActive);
-    if (q)
-      list = list.filter((p) => [p.name, p.brand, p.sku].some((v) => v.toLowerCase().includes(q)));
-    if (search.category) list = list.filter((p) => p.category === search.category);
-    if (search.brand) list = list.filter((p) => p.brand === search.brand);
-    if (search.size) list = list.filter((p) => p.variants.some((v) => v.size === search.size));
-    if (search.promo) list = list.filter((p) => p.promotionalPrice && p.promotionalPrice < p.price);
-    if (search.dispo) list = list.filter((p) => p.stock > 0);
-
-    const sorted = [...list];
-    switch (search.sort) {
-      case "price-asc":
-        sorted.sort((a, b) => effectivePrice(a) - effectivePrice(b));
-        break;
-      case "price-desc":
-        sorted.sort((a, b) => effectivePrice(b) - effectivePrice(a));
-        break;
-      case "name":
-        sorted.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      default:
-        sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    }
-    return sorted;
-  }, [products, search]);
-
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [search]);
-  const visible = results.slice(0, visibleCount);
+  const products = useMemo(() => data?.pages.flatMap((p) => p.rows) ?? [], [data]);
+  const total = data?.pages.at(-1)?.total ?? 0;
+  const brands = filterOptions?.brands ?? [];
+  const sizes = filterOptions?.sizes ?? [];
 
   function update(patch: Partial<BoutiqueSearch>) {
     navigate({ search: (prev: BoutiqueSearch) => ({ ...prev, ...patch }) });
@@ -135,12 +113,11 @@ function Boutique() {
         <p className="mt-1 text-sm text-muted-foreground">
           {search.q ? (
             <>
-              {results.length} résultat{results.length > 1 ? "s" : ""} pour « {search.q} »
+              {total} résultat{total > 1 ? "s" : ""} pour « {search.q} »
             </>
           ) : (
             <>
-              {results.length} produit{results.length > 1 ? "s" : ""} disponible
-              {results.length > 1 ? "s" : ""}
+              {total} produit{total > 1 ? "s" : ""} disponible{total > 1 ? "s" : ""}
             </>
           )}
         </p>
@@ -217,7 +194,7 @@ function Boutique() {
               id="sort"
               className="field !min-h-[38px] w-auto"
               value={search.sort ?? "recent"}
-              onChange={(e) => update({ sort: e.target.value as SortKey })}
+              onChange={(e) => update({ sort: e.target.value as ProductSortKey })}
             >
               <option value="recent">Plus récents</option>
               <option value="price-asc">Prix croissant</option>
@@ -265,7 +242,18 @@ function Boutique() {
           <div className="mt-6">
             <ProductGridSkeleton count={8} />
           </div>
-        ) : results.length === 0 ? (
+        ) : error ? (
+          <div className="mt-10 rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
+            <p className="font-semibold">Erreur de chargement.</p>
+            <button
+              type="button"
+              className="btn-base btn-outline mt-3"
+              onClick={() => window.location.reload()}
+            >
+              Réessayer
+            </button>
+          </div>
+        ) : products.length === 0 ? (
           <div className="mt-10 rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
             <p className="font-semibold">Aucun produit ne correspond à votre recherche.</p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -275,7 +263,7 @@ function Boutique() {
         ) : (
           <>
             <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {visible.map((p, i) => (
+              {products.map((p, i) => (
                 <ProductCard
                   key={p.id}
                   product={p}
@@ -284,17 +272,18 @@ function Boutique() {
                 />
               ))}
             </div>
-            {visibleCount < results.length && (
+            {hasNextPage && (
               <div className="mt-8 flex flex-col items-center gap-2">
                 <p className="text-sm text-muted-foreground">
-                  {visible.length} sur {results.length} produits
+                  {products.length} sur {total} produits
                 </p>
                 <button
                   type="button"
                   className="btn-base btn-outline"
-                  onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+                  disabled={isFetchingNextPage}
+                  onClick={() => fetchNextPage()}
                 >
-                  Charger plus de produits
+                  {isFetchingNextPage ? "Chargement..." : "Charger plus de produits"}
                 </button>
               </div>
             )}

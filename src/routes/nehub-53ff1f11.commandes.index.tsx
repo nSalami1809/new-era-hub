@@ -1,13 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import { ViewToggle } from "@/components/ViewToggle";
+import { Pager } from "@/components/Pager";
 import { AdminCardGridSkeleton, AdminTableSkeleton } from "@/components/Skeleton";
 import { formatDate, formatPrice } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
-import { useAdminOrders } from "@/lib/api/orders";
+import {
+  ADMIN_ORDERS_PAGE_SIZE,
+  fetchAllMatchingAdminOrders,
+  usePaginatedAdminOrders,
+  type AdminOrderFilters,
+} from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
 import { useViewMode } from "@/lib/use-view-mode";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/types";
 
 export const Route = createFileRoute("/nehub-53ff1f11/commandes/")({
@@ -15,39 +22,49 @@ export const Route = createFileRoute("/nehub-53ff1f11/commandes/")({
 });
 
 function AdminOrders() {
-  const { data: orders = [], isLoading } = useAdminOrders();
   const { data: settings } = useSettings();
   const currency = settings?.currency ?? "FCFA";
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "">("");
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query, 300);
   const [view, setView] = useViewMode("admin-orders-view");
+  const [page, setPage] = useState(0);
+  const [exportingCsv, setExportingCsv] = useState(false);
 
-  const filtered = orders.filter((o) => {
-    if (statusFilter && o.status !== statusFilter) return false;
-    const q = query.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      o.orderNumber.toLowerCase().includes(q) ||
-      `${o.customer.firstName} ${o.customer.lastName}`.toLowerCase().includes(q) ||
-      o.customer.phone.toLowerCase().includes(q)
-    );
-  });
+  const filters: AdminOrderFilters = {
+    q: debouncedQuery || undefined,
+    status: statusFilter || undefined,
+  };
 
-  function exportCsv() {
-    downloadCsv(
-      `commandes-${new Date().toISOString().slice(0, 10)}.csv`,
-      ["N°", "Date", "Client", "Téléphone", "Sous-total", "Réduction", "Total", "Statut"],
-      filtered.map((o) => [
-        o.orderNumber,
-        formatDate(o.createdAt),
-        `${o.customer.lastName} ${o.customer.firstName}`,
-        o.customer.phone,
-        o.subtotal,
-        o.discount,
-        o.total,
-        o.status,
-      ]),
-    );
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedQuery, statusFilter]);
+
+  const { data, isLoading, isFetching } = usePaginatedAdminOrders(filters, page);
+  const orders = data?.rows ?? [];
+  const total = data?.total ?? 0;
+
+  async function exportCsv() {
+    setExportingCsv(true);
+    try {
+      const all = await fetchAllMatchingAdminOrders(filters);
+      downloadCsv(
+        `commandes-${new Date().toISOString().slice(0, 10)}.csv`,
+        ["N°", "Date", "Client", "Téléphone", "Sous-total", "Réduction", "Total", "Statut"],
+        all.map((o) => [
+          o.orderNumber,
+          formatDate(o.createdAt),
+          `${o.customer.lastName} ${o.customer.firstName}`,
+          o.customer.phone,
+          o.subtotal,
+          o.discount,
+          o.total,
+          o.status,
+        ]),
+      );
+    } finally {
+      setExportingCsv(false);
+    }
   }
 
   return (
@@ -58,11 +75,12 @@ function AdminOrders() {
           <ViewToggle view={view} onChange={setView} />
           <button
             type="button"
-            onClick={exportCsv}
+            onClick={() => void exportCsv()}
+            disabled={exportingCsv}
             className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
           >
             <Download size={14} />
-            Exporter CSV
+            {exportingCsv ? "Export..." : "Exporter CSV"}
           </button>
         </div>
       </div>
@@ -98,13 +116,15 @@ function AdminOrders() {
             </div>
           )}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : orders.length === 0 ? (
         <p className="mt-6 border border-border p-6 text-sm text-muted-foreground">
           Aucune commande trouvée.
         </p>
       ) : view === "grid" ? (
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((o) => (
+        <div
+          className={`mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 ${isFetching ? "opacity-60" : ""}`}
+        >
+          {orders.map((o) => (
             <div key={o.id} className="flex flex-col border border-border p-4">
               <div className="flex items-center justify-between gap-2">
                 <span className="font-semibold">#{o.orderNumber}</span>
@@ -134,7 +154,9 @@ function AdminOrders() {
           ))}
         </div>
       ) : (
-        <div className="mt-4 overflow-x-auto border border-border">
+        <div
+          className={`mt-4 overflow-x-auto border border-border ${isFetching ? "opacity-60" : ""}`}
+        >
           <table className="w-full min-w-[800px] text-sm">
             <thead>
               <tr className="border-b border-border bg-muted text-left text-xs uppercase text-muted-foreground">
@@ -148,7 +170,7 @@ function AdminOrders() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((o) => (
+              {orders.map((o) => (
                 <tr key={o.id} className="border-b border-border last:border-0">
                   <td className="p-3 font-medium">#{o.orderNumber}</td>
                   <td className="p-3 text-xs text-muted-foreground">{formatDate(o.createdAt)}</td>
@@ -179,6 +201,10 @@ function AdminOrders() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {!isLoading && orders.length > 0 && (
+        <Pager page={page} pageSize={ADMIN_ORDERS_PAGE_SIZE} total={total} onPageChange={setPage} />
       )}
     </div>
   );
