@@ -169,6 +169,11 @@ export function usePaginatedAdminOrders(filters: AdminOrderFilters, page: number
     queryKey: ["orders", "admin", "paginated", filters, page],
     queryFn: () => fetchAdminOrdersPage(filters, page, ADMIN_ORDERS_PAGE_SIZE),
     placeholderData: keepPreviousData,
+    // Explicit cache: flipping back to a page already visited in the last
+    // minute is instant (no refetch); up to 5 minutes it still shows the
+    // cached page immediately while revalidating quietly in the background.
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   });
 }
 
@@ -209,6 +214,21 @@ export function useUpdateOrderStatus() {
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["stock-movements"] });
     },
+  });
+}
+
+// Plain delete — no restock. Cancelling (which does restock, via
+// cancel_order) is the right move for an order that shouldn't be
+// fulfilled; this is for removing a record outright (duplicate, test,
+// mistaken entry). order_items/order_status_history cascade server-side.
+export function useDeleteOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("orders").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["orders"] }),
   });
 }
 

@@ -268,6 +268,13 @@ export function publicProductsInfiniteQueryOptions(filters: PublicProductFilters
       const loaded = allPages.reduce((n, p) => n + p.rows.length, 0);
       return loaded < lastPage.total ? allPages.length : undefined;
     },
+    // Explicit cache for this specific query (not just relying on the
+    // global default): revisiting the same filter/sort combination within
+    // a minute reuses the already-fetched pages instantly, no refetch;
+    // within 5 minutes it still shows the cached pages immediately while
+    // quietly revalidating in the background instead of a blank reload.
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   });
 }
 
@@ -344,6 +351,10 @@ export function usePaginatedAdminProducts(filters: AdminProductFilters, page: nu
     queryKey: ["products", "admin", "paginated", filters, page],
     queryFn: () => fetchAdminProductsPage(filters, page, ADMIN_PRODUCTS_PAGE_SIZE),
     placeholderData: keepPreviousData,
+    // Same explicit cache as the public paginated query — flipping back to
+    // a page already visited in the last minute is instant, no refetch.
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   });
 }
 
