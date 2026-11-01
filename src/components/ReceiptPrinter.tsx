@@ -213,7 +213,7 @@ function ReceiptPrinterOutput({ children, className, ...props }: ReceiptPrinterO
   return (
     <div
       className={cx(
-        "relative z-50 -mt-4 h-[32rem] w-[calc(80%+3rem)] max-w-full overflow-hidden px-6",
+        "relative z-50 -mt-4 w-[calc(80%+3rem)] max-w-full overflow-hidden px-6",
         className,
       )}
       {...props}

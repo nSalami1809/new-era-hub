@@ -314,7 +314,7 @@ export function useProductFilterOptions() {
 
 export type AdminProductFilters = { q?: string | undefined; category?: string | undefined };
 
-export const ADMIN_PRODUCTS_PAGE_SIZE = 20;
+export const ADMIN_PRODUCTS_PAGE_SIZE = 10;
 // Cap PostgREST accepts per request; the exhaustive fetch below loops this
 // to cover any result-set size, never truncating silently.
 const EXHAUSTIVE_BATCH_SIZE = 1000;

@@ -14,12 +14,15 @@ import { whatsappUrl } from "@/lib/whatsapp";
 import { type Order, type OrderStatus, type StoreSettings, variantLabel } from "@/lib/types";
 import logo from "@/assets/logo-new-era-hub-241.jpeg";
 
+/** Le contenu de la facture existe déjà dès que `order` est chargé (ce n'est pas une
+ * opération en cours) — "processing" ne doit donc jamais être utilisé ici : ce stage
+ * masque le ticket, ce qui bloquerait son affichage indéfiniment pour une commande
+ * "Nouvelle" (le tout premier statut, juste après la commande client). */
 function stageForStatus(status: OrderStatus): ReceiptPrinterStage {
   switch (status) {
     case "Nouvelle":
     case "Contacté":
     case "Paiement en attente":
-      return "processing";
     case "Payée":
     case "En préparation":
       return "printing";
@@ -346,6 +349,19 @@ function InvoicePage() {
             </ReceiptPrinter.Output>
           </ReceiptPrinter.Root>
 
+          <a
+            href={whatsappUrl(order, settings)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-base btn-success mx-auto mt-5 block w-full max-w-sm text-center text-base"
+          >
+            Procéder au paiement sur WhatsApp
+          </a>
+          <p className="mx-auto mt-2 max-w-sm text-center text-xs text-muted-foreground">
+            Le message contient votre numéro de commande, vos informations et la liste des articles.
+            Les photos des produits ne peuvent pas être jointes automatiquement.
+          </p>
+
           {order.history.length > 0 && (
             <div className="mx-auto mt-6 max-w-sm">
               <h2 className="text-sm font-bold tracking-wide uppercase">Suivi de la commande</h2>
@@ -497,19 +513,6 @@ function InvoicePage() {
             </div>
           </dl>
         </div>
-
-        <a
-          href={whatsappUrl(order, settings)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-base btn-success mt-5 w-full text-base print:hidden"
-        >
-          Procéder au paiement sur WhatsApp
-        </a>
-        <p className="mt-2 text-center text-xs text-muted-foreground print:hidden">
-          Le message contient votre numéro de commande, vos informations et la liste des articles.
-          Les photos des produits ne peuvent pas être jointes automatiquement.
-        </p>
 
         <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">
           <Link to="/boutique" className="btn-base btn-outline">

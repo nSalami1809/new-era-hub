@@ -125,7 +125,7 @@ export function useAdminOrder(id: string | undefined) {
 
 export type AdminOrderFilters = { q?: string | undefined; status?: OrderStatus | undefined };
 
-export const ADMIN_ORDERS_PAGE_SIZE = 20;
+export const ADMIN_ORDERS_PAGE_SIZE = 10;
 const EXHAUSTIVE_ORDERS_BATCH_SIZE = 1000;
 
 function escapeOrValue(v: string): string {
