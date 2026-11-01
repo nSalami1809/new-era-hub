@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FileDown, Home } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SiteLayout } from "@/components/site";
 import { ProductImage } from "@/components/ProductImage";
 import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
@@ -242,6 +242,18 @@ function InvoicePage() {
   const { data: settings } = useSettings();
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
+  // Le ticket démarre "rentré" (stage "processing" masque le papier) puis, une fois la
+  // commande chargée, passe à son vrai statut un instant plus tard — le temps que la
+  // transition de ReceiptPrinter.Output anime visiblement le papier qui sort de la
+  // machine. Sans ce délai, React monte directement dans l'état final et il n'y a
+  // jamais rien à voir sortir.
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    if (!order) return;
+    const timer = setTimeout(() => setRevealed(true), 450);
+    return () => clearTimeout(timer);
+  }, [order?.id]);
+
   async function handleDownload() {
     if (!order || !settings) return;
     setDownloadingPdf(true);
@@ -293,7 +305,7 @@ function InvoicePage() {
     );
   }
 
-  const stage = stageForStatus(order.status);
+  const stage = revealed ? stageForStatus(order.status) : "processing";
 
   return (
     <SiteLayout>
@@ -388,7 +400,7 @@ function InvoicePage() {
 
                 <div className="my-4 border-t border-dashed border-foreground/30" />
 
-                <div className="space-y-2.5 text-xs">
+                <div className="space-y-3 text-xs">
                   {order.items.map((item, i) => {
                     const label = variantLabel(
                       item.variantColor,
@@ -396,18 +408,29 @@ function InvoicePage() {
                       item.variantSizeKind,
                     );
                     return (
-                      <div key={item.productId ?? `${item.sku}-${i}`}>
-                        <p className="font-medium">
-                          {item.brand} {item.name}
-                          {label ? ` — ${label}` : ""}
-                        </p>
-                        <div className="flex justify-between text-muted-foreground">
-                          <span>
-                            {item.quantity} × {formatPrice(item.unitPrice, settings.currency)}
-                          </span>
-                          <span className="text-foreground">
-                            {formatPrice(item.unitPrice * item.quantity, settings.currency)}
-                          </span>
+                      <div
+                        key={item.productId ?? `${item.sku}-${i}`}
+                        className="flex items-start gap-2"
+                      >
+                        <ProductImage
+                          src={item.image}
+                          alt={`${item.brand} ${item.name}`}
+                          width={40}
+                          className="h-10 w-10 shrink-0 rounded border border-foreground/15 bg-white object-contain p-0.5"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium">
+                            {item.brand} {item.name}
+                            {label ? ` — ${label}` : ""}
+                          </p>
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>
+                              {item.quantity} × {formatPrice(item.unitPrice, settings.currency)}
+                            </span>
+                            <span className="text-foreground">
+                              {formatPrice(item.unitPrice * item.quantity, settings.currency)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );

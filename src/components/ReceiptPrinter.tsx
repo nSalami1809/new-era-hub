@@ -1,4 +1,4 @@
-import { CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import {
   type ComponentPropsWithoutRef,
   createContext,
@@ -134,7 +134,10 @@ function ReceiptPrinterScreen({ children, className, ...props }: ReceiptPrinterS
 }
 
 function StatusIndicator({ animate, stage }: { animate: boolean; stage: ReceiptPrinterStage }) {
-  const Icon = stage === "complete" ? CheckCircle2 : stage === "cancelled" ? XCircle : Loader2;
+  // Pas d'icône qui tourne en boucle : ce n'est pas une opération en cours, juste un
+  // statut figé (ex. "Nouvelle") — une rotation infinie donnerait l'impression d'un
+  // chargement qui ne se termine jamais.
+  const Icon = stage === "complete" ? CheckCircle2 : stage === "cancelled" ? XCircle : Clock;
   const tone =
     stage === "complete"
       ? "text-success"
@@ -147,13 +150,11 @@ function StatusIndicator({ animate, stage }: { animate: boolean; stage: ReceiptP
       <Icon
         key={stage}
         size={18}
-        strokeWidth={stage === "processing" || stage === "printing" ? 2.5 : 2}
+        strokeWidth={2}
         className={cx(
           tone,
           "animate-in fade-in zoom-in-95 motion-reduce:animate-none",
           animate ? "duration-150" : "duration-0",
-          (stage === "processing" || stage === "printing") &&
-            "animate-spin motion-reduce:animate-none",
         )}
       />
     </span>
