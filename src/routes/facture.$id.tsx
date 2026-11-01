@@ -34,11 +34,15 @@ function stageForStatus(status: OrderStatus): ReceiptPrinterStage {
   }
 }
 
-/** Dessine le logo sur un canvas pour en tirer un data URL exploitable par jsPDF — échoue
- * silencieusement (PDF généré sans logo) plutôt que de bloquer le téléchargement de la facture. */
-async function loadImageAsDataUrl(src: string): Promise<string | null> {
+type LoadedImage = { dataUrl: string; width: number; height: number };
+
+/** Dessine une image sur un canvas pour en tirer un data URL exploitable par jsPDF — échoue
+ * silencieusement (élément simplement omis du PDF) plutôt que de bloquer le téléchargement. */
+async function loadImage(src: string, format: "JPEG" | "PNG"): Promise<LoadedImage | null> {
+  if (!src) return null;
   try {
     const img = new Image();
+    img.crossOrigin = "anonymous";
     const loaded = await new Promise<HTMLImageElement>((resolve, reject) => {
       img.onload = () => resolve(img);
       img.onerror = () => reject(new Error("image load failed"));
@@ -50,38 +54,96 @@ async function loadImageAsDataUrl(src: string): Promise<string | null> {
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
     ctx.drawImage(loaded, 0, 0);
-    return canvas.toDataURL("image/jpeg");
+    return {
+      dataUrl: canvas.toDataURL(format === "PNG" ? "image/png" : "image/jpeg"),
+      width: loaded.naturalWidth,
+      height: loaded.naturalHeight,
+    };
   } catch {
     return null;
   }
 }
 
-async function downloadInvoicePdf(order: Order, settings: StoreSettings) {
-  const [{ default: JsPDF }, { autoTable }, logoDataUrl] = await Promise.all([
-    import("jspdf"),
-    import("jspdf-autotable"),
-    loadImageAsDataUrl(logo),
-  ]);
-  const doc = new JsPDF();
-  const textX = logoDataUrl ? 36 : 14;
-  if (logoDataUrl) doc.addImage(logoDataUrl, "JPEG", 14, 10, 18, 18);
+/** Dimensions (mm) d'une image centrée dans une boîte carrée, ratio préservé. */
+function fitInBox(imgWidth: number, imgHeight: number, box: number) {
+  const scale = Math.min(box / imgWidth, box / imgHeight);
+  return { w: imgWidth * scale, h: imgHeight * scale };
+}
 
-  doc.setFontSize(14);
-  doc.text(settings.storeName, textX, 17);
-  doc.setFontSize(9);
-  doc.text(settings.address || "", textX, 23);
-  if (settings.phone || settings.whatsappNumber) {
-    doc.text(settings.phone || settings.whatsappNumber || "", textX, 28);
+const RECEIPT_PAGE_WIDTH = 80;
+const RECEIPT_PAGE_HEIGHT = 200;
+const RECEIPT_MARGIN = 6;
+const RECEIPT_CONTENT_WIDTH = RECEIPT_PAGE_WIDTH - RECEIPT_MARGIN * 2;
+const RECEIPT_ITEM_IMAGE_BOX = 15;
+
+/** Génère un PDF au format reçu thermique (papier étroit, police mono, séparateurs
+ * pointillés) qui reprend la mise en page du ticket animé affiché sur la page — plutôt
+ * qu'un rapport A4, pour que le fichier téléchargé ressemble vraiment à ce que montre
+ * l'imprimante à l'écran. Pagine automatiquement si la commande compte beaucoup d'articles. */
+async function downloadInvoicePdf(order: Order, settings: StoreSettings) {
+  const [{ default: JsPDF }, logoImg, itemImages] = await Promise.all([
+    import("jspdf"),
+    loadImage(logo, "JPEG"),
+    Promise.all(order.items.map((item) => loadImage(item.image, "PNG"))),
+  ]);
+
+  const doc = new JsPDF({ unit: "mm", format: [RECEIPT_PAGE_WIDTH, RECEIPT_PAGE_HEIGHT] });
+  doc.setFont("courier");
+  const centerX = RECEIPT_PAGE_WIDTH / 2;
+  const rightX = RECEIPT_PAGE_WIDTH - RECEIPT_MARGIN;
+  let y = RECEIPT_MARGIN;
+
+  function ensureSpace(needed: number) {
+    if (y + needed > RECEIPT_PAGE_HEIGHT - RECEIPT_MARGIN) {
+      doc.addPage([RECEIPT_PAGE_WIDTH, RECEIPT_PAGE_HEIGHT]);
+      y = RECEIPT_MARGIN;
+    }
   }
 
-  doc.setFontSize(11);
-  doc.text(`Commande #${order.orderNumber}`, 14, 40);
-  doc.setFontSize(9);
-  doc.text(`${formatDate(order.createdAt)} — Statut : ${order.status}`, 14, 45);
+  function divider() {
+    ensureSpace(6);
+    doc.setLineDashPattern([0.8, 0.8], 0);
+    doc.line(RECEIPT_MARGIN, y, rightX, y);
+    doc.setLineDashPattern([], 0);
+    y += 5;
+  }
 
-  doc.setFontSize(10);
-  doc.text("Client", 14, 55);
-  doc.setFontSize(9);
+  function row(label: string, value: string, size = 8) {
+    ensureSpace(4);
+    doc.setFontSize(size);
+    doc.text(label, RECEIPT_MARGIN, y);
+    doc.text(value, rightX, y, { align: "right" });
+    y += 4;
+  }
+
+  if (logoImg) {
+    const { w, h } = fitInBox(logoImg.width, logoImg.height, 15);
+    doc.addImage(logoImg.dataUrl, "JPEG", centerX - w / 2, y, w, h);
+    y += 17;
+  }
+  doc.setFontSize(11);
+  doc.text(settings.storeName, centerX, y, { align: "center" });
+  y += 5;
+  doc.setFontSize(7);
+  if (settings.address) {
+    doc.text(settings.address, centerX, y, { align: "center" });
+    y += 4;
+  }
+  if (settings.phone || settings.whatsappNumber) {
+    doc.text(settings.phone || settings.whatsappNumber || "", centerX, y, { align: "center" });
+    y += 4;
+  }
+
+  divider();
+  row("N° commande", order.orderNumber);
+  row("Date", formatDate(order.createdAt));
+  row("Statut", order.status);
+
+  divider();
+  ensureSpace(4);
+  doc.setFontSize(7.5);
+  doc.text("CLIENT", RECEIPT_MARGIN, y);
+  y += 4;
   const customerLines = [
     `${order.customer.lastName} ${order.customer.firstName}`,
     order.customer.phone,
@@ -89,37 +151,68 @@ async function downloadInvoicePdf(order: Order, settings: StoreSettings) {
     ...(order.customer.address ? [order.customer.address] : []),
     ...(order.customer.note ? [`Note : ${order.customer.note}`] : []),
   ];
-  doc.text(customerLines, 14, 60);
+  doc.setFontSize(8);
+  for (const line of customerLines) {
+    const wrapped = doc.splitTextToSize(line, RECEIPT_CONTENT_WIDTH) as string[];
+    ensureSpace(wrapped.length * 4);
+    doc.text(wrapped, RECEIPT_MARGIN, y);
+    y += wrapped.length * 4;
+  }
 
-  autoTable(doc, {
-    startY: 60 + customerLines.length * 5 + 6,
-    head: [["Article", "Qté", "Prix unitaire", "Sous-total"]],
-    body: order.items.map((item) => {
-      const label = variantLabel(item.variantColor, item.variantSize, item.variantSizeKind);
-      return [
-        `${item.brand} ${item.name}${label ? ` — ${label}` : ""}`,
-        String(item.quantity),
-        formatPrice(item.unitPrice, settings.currency),
-        formatPrice(item.unitPrice * item.quantity, settings.currency),
-      ];
-    }),
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [23, 23, 23] },
+  divider();
+  order.items.forEach((item, i) => {
+    const img = itemImages[i];
+    const textX = img ? RECEIPT_MARGIN + RECEIPT_ITEM_IMAGE_BOX + 3 : RECEIPT_MARGIN;
+    const textWidth = img
+      ? RECEIPT_CONTENT_WIDTH - RECEIPT_ITEM_IMAGE_BOX - 3
+      : RECEIPT_CONTENT_WIDTH;
+    const label = variantLabel(item.variantColor, item.variantSize, item.variantSizeKind);
+    doc.setFontSize(7.5);
+    const nameLines = doc.splitTextToSize(
+      `${item.brand} ${item.name}${label ? ` — ${label}` : ""}`,
+      textWidth,
+    ) as string[];
+    const rowHeight = Math.max(RECEIPT_ITEM_IMAGE_BOX, 3 + nameLines.length * 3.2 + 4) + 2;
+    ensureSpace(rowHeight);
+    const rowTop = y;
+
+    if (img) {
+      const { w, h } = fitInBox(img.width, img.height, RECEIPT_ITEM_IMAGE_BOX);
+      doc.addImage(
+        img.dataUrl,
+        "PNG",
+        RECEIPT_MARGIN + (RECEIPT_ITEM_IMAGE_BOX - w) / 2,
+        rowTop + (RECEIPT_ITEM_IMAGE_BOX - h) / 2,
+        w,
+        h,
+      );
+    }
+    doc.text(nameLines, textX, rowTop + 3);
+    doc.text(
+      `${item.quantity} x ${formatPrice(item.unitPrice, settings.currency)}`,
+      textX,
+      rowTop + 3 + nameLines.length * 3.2,
+    );
+    doc.text(formatPrice(item.unitPrice * item.quantity, settings.currency), rightX, rowTop + 3, {
+      align: "right",
+    });
+
+    y = rowTop + rowHeight;
   });
 
-  const afterTableY =
-    (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
-  doc.setFontSize(9);
-  doc.text(`Sous-total : ${formatPrice(order.subtotal, settings.currency)}`, 140, afterTableY);
-  doc.text(
-    `Réduction${order.promoCode ? ` (${order.promoCode})` : ""} : ${
-      order.discount > 0 ? `-${formatPrice(order.discount, settings.currency)}` : "—"
-    }`,
-    140,
-    afterTableY + 5,
+  divider();
+  row("Sous-total", formatPrice(order.subtotal, settings.currency));
+  row(
+    `Réduction${order.promoCode ? ` (${order.promoCode})` : ""}`,
+    order.discount > 0 ? `-${formatPrice(order.discount, settings.currency)}` : "—",
   );
-  doc.setFontSize(11);
-  doc.text(`Total : ${formatPrice(order.total, settings.currency)}`, 140, afterTableY + 13);
+  y += 1;
+  row("TOTAL", formatPrice(order.total, settings.currency), 10);
+
+  y += 4;
+  ensureSpace(6);
+  doc.setFontSize(7);
+  doc.text("Merci pour votre achat !", centerX, y, { align: "center" });
 
   const safeNumber = order.orderNumber.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
   doc.save(`facture-${safeNumber}.pdf`);
@@ -209,19 +302,19 @@ function InvoicePage() {
           <ReceiptPrinter.Root stage={stage} className="mx-auto">
             <ReceiptPrinter.Machine>
               <ReceiptPrinter.Header>
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 items-center gap-2">
                   <img
                     src={logo}
                     alt={settings.storeName}
-                    className="h-7 w-7 rounded-full object-contain"
+                    className="h-7 w-7 shrink-0 rounded-full object-contain"
                   />
-                  <span className="text-sm font-bold text-primary-foreground">
+                  <span className="truncate text-sm font-bold text-primary-foreground">
                     {settings.storeName}
                   </span>
                 </div>
                 <Link
                   to="/"
-                  className="flex min-h-0 items-center gap-1 rounded-full border border-primary-foreground/25 px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/10"
+                  className="flex min-h-0 shrink-0 items-center gap-1 rounded-full border border-primary-foreground/25 px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/10"
                 >
                   <Home aria-hidden="true" size={12} />
                   Accueil
@@ -231,8 +324,10 @@ function InvoicePage() {
               <ReceiptPrinter.Screen>
                 <div className="space-y-3">
                   <div className="flex justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold">Commande #{order.orderNumber}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold break-words">
+                        Commande #{order.orderNumber}
+                      </p>
                       <p className="text-xs text-primary-foreground/70">
                         {order.items.length} article{order.items.length > 1 ? "s" : ""} ·{" "}
                         {formatDate(order.createdAt)}
