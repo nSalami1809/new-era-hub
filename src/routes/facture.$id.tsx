@@ -1,14 +1,126 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { FileDown, Home } from "lucide-react";
+import { useState } from "react";
 import { SiteLayout } from "@/components/site";
 import { ProductImage } from "@/components/ProductImage";
 import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
 import { Skeleton } from "@/components/Skeleton";
+import { Spinner } from "@/components/Spinner";
+import { ReceiptPrinter, type ReceiptPrinterStage } from "@/components/ReceiptPrinter";
 import { formatDate, formatPrice } from "@/lib/format";
 import { useOrderReceipt } from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
 import { whatsappUrl } from "@/lib/whatsapp";
-import { variantLabel } from "@/lib/types";
+import { type Order, type OrderStatus, type StoreSettings, variantLabel } from "@/lib/types";
 import logo from "@/assets/logo-new-era-hub-241.jpeg";
+
+function stageForStatus(status: OrderStatus): ReceiptPrinterStage {
+  switch (status) {
+    case "Nouvelle":
+    case "Contacté":
+    case "Paiement en attente":
+      return "processing";
+    case "Payée":
+    case "En préparation":
+      return "printing";
+    case "Expédiée":
+    case "Livrée":
+      return "complete";
+    case "Annulée":
+      return "cancelled";
+  }
+}
+
+/** Dessine le logo sur un canvas pour en tirer un data URL exploitable par jsPDF — échoue
+ * silencieusement (PDF généré sans logo) plutôt que de bloquer le téléchargement de la facture. */
+async function loadImageAsDataUrl(src: string): Promise<string | null> {
+  try {
+    const img = new Image();
+    const loaded = await new Promise<HTMLImageElement>((resolve, reject) => {
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("image load failed"));
+      img.src = src;
+    });
+    const canvas = document.createElement("canvas");
+    canvas.width = loaded.naturalWidth;
+    canvas.height = loaded.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(loaded, 0, 0);
+    return canvas.toDataURL("image/jpeg");
+  } catch {
+    return null;
+  }
+}
+
+async function downloadInvoicePdf(order: Order, settings: StoreSettings) {
+  const [{ default: JsPDF }, { autoTable }, logoDataUrl] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+    loadImageAsDataUrl(logo),
+  ]);
+  const doc = new JsPDF();
+  const textX = logoDataUrl ? 36 : 14;
+  if (logoDataUrl) doc.addImage(logoDataUrl, "JPEG", 14, 10, 18, 18);
+
+  doc.setFontSize(14);
+  doc.text(settings.storeName, textX, 17);
+  doc.setFontSize(9);
+  doc.text(settings.address || "", textX, 23);
+  if (settings.phone || settings.whatsappNumber) {
+    doc.text(settings.phone || settings.whatsappNumber || "", textX, 28);
+  }
+
+  doc.setFontSize(11);
+  doc.text(`Commande #${order.orderNumber}`, 14, 40);
+  doc.setFontSize(9);
+  doc.text(`${formatDate(order.createdAt)} — Statut : ${order.status}`, 14, 45);
+
+  doc.setFontSize(10);
+  doc.text("Client", 14, 55);
+  doc.setFontSize(9);
+  const customerLines = [
+    `${order.customer.lastName} ${order.customer.firstName}`,
+    order.customer.phone,
+    order.customer.deliveryLocation,
+    ...(order.customer.address ? [order.customer.address] : []),
+    ...(order.customer.note ? [`Note : ${order.customer.note}`] : []),
+  ];
+  doc.text(customerLines, 14, 60);
+
+  autoTable(doc, {
+    startY: 60 + customerLines.length * 5 + 6,
+    head: [["Article", "Qté", "Prix unitaire", "Sous-total"]],
+    body: order.items.map((item) => {
+      const label = variantLabel(item.variantColor, item.variantSize, item.variantSizeKind);
+      return [
+        `${item.brand} ${item.name}${label ? ` — ${label}` : ""}`,
+        String(item.quantity),
+        formatPrice(item.unitPrice, settings.currency),
+        formatPrice(item.unitPrice * item.quantity, settings.currency),
+      ];
+    }),
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [23, 23, 23] },
+  });
+
+  const afterTableY =
+    (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  doc.setFontSize(9);
+  doc.text(`Sous-total : ${formatPrice(order.subtotal, settings.currency)}`, 140, afterTableY);
+  doc.text(
+    `Réduction${order.promoCode ? ` (${order.promoCode})` : ""} : ${
+      order.discount > 0 ? `-${formatPrice(order.discount, settings.currency)}` : "—"
+    }`,
+    140,
+    afterTableY + 5,
+  );
+  doc.setFontSize(11);
+  doc.text(`Total : ${formatPrice(order.total, settings.currency)}`, 140, afterTableY + 13);
+
+  const safeNumber = order.orderNumber.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
+  doc.save(`facture-${safeNumber}.pdf`);
+}
 
 export const Route = createFileRoute("/facture/$id")({
   head: () => ({
@@ -32,6 +144,17 @@ function InvoicePage() {
   const { id } = Route.useParams();
   const { data: order, isLoading } = useOrderReceipt(id);
   const { data: settings } = useSettings();
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  async function handleDownload() {
+    if (!order || !settings) return;
+    setDownloadingPdf(true);
+    try {
+      await downloadInvoicePdf(order, settings);
+    } finally {
+      setDownloadingPdf(false);
+    }
+  }
 
   if (isLoading || !settings) {
     return (
@@ -74,10 +197,166 @@ function InvoicePage() {
     );
   }
 
+  const stage = stageForStatus(order.status);
+
   return (
     <SiteLayout>
       <div className="container-page max-w-3xl py-8">
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm print:rounded-none print:border-black print:shadow-none sm:p-8">
+        <div className="print:hidden">
+          <ReceiptPrinter.Root stage={stage} className="mx-auto">
+            <ReceiptPrinter.Machine>
+              <ReceiptPrinter.Header>
+                <div className="flex items-center gap-2">
+                  <img
+                    src={logo}
+                    alt={settings.storeName}
+                    className="h-7 w-7 rounded-full object-contain"
+                  />
+                  <span className="text-sm font-bold text-primary-foreground">
+                    {settings.storeName}
+                  </span>
+                </div>
+                <Link
+                  to="/"
+                  className="flex min-h-0 items-center gap-1 rounded-full border border-primary-foreground/25 px-2.5 py-1 text-[11px] font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/10"
+                >
+                  <Home aria-hidden="true" size={12} />
+                  Accueil
+                </Link>
+              </ReceiptPrinter.Header>
+
+              <ReceiptPrinter.Screen>
+                <div className="space-y-3">
+                  <div className="flex justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">Commande #{order.orderNumber}</p>
+                      <p className="text-xs text-primary-foreground/70">
+                        {order.items.length} article{order.items.length > 1 ? "s" : ""} ·{" "}
+                        {formatDate(order.createdAt)}
+                      </p>
+                    </div>
+                    <strong className="shrink-0 text-sm">
+                      {formatPrice(order.total, settings.currency)}
+                    </strong>
+                  </div>
+                  <ReceiptPrinter.Status>{order.status}</ReceiptPrinter.Status>
+                </div>
+              </ReceiptPrinter.Screen>
+            </ReceiptPrinter.Machine>
+
+            <ReceiptPrinter.Output>
+              <ReceiptPrinter.Paper>
+                <div className="text-center">
+                  <p className="text-sm font-bold tracking-wide uppercase">{settings.storeName}</p>
+                  {settings.address && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">{settings.address}</p>
+                  )}
+                  {(settings.phone || settings.whatsappNumber) && (
+                    <p className="text-[11px] text-muted-foreground">
+                      {settings.phone || settings.whatsappNumber}
+                    </p>
+                  )}
+                </div>
+
+                <div className="my-4 border-t border-dashed border-foreground/30" />
+
+                <div className="text-xs">
+                  <div className="flex justify-between">
+                    <span>N° commande</span>
+                    <span className="font-semibold">{order.orderNumber}</span>
+                  </div>
+                  <div className="mt-1 flex justify-between">
+                    <span>Date</span>
+                    <span>{formatDate(order.createdAt)}</span>
+                  </div>
+                </div>
+
+                <div className="my-4 border-t border-dashed border-foreground/30" />
+
+                <div className="text-xs">
+                  <p className="font-semibold tracking-wide text-muted-foreground uppercase">
+                    Client
+                  </p>
+                  <p className="mt-1">
+                    {order.customer.lastName} {order.customer.firstName}
+                  </p>
+                  <p>{order.customer.phone}</p>
+                  <p>{order.customer.deliveryLocation}</p>
+                  {order.customer.address ? <p>{order.customer.address}</p> : null}
+                  {order.customer.note ? (
+                    <p className="mt-1 text-muted-foreground">Note : {order.customer.note}</p>
+                  ) : null}
+                </div>
+
+                <div className="my-4 border-t border-dashed border-foreground/30" />
+
+                <div className="space-y-2.5 text-xs">
+                  {order.items.map((item, i) => {
+                    const label = variantLabel(
+                      item.variantColor,
+                      item.variantSize,
+                      item.variantSizeKind,
+                    );
+                    return (
+                      <div key={item.productId ?? `${item.sku}-${i}`}>
+                        <p className="font-medium">
+                          {item.brand} {item.name}
+                          {label ? ` — ${label}` : ""}
+                        </p>
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>
+                            {item.quantity} × {formatPrice(item.unitPrice, settings.currency)}
+                          </span>
+                          <span className="text-foreground">
+                            {formatPrice(item.unitPrice * item.quantity, settings.currency)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="my-4 border-t border-dashed border-foreground/30" />
+
+                <dl className="space-y-1.5 text-xs">
+                  <div className="flex justify-between">
+                    <dt className="text-muted-foreground">Sous-total</dt>
+                    <dd>{formatPrice(order.subtotal, settings.currency)}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="text-muted-foreground">
+                      Réduction{order.promoCode ? ` (${order.promoCode})` : ""}
+                    </dt>
+                    <dd>
+                      {order.discount > 0
+                        ? `-${formatPrice(order.discount, settings.currency)}`
+                        : "—"}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between border-t border-foreground/20 pt-2 text-sm font-bold">
+                    <dt>Total</dt>
+                    <dd>{formatPrice(order.total, settings.currency)}</dd>
+                  </div>
+                </dl>
+
+                <p className="mt-6 text-center text-[11px] text-muted-foreground">
+                  Merci pour votre achat !
+                </p>
+              </ReceiptPrinter.Paper>
+            </ReceiptPrinter.Output>
+          </ReceiptPrinter.Root>
+
+          {order.history.length > 0 && (
+            <div className="mx-auto mt-6 max-w-sm">
+              <h2 className="text-sm font-bold tracking-wide uppercase">Suivi de la commande</h2>
+              <div className="mt-3">
+                <OrderStatusTimeline history={order.history} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="hidden rounded-2xl border border-border bg-card p-5 shadow-sm print:block print:rounded-none print:border-black print:shadow-none sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5">
             <div>
               <div className="flex items-center gap-2">
@@ -241,6 +520,15 @@ function InvoicePage() {
           </Link>
           <button type="button" className="btn-base btn-outline" onClick={() => window.print()}>
             Imprimer la facture
+          </button>
+          <button
+            type="button"
+            className="btn-base btn-outline"
+            disabled={downloadingPdf}
+            onClick={() => void handleDownload()}
+          >
+            {downloadingPdf ? <Spinner size={14} /> : <FileDown size={14} />}
+            Télécharger (PDF)
           </button>
         </div>
       </div>
