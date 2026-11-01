@@ -168,8 +168,10 @@ async function downloadInvoicePdf(order: Order, settings: StoreSettings) {
       : RECEIPT_CONTENT_WIDTH;
     const label = variantLabel(item.variantColor, item.variantSize, item.variantSizeKind);
     doc.setFontSize(7.5);
+    // jsPDF's built-in fonts (pas de police embarquée ici) rendent mal le tiret cadratin
+    // "—" (glyphes corrompus) - un simple tiret ASCII est sans risque.
     const nameLines = doc.splitTextToSize(
-      `${item.brand} ${item.name}${label ? ` — ${label}` : ""}`,
+      `${item.brand} ${item.name}${label ? ` - ${label}` : ""}`,
       textWidth,
     ) as string[];
     const rowHeight = Math.max(RECEIPT_ITEM_IMAGE_BOX, 3 + nameLines.length * 3.2 + 4) + 2;
@@ -204,7 +206,7 @@ async function downloadInvoicePdf(order: Order, settings: StoreSettings) {
   row("Sous-total", formatPrice(order.subtotal, settings.currency));
   row(
     `Réduction${order.promoCode ? ` (${order.promoCode})` : ""}`,
-    order.discount > 0 ? `-${formatPrice(order.discount, settings.currency)}` : "—",
+    order.discount > 0 ? `-${formatPrice(order.discount, settings.currency)}` : "-",
   );
   y += 1;
   row("TOTAL", formatPrice(order.total, settings.currency), 10);
@@ -212,7 +214,7 @@ async function downloadInvoicePdf(order: Order, settings: StoreSettings) {
   y += 4;
   ensureSpace(6);
   doc.setFontSize(7);
-  doc.text("Merci pour votre achat !", centerX, y, { align: "center" });
+  doc.text("Merci pour votre achat ! À bientôt !", centerX, y, { align: "center" });
 
   const safeNumber = order.orderNumber.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "");
   doc.save(`facture-${safeNumber}.pdf`);
@@ -461,7 +463,7 @@ function InvoicePage() {
                 </dl>
 
                 <p className="mt-6 text-center text-[11px] text-muted-foreground">
-                  Merci pour votre achat !
+                  Merci pour votre achat ! À bientôt !
                 </p>
               </ReceiptPrinter.Paper>
             </ReceiptPrinter.Output>
