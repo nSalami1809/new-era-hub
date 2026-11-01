@@ -4,6 +4,7 @@ import { formatPrice } from "@/lib/format";
 import { addToCart, cartQuantity, setCartQuantity, useCart } from "@/lib/cart";
 import { isFavorite, toggleFavorite, useFavorites } from "@/lib/favorites";
 import { ProductImage } from "@/components/ProductImage";
+import { Stamp } from "@/components/Stamp";
 import { transformImageUrl } from "@/lib/image-transform";
 import {
   activeBundle,
@@ -12,6 +13,12 @@ import {
   stockStatus,
   type Product,
 } from "@/lib/types";
+
+const NEW_PRODUCT_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+
+function isNewProduct(product: Product): boolean {
+  return Date.now() - new Date(product.createdAt).getTime() < NEW_PRODUCT_WINDOW_MS;
+}
 
 // The card shows this photo at width=300 (see below); the product page's own
 // gallery shows the exact same photo at width=600 (produit.$id.tsx). Without
@@ -86,6 +93,8 @@ export function ProductCard({
   priority?: boolean;
 }) {
   const out = product.stock <= 0;
+  const percent = discountPercent(product);
+  const isNew = !out && percent === null && isNewProduct(product);
   const hasVariants = product.variants.length > 0;
   useCart(); // subscribe so this card re-renders when its own quantity changes
   useFavorites(); // subscribe so this card re-renders when its own favorite state changes
@@ -107,11 +116,19 @@ export function ProductCard({
             className="h-full w-full object-contain p-4 transition-transform duration-300 ease-out group-hover:scale-[1.06] sm:p-6"
           />
         </Link>
-        {out && (
-          <span className="absolute left-2 top-2 rounded-full bg-foreground px-2.5 py-1 text-xs font-semibold text-background">
+        {out ? (
+          <Stamp tone="danger" className="absolute top-2 left-2">
             Rupture
-          </span>
-        )}
+          </Stamp>
+        ) : percent !== null ? (
+          <Stamp tone="danger" className="absolute top-2 left-2">
+            -{percent}%
+          </Stamp>
+        ) : isNew ? (
+          <Stamp tone="accent" className="absolute top-2 left-2">
+            Nouveau
+          </Stamp>
+        ) : null}
         <button
           type="button"
           onClick={() => toggleFavorite(product.id)}

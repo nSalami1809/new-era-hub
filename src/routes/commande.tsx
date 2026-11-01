@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Check } from "lucide-react";
 import { useState } from "react";
 import { SiteLayout } from "@/components/site";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { DynamicButton } from "@/components/DynamicButton";
 import { Spinner } from "@/components/Spinner";
 import { formatPrice, isValidPhone } from "@/lib/format";
 import { cartTotals, clearCart, useCart } from "@/lib/cart";
@@ -252,14 +254,27 @@ function CheckoutPage() {
                   placeholder="Entrez votre code"
                   className="field !min-h-9 flex-1 text-sm uppercase"
                 />
-                <button
+                <DynamicButton
                   type="button"
                   onClick={() => void applyPromo()}
                   disabled={previewPromo.isPending || !promoInput.trim()}
-                  className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
-                >
-                  Appliquer
-                </button>
+                  variant={promo?.valid ? "success" : "outline"}
+                  className="!min-h-9 !px-3 !py-1.5 text-xs"
+                  icon={
+                    previewPromo.isPending ? (
+                      <Spinner size={13} />
+                    ) : promo?.valid ? (
+                      <Check size={13} />
+                    ) : undefined
+                  }
+                  label={
+                    previewPromo.isPending
+                      ? "Vérification..."
+                      : promo?.valid
+                        ? "Appliqué"
+                        : "Appliquer"
+                  }
+                />
               </div>
               {promo && !promo.valid && (
                 <p className="mt-1 text-xs text-destructive">{promo.message}</p>

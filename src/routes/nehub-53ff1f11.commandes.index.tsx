@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Download, Trash2 } from "lucide-react";
 import { ViewToggle } from "@/components/ViewToggle";
 import { Pager } from "@/components/Pager";
+import { HoldToConfirm } from "@/components/HoldToConfirm";
 import { AdminCardGridSkeleton, AdminTableSkeleton } from "@/components/Skeleton";
 import { formatDate, formatPrice } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
@@ -352,8 +353,8 @@ function AdminOrders() {
           <div className="w-full max-w-sm border border-border bg-background p-5">
             <h2 className="text-lg">Supprimer {toDelete.label} ?</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Cette action est irréversible et ne restitue pas le stock (utilisez "Annuler la
-              commande" pour ça).
+              Le stock n'est pas restitué (utilisez "Annuler la commande" pour ça). Maintenez le
+              bouton pour confirmer — vous aurez 4 secondes pour revenir en arrière.
             </p>
             <div className="mt-5 flex justify-end gap-2">
               <button
@@ -364,14 +365,12 @@ function AdminOrders() {
               >
                 Annuler
               </button>
-              <button
-                type="button"
-                className="btn-base btn-danger"
-                onClick={() => void confirmDelete()}
+              <HoldToConfirm
+                onConfirm={confirmDelete}
+                idleLabel="Maintenir pour supprimer"
+                idleIcon={<Trash2 size={15} />}
                 disabled={bulkPending}
-              >
-                Supprimer
-              </button>
+              />
             </div>
           </div>
         </div>

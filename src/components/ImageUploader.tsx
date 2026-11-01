@@ -3,6 +3,7 @@ import { ImagePlus, Star, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/lib/toast";
 import { ProductImage } from "@/components/ProductImage";
+import { MagneticDropZone } from "@/components/MagneticDropZone";
 import { compressImage } from "@/lib/image-compression";
 
 const BUCKET = "product-images";
@@ -71,7 +72,8 @@ export function ImageUploader({
     <div>
       <label className="mb-1 block text-sm font-medium">Photos du produit</label>
       <p className="mb-2 text-xs text-muted-foreground">
-        La première image est la photo principale. JPEG, PNG ou WebP, {MAX_SIZE_MB} Mo max.
+        La première image est la photo principale. JPEG, PNG ou WebP, {MAX_SIZE_MB} Mo max. Cliquez
+        ou glissez-déposez vos fichiers sur la case en pointillés.
       </p>
 
       <div className="flex flex-wrap gap-3">
@@ -109,16 +111,16 @@ export function ImageUploader({
           </div>
         ))}
 
-        <button
-          type="button"
-          disabled={uploading}
+        <MagneticDropZone
+          onFiles={(files) => void handleFiles(files)}
           onClick={() => inputRef.current?.click()}
+          disabled={uploading}
           className={`grid h-24 w-24 place-items-center border border-dashed text-muted-foreground hover:border-border-strong hover:text-foreground ${
             error ? "border-destructive" : "border-border-strong"
           }`}
         >
           {uploading ? <Loader2 size={20} className="animate-spin" /> : <ImagePlus size={20} />}
-        </button>
+        </MagneticDropZone>
         <input
           ref={inputRef}
           type="file"
