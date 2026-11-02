@@ -8,7 +8,7 @@ import {
   Home,
   Store,
   Percent,
-  Sparkles,
+  Flame,
   PackageSearch,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -154,7 +154,7 @@ export function SiteHeader() {
       to: "/boutique" as const,
       search: { sort: "recent" as const },
       label: "Nouveautés",
-      icon: Sparkles,
+      icon: Flame,
     },
   ];
   const mobileQuickLinks = [
