@@ -1,5 +1,16 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { Search, ShoppingBag, Heart, Menu, X } from "lucide-react";
+import {
+  Search,
+  ShoppingBag,
+  Heart,
+  Menu,
+  X,
+  Home,
+  Store,
+  Percent,
+  Sparkles,
+  PackageSearch,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { cartCount, useCart } from "@/lib/cart";
 import { useFavorites } from "@/lib/favorites";
@@ -127,6 +138,31 @@ export function SiteHeader() {
     { to: "/boutique" as const, search: { sort: "recent" as const }, label: "Nouveautés" },
   ];
 
+  // Menu mobile : les mêmes destinations, avec une icône et "Accueil" en
+  // plus (le logo suffit sur desktop, mais c'est une cible trop petite et
+  // peu évidente dans un menu déroulant tactile).
+  const mobileNavItems = [
+    { to: "/" as const, search: {}, label: "Accueil", icon: Home },
+    { to: "/boutique" as const, search: {}, label: "Boutique", icon: Store },
+    {
+      to: "/boutique" as const,
+      search: { promo: true as const },
+      label: "Promotions",
+      icon: Percent,
+    },
+    {
+      to: "/boutique" as const,
+      search: { sort: "recent" as const },
+      label: "Nouveautés",
+      icon: Sparkles,
+    },
+  ];
+  const mobileQuickLinks = [
+    { to: "/favoris" as const, label: "Favoris", icon: Heart, count: favoritesCount },
+    { to: "/panier" as const, label: "Panier", icon: ShoppingBag, count },
+    { to: "/suivi-commande" as const, label: "Suivre ma commande", icon: PackageSearch, count: 0 },
+  ];
+
   const desktopNavLinks = (
     <>
       {navItems.map((item) => (
@@ -202,13 +238,18 @@ export function SiteHeader() {
         <div className="ml-auto flex items-center gap-1 lg:ml-3">
           <Link
             to="/favoris"
-            className="hidden rounded-full p-2.5 text-foreground transition-colors hover:bg-muted sm:block"
+            className="relative rounded-full p-2.5 text-foreground transition-colors hover:bg-muted"
             aria-label={`Favoris, ${favoritesCount} produit(s)`}
           >
             <Heart
               size={20}
               className={favoritesCount > 0 ? "fill-destructive text-destructive" : ""}
             />
+            {favoritesCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-foreground px-1 text-[11px] font-semibold text-background">
+                {favoritesCount}
+              </span>
+            )}
           </Link>
           <Link
             to="/panier"
@@ -258,15 +299,37 @@ export function SiteHeader() {
       {open && (
         <div className="animate-in fade-in slide-in-from-top-2 border-t border-border duration-150 md:hidden">
           <nav className="divide-y divide-border">
-            {navItems.map((item) => (
+            {mobileNavItems.map((item) => (
               <Link
                 key={item.label}
                 to={item.to}
                 search={item.search}
+                activeOptions={{ exact: item.to === "/", includeSearch: false }}
                 onClick={() => setOpen(false)}
-                className="container-page flex items-center py-3.5 text-base font-bold uppercase tracking-wide text-foreground active:bg-muted"
+                className="container-page flex items-center gap-3 py-3.5 text-base font-bold tracking-wide text-foreground uppercase transition-colors active:bg-muted"
               >
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-muted">
+                  <item.icon size={18} />
+                </span>
                 {item.label}
+              </Link>
+            ))}
+          </nav>
+          <nav className="divide-y divide-border border-t border-border bg-muted/40">
+            {mobileQuickLinks.map((item) => (
+              <Link
+                key={item.label}
+                to={item.to}
+                onClick={() => setOpen(false)}
+                className="container-page flex items-center gap-3 py-3 text-sm font-medium text-muted-foreground transition-colors active:bg-muted active:text-foreground"
+              >
+                <item.icon size={16} className="shrink-0" />
+                {item.label}
+                {item.count > 0 && (
+                  <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-foreground px-1 text-[11px] font-semibold text-background">
+                    {item.count}
+                  </span>
+                )}
               </Link>
             ))}
           </nav>
