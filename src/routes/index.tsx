@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteLayout } from "@/components/site";
+import { CapRail } from "@/components/CapRail";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductImage } from "@/components/ProductImage";
 import { ProductGridSkeleton, Skeleton } from "@/components/Skeleton";
@@ -74,7 +75,7 @@ function Index() {
   const { data: settings } = useSettings();
   const { data: categories = [] } = useCategories();
   const active = products.filter((p) => p.isActive);
-  const featured = active.filter((p) => p.isFeatured).slice(0, 4);
+  const featured = active.filter((p) => p.isFeatured).slice(0, 8);
   const promos = active
     .filter((p) => p.promotionalPrice && p.promotionalPrice < p.price)
     .slice(0, 4);
@@ -175,11 +176,7 @@ function Index() {
         {isLoading ? (
           <ProductGridSkeleton />
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            {(featured.length ? featured : active.slice(0, 4)).map((p, i) => (
-              <ProductCard key={p.id} product={p} currency={currency} priority={i === 0} />
-            ))}
-          </div>
+          <CapRail items={featured.length ? featured : active.slice(0, 8)} currency={currency} />
         )}
       </section>
 
