@@ -16,7 +16,7 @@ import {
 
 const NEW_PRODUCT_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
-function isNewProduct(product: Product): boolean {
+export function isNewProduct(product: Product): boolean {
   return Date.now() - new Date(product.createdAt).getTime() < NEW_PRODUCT_WINDOW_MS;
 }
 

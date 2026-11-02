@@ -139,6 +139,25 @@ function Index() {
         </div>
       </section>
 
+      <section className="overflow-hidden border-b border-border bg-muted/30">
+        <div className="container-page py-10 sm:py-14">
+          <div className="mb-2 flex items-end justify-between gap-4">
+            <div>
+              <span className="eyebrow">Notre choix</span>
+              <h2 className="mt-1 text-2xl sm:text-3xl">Sélection du moment</h2>
+            </div>
+            <Link to="/boutique" className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-sm">
+              Tout voir
+            </Link>
+          </div>
+          {isLoading ? (
+            <ProductGridSkeleton />
+          ) : (
+            <CapRail items={featured.length ? featured : active.slice(0, 8)} currency={currency} />
+          )}
+        </div>
+      </section>
+
       {isLoading && (
         <section className="container-page py-10">
           <span className="eyebrow">Catalogue</span>
@@ -162,23 +181,6 @@ function Index() {
           </div>
         </section>
       )}
-
-      <section className="container-page pb-10">
-        <div className="mb-4 flex items-end justify-between gap-4">
-          <div>
-            <span className="eyebrow">Notre choix</span>
-            <h2 className="mt-1 text-2xl sm:text-3xl">Sélection du moment</h2>
-          </div>
-          <Link to="/boutique" className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-sm">
-            Tout voir
-          </Link>
-        </div>
-        {isLoading ? (
-          <ProductGridSkeleton />
-        ) : (
-          <CapRail items={featured.length ? featured : active.slice(0, 8)} currency={currency} />
-        )}
-      </section>
 
       {promos.length > 0 && (
         <section className="container-page pb-10">
