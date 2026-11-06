@@ -6,7 +6,12 @@ import { formatDate, formatPrice } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
 import { useProducts } from "@/lib/api/products";
 import { useCategories } from "@/lib/api/categories";
-import { useAdminOrders, useCreateOfflineSale, type OfflineSaleItem } from "@/lib/api/orders";
+import {
+  useAdminOrders,
+  useCreateOfflineSale,
+  useUpdateOfflineSaleCustomer,
+  type OfflineSaleItem,
+} from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
 import { toast } from "@/lib/toast";
 import { effectivePrice, variantLabel, type Product } from "@/lib/types";
@@ -150,11 +155,15 @@ function AdminOfflineSales() {
   const { data: settings } = useSettings();
   const currency = settings?.currency ?? "FCFA";
   const createOfflineSale = useCreateOfflineSale();
+  const updateCustomer = useUpdateOfflineSaleCustomer();
 
   const [productId, setProductId] = useState("");
   const [variantId, setVariantId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [unitPrice, setUnitPrice] = useState("");
+  const [customerFirstName, setCustomerFirstName] = useState("");
+  const [customerLastName, setCustomerLastName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [note, setNote] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [error, setError] = useState("");
@@ -251,8 +260,20 @@ function AdminOfflineSales() {
             setError(result.error);
             return;
           }
+          if (customerFirstName.trim() || customerLastName.trim() || customerPhone.trim()) {
+            updateCustomer.mutate({
+              id: result.orderId,
+              firstName: customerFirstName,
+              lastName: customerLastName,
+              phone: customerPhone,
+              note,
+            });
+          }
           toast(`Vente hors site #${result.orderNumber} enregistrée.`);
           setCart([]);
+          setCustomerFirstName("");
+          setCustomerLastName("");
+          setCustomerPhone("");
           setNote("");
           setError("");
         },
@@ -271,14 +292,19 @@ function AdminOfflineSales() {
   function exportCsv() {
     downloadCsv(
       `ventes-hors-site-${new Date().toISOString().slice(0, 10)}.csv`,
-      ["N°", "Date", "Articles", "Total", "Note"],
-      offlineSales.map((o) => [
-        o.orderNumber,
-        formatDate(o.createdAt),
-        o.items.map((i) => `${i.name} x${i.quantity}`).join(" + "),
-        o.total,
-        o.customer.note ?? "",
-      ]),
+      ["N°", "Date", "Destinataire", "Téléphone", "Articles", "Total", "Note"],
+      offlineSales.map((o) => {
+        const named = o.customer.firstName !== "Vente" || o.customer.lastName !== "hors site";
+        return [
+          o.orderNumber,
+          formatDate(o.createdAt),
+          named ? `${o.customer.lastName} ${o.customer.firstName}`.trim() : "",
+          o.customer.phone === "—" ? "" : o.customer.phone,
+          o.items.map((i) => `${i.name} x${i.quantity}`).join(" + "),
+          o.total,
+          o.customer.note ?? "",
+        ];
+      }),
     );
   }
 
@@ -400,16 +426,60 @@ function AdminOfflineSales() {
               <span>{formatPrice(total, currency)}</span>
             </div>
 
-            <label htmlFor="note" className="mb-1 mt-4 block text-sm font-medium">
-              Note (facultatif)
-            </label>
-            <input
-              id="note"
-              className="field"
-              placeholder="Vendu via WhatsApp à..."
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
+            <h3 className="mb-1 mt-4 text-sm font-bold uppercase tracking-wide">
+              Destinataire (facultatif)
+            </h3>
+            <p className="mb-2 text-xs text-muted-foreground">
+              À qui est destinée cette vente. Laissez vide pour une vente anonyme — modifiable plus
+              tard depuis le détail de la commande.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="customer-first-name" className="mb-1 block text-sm font-medium">
+                  Prénom
+                </label>
+                <input
+                  id="customer-first-name"
+                  className="field"
+                  value={customerFirstName}
+                  onChange={(e) => setCustomerFirstName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="customer-last-name" className="mb-1 block text-sm font-medium">
+                  Nom
+                </label>
+                <input
+                  id="customer-last-name"
+                  className="field"
+                  value={customerLastName}
+                  onChange={(e) => setCustomerLastName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="customer-phone" className="mb-1 block text-sm font-medium">
+                  Téléphone
+                </label>
+                <input
+                  id="customer-phone"
+                  className="field"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="note" className="mb-1 block text-sm font-medium">
+                  Note
+                </label>
+                <input
+                  id="note"
+                  className="field"
+                  placeholder="Vendu via WhatsApp à..."
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              </div>
+            </div>
 
             {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
             <button
@@ -452,31 +522,45 @@ function AdminOfflineSales() {
               <tr className="border-b border-border bg-muted text-left text-xs uppercase text-muted-foreground">
                 <th className="p-3">N°</th>
                 <th className="p-3">Date</th>
+                <th className="p-3">Destinataire</th>
                 <th className="p-3">Articles</th>
                 <th className="p-3 text-right">Total</th>
                 <th className="p-3 text-right">Détail</th>
               </tr>
             </thead>
             <tbody>
-              {offlineSales.map((o) => (
-                <tr key={o.id} className="border-b border-border last:border-0">
-                  <td className="p-3 font-medium">#{o.orderNumber}</td>
-                  <td className="p-3 text-xs text-muted-foreground">{formatDate(o.createdAt)}</td>
-                  <td className="p-3">
-                    {o.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
-                  </td>
-                  <td className="p-3 text-right font-semibold">{formatPrice(o.total, currency)}</td>
-                  <td className="p-3 text-right">
-                    <Link
-                      to="/nehub-53ff1f11/commandes/$id"
-                      params={{ id: o.id }}
-                      className="btn-base btn-outline !min-h-9 !px-2.5 !py-1.5 text-xs"
-                    >
-                      Détail
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+              {offlineSales.map((o) => {
+                const named =
+                  o.customer.firstName !== "Vente" || o.customer.lastName !== "hors site";
+                return (
+                  <tr key={o.id} className="border-b border-border last:border-0">
+                    <td className="p-3 font-medium">#{o.orderNumber}</td>
+                    <td className="p-3 text-xs text-muted-foreground">{formatDate(o.createdAt)}</td>
+                    <td className="p-3 text-xs">
+                      {named ? (
+                        `${o.customer.lastName} ${o.customer.firstName}`.trim()
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      {o.items.map((i) => `${i.name} ×${i.quantity}`).join(", ")}
+                    </td>
+                    <td className="p-3 text-right font-semibold">
+                      {formatPrice(o.total, currency)}
+                    </td>
+                    <td className="p-3 text-right">
+                      <Link
+                        to="/nehub-53ff1f11/commandes/$id"
+                        params={{ id: o.id }}
+                        className="btn-base btn-outline !min-h-9 !px-2.5 !py-1.5 text-xs"
+                      >
+                        Détail
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

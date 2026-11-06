@@ -232,6 +232,46 @@ export function useDeleteOrder() {
   });
 }
 
+/** Scoped to channel "offline" on purpose: a normal site order's customer
+ * info was entered by the customer themselves at checkout, not something an
+ * admin should silently overwrite. An offline sale's info is admin-entered
+ * from the start, so editing it afterwards is just fixing a typo or adding
+ * detail that wasn't captured yet. */
+export function useUpdateOfflineSaleCustomer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      firstName,
+      lastName,
+      phone,
+      note,
+    }: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      phone: string;
+      note: string;
+    }) => {
+      const { error } = await supabase
+        .from("orders")
+        .update({
+          customer_first_name: firstName.trim() || "Vente",
+          customer_last_name: lastName.trim() || "hors site",
+          customer_phone: phone.trim() || "—",
+          customer_note: note.trim() || null,
+        })
+        .eq("id", id)
+        .eq("channel", "offline");
+      if (error) throw error;
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["orders"] });
+      qc.invalidateQueries({ queryKey: ["orders", variables.id] });
+    },
+  });
+}
+
 export type CreateOrderResult =
   | { ok: true; orderId: string; orderNumber: string; accessToken: string }
   | { ok: false; error: string };

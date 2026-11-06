@@ -1,15 +1,120 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
+import { useState } from "react";
 import { ProductImage } from "@/components/ProductImage";
 import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
 import { Skeleton } from "@/components/Skeleton";
 import { Spinner } from "@/components/Spinner";
 import { formatDate, formatPrice } from "@/lib/format";
-import { useAdminOrder, useUpdateOrderStatus } from "@/lib/api/orders";
+import {
+  useAdminOrder,
+  useUpdateOfflineSaleCustomer,
+  useUpdateOrderStatus,
+} from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
-import { ORDER_STATUSES, variantLabel, type OrderStatus } from "@/lib/types";
+import { ORDER_STATUSES, variantLabel, type Order, type OrderStatus } from "@/lib/types";
 import { orderStatusWhatsappUrl } from "@/lib/whatsapp";
 import { toast } from "@/lib/toast";
+
+/** Formulaire d'édition des infos client d'une vente hors site — qui elle
+ * est destinée, son contact, une précision. Non affiché pour les commandes
+ * du site : leurs infos viennent du client lui-même au moment de la
+ * commande, pas quelque chose que l'admin devrait réécrire. */
+function EditOfflineCustomer({ order, onDone }: { order: Order; onDone: () => void }) {
+  const [firstName, setFirstName] = useState(
+    order.customer.firstName === "Vente" ? "" : order.customer.firstName,
+  );
+  const [lastName, setLastName] = useState(
+    order.customer.lastName === "hors site" ? "" : order.customer.lastName,
+  );
+  const [phone, setPhone] = useState(order.customer.phone === "—" ? "" : order.customer.phone);
+  const [note, setNote] = useState(order.customer.note ?? "");
+  const update = useUpdateOfflineSaleCustomer();
+
+  function save() {
+    update.mutate(
+      { id: order.id, firstName, lastName, phone, note },
+      {
+        onSuccess: () => {
+          toast("Informations mises à jour.");
+          onDone();
+        },
+      },
+    );
+  }
+
+  return (
+    <div className="mt-2 space-y-2">
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div>
+          <label htmlFor="edit-first-name" className="mb-1 block text-xs font-medium">
+            Prénom
+          </label>
+          <input
+            id="edit-first-name"
+            className="field !min-h-9 text-sm"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="Vendu à..."
+          />
+        </div>
+        <div>
+          <label htmlFor="edit-last-name" className="mb-1 block text-xs font-medium">
+            Nom
+          </label>
+          <input
+            id="edit-last-name"
+            className="field !min-h-9 text-sm"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+          />
+        </div>
+      </div>
+      <div>
+        <label htmlFor="edit-phone" className="mb-1 block text-xs font-medium">
+          Téléphone
+        </label>
+        <input
+          id="edit-phone"
+          className="field !min-h-9 text-sm"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
+      </div>
+      <div>
+        <label htmlFor="edit-note" className="mb-1 block text-xs font-medium">
+          Précision
+        </label>
+        <input
+          id="edit-note"
+          className="field !min-h-9 text-sm"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Vendu via WhatsApp à..."
+        />
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={save}
+          disabled={update.isPending}
+          className="btn-base btn-success !min-h-9 !px-3 !py-1.5 text-xs"
+        >
+          {update.isPending && <Spinner size={13} />}
+          Enregistrer
+        </button>
+        <button
+          type="button"
+          onClick={onDone}
+          disabled={update.isPending}
+          className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+        >
+          Annuler
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/nehub-53ff1f11/commandes/$id")({
   component: AdminOrderDetail,
@@ -21,6 +126,7 @@ function AdminOrderDetail() {
   const { data: settings } = useSettings();
   const currency = settings?.currency ?? "FCFA";
   const updateStatus = useUpdateOrderStatus();
+  const [editingCustomer, setEditingCustomer] = useState(false);
 
   if (isLoading) {
     return (
@@ -112,22 +218,42 @@ function AdminOrderDetail() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section className="border border-border p-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide">Client</h2>
-          <p className="mt-2 text-sm">
-            {order.customer.lastName} {order.customer.firstName}
-            <br />
-            {order.customer.phone}
-            <br />
-            {order.customer.deliveryLocation}
-            {order.customer.address ? (
-              <>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-bold uppercase tracking-wide">Client</h2>
+            {order.channel === "offline" && !editingCustomer && (
+              <button
+                type="button"
+                onClick={() => setEditingCustomer(true)}
+                className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                <Pencil size={12} />
+                Modifier
+              </button>
+            )}
+          </div>
+          {editingCustomer ? (
+            <EditOfflineCustomer order={order} onDone={() => setEditingCustomer(false)} />
+          ) : (
+            <>
+              <p className="mt-2 text-sm">
+                {order.customer.lastName} {order.customer.firstName}
                 <br />
-                {order.customer.address}
-              </>
-            ) : null}
-          </p>
-          {order.customer.note && (
-            <p className="mt-2 text-sm text-muted-foreground">Précision : {order.customer.note}</p>
+                {order.customer.phone}
+                <br />
+                {order.customer.deliveryLocation}
+                {order.customer.address ? (
+                  <>
+                    <br />
+                    {order.customer.address}
+                  </>
+                ) : null}
+              </p>
+              {order.customer.note && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Précision : {order.customer.note}
+                </p>
+              )}
+            </>
           )}
         </section>
 
