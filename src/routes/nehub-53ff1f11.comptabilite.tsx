@@ -55,12 +55,18 @@ function Accounting() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("");
 
   const categoryByProductId = useMemo(() => {
     const map = new Map<string, string>();
     for (const p of products) map.set(p.id, p.category);
     return map;
   }, [products]);
+
+  const categoryOptions = useMemo(
+    () => [...new Set(products.map((p) => p.category))].sort((a, b) => a.localeCompare(b)),
+    [products],
+  );
 
   const { start, end } = useMemo(() => periodRange(periodKey, from, to), [periodKey, from, to]);
 
@@ -148,10 +154,10 @@ function Accounting() {
 
   const categoryStockRows = useMemo(() => computeCategoryStockRows(products), [products]);
 
-  const categoryFinancials = useMemo(
-    () => mergeCategoryFinancials(categoryRows, categoryStockRows),
-    [categoryRows, categoryStockRows],
-  );
+  const categoryFinancials = useMemo(() => {
+    const all = mergeCategoryFinancials(categoryRows, categoryStockRows);
+    return categoryFilter ? all.filter((r) => r.name === categoryFilter) : all;
+  }, [categoryRows, categoryStockRows, categoryFilter]);
 
   const categoryMaxRevenue = Math.max(1, ...categoryFinancials.map((r) => r.revenue));
 
@@ -159,6 +165,9 @@ function Accounting() {
     const map = new Map<string, ProductRow>();
     for (const o of paidOrders) {
       for (const it of o.items) {
+        if (categoryFilter && categoryByProductId.get(it.productId ?? "") !== categoryFilter) {
+          continue;
+        }
         const key = it.productId ?? `${it.sku}-${it.name}`;
         const row = map.get(key) ?? {
           key,
@@ -179,7 +188,7 @@ function Accounting() {
       ...r,
       margin: r.revenue > 0 ? Math.round((r.profit / r.revenue) * 100) : 0,
     }));
-  }, [paidOrders]);
+  }, [paidOrders, categoryFilter, categoryByProductId]);
 
   const topProfit = [...productRows].sort((a, b) => b.profit - a.profit).slice(0, 5);
   const worstProfit = [...productRows]
@@ -372,6 +381,22 @@ function Accounting() {
           onFromChange={setFrom}
           onToChange={setTo}
         />
+        <label htmlFor="category-filter" className="sr-only">
+          Filtrer par catégorie
+        </label>
+        <select
+          id="category-filter"
+          className="field !min-h-9 w-auto !py-1.5 text-sm"
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+        >
+          <option value="">Toutes les catégories</option>
+          {categoryOptions.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
         <span className="text-xs text-muted-foreground">
           {ordersInRange.length} commande(s) sur la période, dont {paidOrders.length} payée(s)
         </span>
@@ -433,7 +458,14 @@ function Accounting() {
 
           <section className="mt-6 border border-border">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-4">
-              <h2 className="text-base">Marges et stock par catégorie</h2>
+              <h2 className="text-base">
+                Marges et stock par catégorie
+                {categoryFilter && (
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    — {categoryFilter}
+                  </span>
+                )}
+              </h2>
               <button
                 type="button"
                 onClick={exportCategoryCsv}
@@ -514,6 +546,14 @@ function Accounting() {
               sélectionnée (hors répartition des codes promo) — le CA encaissé ci-dessus (après
               remises) fait foi pour le total. La valeur du stock et le bénéfice potentiel sont un
               instantané de l'inventaire actuel (prix d'achat), indépendant de la période.
+              {categoryFilter && (
+                <>
+                  {" "}
+                  Les indicateurs généraux en haut de page (commandes payées, panier moyen,
+                  remises...) restent calculés sur toutes les catégories : une commande peut
+                  mélanger plusieurs catégories, impossible à répartir proprement entre elles.
+                </>
+              )}
             </p>
           </section>
 
@@ -579,7 +619,14 @@ function Accounting() {
 
           <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <section className="border border-border">
-              <h2 className="border-b border-border p-4 text-base">Top 5 bénéfices</h2>
+              <h2 className="border-b border-border p-4 text-base">
+                Top 5 bénéfices
+                {categoryFilter && (
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    — {categoryFilter}
+                  </span>
+                )}
+              </h2>
               {topProfit.length === 0 ? (
                 <p className="p-4 text-sm text-muted-foreground">Aucune vente sur la période.</p>
               ) : (
@@ -606,6 +653,11 @@ function Accounting() {
             <section className="border border-border">
               <h2 className="border-b border-border p-4 text-base">
                 À surveiller (plus faible marge)
+                {categoryFilter && (
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    — {categoryFilter}
+                  </span>
+                )}
               </h2>
               {worstProfit.length === 0 ? (
                 <p className="p-4 text-sm text-muted-foreground">Aucune vente sur la période.</p>
