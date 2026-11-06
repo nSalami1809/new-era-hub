@@ -168,6 +168,7 @@ export type Database = {
           id: string;
           order_number: string;
           promo_code: string | null;
+          proof_image_url: string | null;
           status: Database["public"]["Enums"]["order_status"];
           subtotal: number;
           total: number;
@@ -187,6 +188,7 @@ export type Database = {
           id?: string;
           order_number: string;
           promo_code?: string | null;
+          proof_image_url?: string | null;
           status?: Database["public"]["Enums"]["order_status"];
           subtotal: number;
           total: number;
@@ -206,6 +208,7 @@ export type Database = {
           id?: string;
           order_number?: string;
           promo_code?: string | null;
+          proof_image_url?: string | null;
           status?: Database["public"]["Enums"]["order_status"];
           subtotal?: number;
           total?: number;

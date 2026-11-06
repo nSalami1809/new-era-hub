@@ -33,6 +33,7 @@ type OrderRow = {
   promo_code?: string | null;
   status: OrderStatus;
   channel?: string | null;
+  proof_image_url?: string | null;
   created_at: string;
   updated_at: string;
   order_items?: OrderItemRow[];
@@ -75,6 +76,7 @@ function mapOrder(row: OrderRow): Order {
     promoCode: row.promo_code ?? null,
     status: row.status,
     channel: (row.channel as OrderChannel | null | undefined) ?? "site",
+    proofImageUrl: row.proof_image_url ?? null,
     history: (row.order_status_history ?? [])
       .map((h) => ({ status: h.status, at: h.at }))
       .sort((a, b) => a.at.localeCompare(b.at)),
@@ -236,8 +238,11 @@ export function useDeleteOrder() {
  * info was entered by the customer themselves at checkout, not something an
  * admin should silently overwrite. An offline sale's info is admin-entered
  * from the start, so editing it afterwards is just fixing a typo or adding
- * detail that wasn't captured yet. */
-export function useUpdateOfflineSaleCustomer() {
+ * detail (or a proof image) that wasn't captured yet. `proofImageUrl`
+ * undefined leaves the column untouched; null clears it; a string sets it —
+ * lets callers update customer fields without accidentally wiping an
+ * already-uploaded proof. */
+export function useUpdateOfflineSaleInfo() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -246,12 +251,14 @@ export function useUpdateOfflineSaleCustomer() {
       lastName,
       phone,
       note,
+      proofImageUrl,
     }: {
       id: string;
       firstName: string;
       lastName: string;
       phone: string;
       note: string;
+      proofImageUrl?: string | null;
     }) => {
       const { error } = await supabase
         .from("orders")
@@ -260,6 +267,7 @@ export function useUpdateOfflineSaleCustomer() {
           customer_last_name: lastName.trim() || "hors site",
           customer_phone: phone.trim() || "—",
           customer_note: note.trim() || null,
+          ...(proofImageUrl !== undefined ? { proof_image_url: proofImageUrl } : {}),
         })
         .eq("id", id)
         .eq("channel", "offline");

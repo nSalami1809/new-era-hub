@@ -3,14 +3,11 @@ import { ArrowLeft, Pencil } from "lucide-react";
 import { useState } from "react";
 import { ProductImage } from "@/components/ProductImage";
 import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
+import { ProofUploader } from "@/components/ProofUploader";
 import { Skeleton } from "@/components/Skeleton";
 import { Spinner } from "@/components/Spinner";
 import { formatDate, formatPrice } from "@/lib/format";
-import {
-  useAdminOrder,
-  useUpdateOfflineSaleCustomer,
-  useUpdateOrderStatus,
-} from "@/lib/api/orders";
+import { useAdminOrder, useUpdateOfflineSaleInfo, useUpdateOrderStatus } from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
 import { ORDER_STATUSES, variantLabel, type Order, type OrderStatus } from "@/lib/types";
 import { orderStatusWhatsappUrl } from "@/lib/whatsapp";
@@ -29,11 +26,12 @@ function EditOfflineCustomer({ order, onDone }: { order: Order; onDone: () => vo
   );
   const [phone, setPhone] = useState(order.customer.phone === "—" ? "" : order.customer.phone);
   const [note, setNote] = useState(order.customer.note ?? "");
-  const update = useUpdateOfflineSaleCustomer();
+  const [proofImageUrl, setProofImageUrl] = useState(order.proofImageUrl);
+  const update = useUpdateOfflineSaleInfo();
 
   function save() {
     update.mutate(
-      { id: order.id, firstName, lastName, phone, note },
+      { id: order.id, firstName, lastName, phone, note, proofImageUrl },
       {
         onSuccess: () => {
           toast("Informations mises à jour.");
@@ -92,6 +90,10 @@ function EditOfflineCustomer({ order, onDone }: { order: Order; onDone: () => vo
           onChange={(e) => setNote(e.target.value)}
           placeholder="Vendu via WhatsApp à..."
         />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium">Justificatif de transaction</label>
+        <ProofUploader value={proofImageUrl} onChange={setProofImageUrl} />
       </div>
       <div className="flex gap-2">
         <button
@@ -252,6 +254,22 @@ function AdminOrderDetail() {
                 <p className="mt-2 text-sm text-muted-foreground">
                   Précision : {order.customer.note}
                 </p>
+              )}
+              {order.proofImageUrl && (
+                <a
+                  href={order.proofImageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  <ProductImage
+                    src={order.proofImageUrl}
+                    alt="Justificatif de transaction"
+                    width={40}
+                    className="h-10 w-10 rounded-md border border-border bg-white object-contain p-1"
+                  />
+                  Voir le justificatif de transaction
+                </a>
               )}
             </>
           )}

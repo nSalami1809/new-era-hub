@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Download, Plus, Trash2 } from "lucide-react";
+import { HoldToConfirm } from "@/components/HoldToConfirm";
 import { ProductImage } from "@/components/ProductImage";
+import { ProofUploader } from "@/components/ProofUploader";
 import { formatDate, formatPrice } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
 import { useProducts } from "@/lib/api/products";
@@ -9,7 +11,8 @@ import { useCategories } from "@/lib/api/categories";
 import {
   useAdminOrders,
   useCreateOfflineSale,
-  useUpdateOfflineSaleCustomer,
+  useDeleteOrder,
+  useUpdateOfflineSaleInfo,
   type OfflineSaleItem,
 } from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
@@ -155,7 +158,8 @@ function AdminOfflineSales() {
   const { data: settings } = useSettings();
   const currency = settings?.currency ?? "FCFA";
   const createOfflineSale = useCreateOfflineSale();
-  const updateCustomer = useUpdateOfflineSaleCustomer();
+  const updateInfo = useUpdateOfflineSaleInfo();
+  const deleteOrder = useDeleteOrder();
 
   const [productId, setProductId] = useState("");
   const [variantId, setVariantId] = useState("");
@@ -165,6 +169,7 @@ function AdminOfflineSales() {
   const [customerLastName, setCustomerLastName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [note, setNote] = useState("");
+  const [proofImageUrl, setProofImageUrl] = useState<string | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [error, setError] = useState("");
 
@@ -260,17 +265,24 @@ function AdminOfflineSales() {
             setError(result.error);
             return;
           }
-          if (customerFirstName.trim() || customerLastName.trim() || customerPhone.trim()) {
-            updateCustomer.mutate({
+          if (
+            customerFirstName.trim() ||
+            customerLastName.trim() ||
+            customerPhone.trim() ||
+            proofImageUrl
+          ) {
+            updateInfo.mutate({
               id: result.orderId,
               firstName: customerFirstName,
               lastName: customerLastName,
               phone: customerPhone,
               note,
+              proofImageUrl,
             });
           }
           toast(`Vente hors site #${result.orderNumber} enregistrée.`);
           setCart([]);
+          setProofImageUrl(null);
           setCustomerFirstName("");
           setCustomerLastName("");
           setCustomerPhone("");
@@ -481,6 +493,11 @@ function AdminOfflineSales() {
               </div>
             </div>
 
+            <h3 className="mb-1 mt-4 text-sm font-bold uppercase tracking-wide">
+              Justificatif de transaction (facultatif)
+            </h3>
+            <ProofUploader value={proofImageUrl} onChange={setProofImageUrl} />
+
             {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
             <button
               type="button"
@@ -526,6 +543,7 @@ function AdminOfflineSales() {
                 <th className="p-3">Articles</th>
                 <th className="p-3 text-right">Total</th>
                 <th className="p-3 text-right">Détail</th>
+                <th className="p-3 text-right">Supprimer</th>
               </tr>
             </thead>
             <tbody>
@@ -557,6 +575,13 @@ function AdminOfflineSales() {
                       >
                         Détail
                       </Link>
+                    </td>
+                    <td className="p-3 text-right">
+                      <HoldToConfirm
+                        onConfirm={() => deleteOrder.mutate(o.id)}
+                        idleLabel="Maintenir"
+                        className="!min-h-9 !px-2.5 !py-1.5 text-xs"
+                      />
                     </td>
                   </tr>
                 );

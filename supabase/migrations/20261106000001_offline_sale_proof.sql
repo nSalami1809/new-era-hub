@@ -1,0 +1,11 @@
+-- Justificatif de transaction (capture d'ecran de transfert Mobile Money,
+-- photo de recu...) pour une vente hors site : une image par commande,
+-- visible sur sa fiche detail. Colonne generique sur `orders` (pas
+-- seulement "offline") pour rester simple, mais l'UI ne l'expose que pour
+-- channel = 'offline'. L'image elle-meme est stockee dans le bucket
+-- product-images existant (deja public en lecture, admin en ecriture - voir
+-- 20260920000008_product_images_storage.sql), sous un prefixe sale-proofs/
+-- dedie : evite de creer un nouveau bucket/policies pour un seul usage,
+-- simplement un dossier different dans le meme bucket a policies bucket-
+-- level (non limitees par chemin).
+alter table public.orders add column proof_image_url text;

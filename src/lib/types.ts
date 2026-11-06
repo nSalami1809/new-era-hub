@@ -123,6 +123,9 @@ export type Order = {
   promoCode: string | null;
   status: OrderStatus;
   channel: OrderChannel;
+  /** Justificatif de transaction (vente hors site) : capture d'écran de
+   * transfert, photo de reçu... null si aucun n'a été ajouté. */
+  proofImageUrl: string | null;
   history: { status: OrderStatus; at: string }[];
   createdAt: string;
   updatedAt: string;
