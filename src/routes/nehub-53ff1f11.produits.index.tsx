@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Download, Pencil, Trash2 } from "lucide-react";
+import { Download, FileDown, Pencil, Trash2 } from "lucide-react";
 import { ProductImage } from "@/components/ProductImage";
 import { ViewToggle } from "@/components/ViewToggle";
 import { Pager } from "@/components/Pager";
 import { AdminCardGridSkeleton, AdminTableSkeleton } from "@/components/Skeleton";
+import { Spinner } from "@/components/Spinner";
 import { formatPrice } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
+import { loadImage, fitInBox } from "@/lib/pdf-image";
 import {
   ADMIN_PRODUCTS_PAGE_SIZE,
   fetchAllMatchingAdminProducts,
@@ -20,7 +22,8 @@ import { useSettings } from "@/lib/api/settings";
 import { useViewMode } from "@/lib/use-view-mode";
 import { usePersistedState } from "@/lib/use-persisted-state";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
-import { stockStatus, unitProfit, profitMargin, type Product } from "@/lib/types";
+import { effectivePrice, stockStatus, unitProfit, profitMargin, type Product } from "@/lib/types";
+import logo from "@/assets/logo-new-era-hub-241.jpeg";
 
 export const Route = createFileRoute("/nehub-53ff1f11/produits/")({
   component: AdminProducts,
@@ -62,6 +65,7 @@ function AdminProducts() {
   const [bulkPending, setBulkPending] = useState(false);
   const [selectingAll, setSelectingAll] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const filters: AdminProductFilters = {
     q: debouncedQuery || undefined,
@@ -168,6 +172,83 @@ function AdminProducts() {
     }
   }
 
+  /** Catalogue produits en PDF — identité du site (logo, nom) comme la
+   * facture, une ligne par produit avec sa photo intégrée. Même technique
+   * jsPDF/autoTable que le "Détail par produit" de Comptabilité : les
+   * photos sont préchargées en data URL puis dessinées dans la cellule via
+   * didDrawCell (jspdf-autotable ne sait pas afficher une image autrement). */
+  async function exportProductsPdf() {
+    setExportingPdf(true);
+    try {
+      const [{ default: JsPDF }, { autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
+      const all = await fetchAllMatchingAdminProducts(filters);
+      const [logoImg, ...productImages] = await Promise.all([
+        loadImage(logo, "JPEG"),
+        ...all.map((p) => loadImage(p.images[0] ?? "", "PNG")),
+      ]);
+
+      const doc = new JsPDF();
+      let y = 16;
+
+      if (logoImg) {
+        const { w, h } = fitInBox(logoImg.width, logoImg.height, 16);
+        doc.addImage(logoImg.dataUrl, "JPEG", 14, y - 9, w, h);
+      }
+      doc.setFontSize(16);
+      doc.text(settings?.storeName ?? "New Era Hub 241", 34, y - 2);
+      doc.setFontSize(10);
+      doc.text("Catalogue produits", 34, y + 4);
+
+      y += 14;
+      doc.setFontSize(8);
+      doc.setTextColor(120);
+      doc.text(
+        `${all.length} produit${all.length > 1 ? "s" : ""} · ${new Date().toLocaleDateString("fr-FR")}`,
+        14,
+        y,
+      );
+      doc.setTextColor(0);
+
+      autoTable(doc, {
+        startY: y + 4,
+        head: [["Photo", "Produit", "Quantité", "Prix d'achat", "Prix de vente", "Marge"]],
+        body: all.map((p) => [
+          "",
+          `${p.brand} ${p.name}`,
+          String(p.stock),
+          formatPrice(p.costPrice, currency),
+          formatPrice(effectivePrice(p), currency),
+          profitMargin(p) !== null ? `${profitMargin(p)}%` : "—",
+        ]),
+        styles: { fontSize: 9, minCellHeight: 16 },
+        headStyles: { fillColor: [23, 23, 23] },
+        columnStyles: { 0: { cellWidth: 18 } },
+        didDrawCell: (data) => {
+          if (data.section !== "body" || data.column.index !== 0) return;
+          const img = productImages[data.row.index];
+          if (!img) return;
+          const box = Math.min(data.cell.height - 2, 14);
+          const { w, h } = fitInBox(img.width, img.height, box);
+          doc.addImage(
+            img.dataUrl,
+            "PNG",
+            data.cell.x + (data.cell.width - w) / 2,
+            data.cell.y + (data.cell.height - h) / 2,
+            w,
+            h,
+          );
+        },
+      });
+
+      doc.save(`produits-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } finally {
+      setExportingPdf(false);
+    }
+  }
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -182,6 +263,15 @@ function AdminProducts() {
           >
             <Download size={14} />
             {exportingCsv ? "Export..." : "Exporter CSV"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void exportProductsPdf()}
+            disabled={exportingPdf}
+            className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+          >
+            {exportingPdf ? <Spinner size={14} /> : <FileDown size={14} />}
+            {exportingPdf ? "Export..." : "Exporter PDF"}
           </button>
           <Link to="/nehub-53ff1f11/produits/nouveau" className="btn-base btn-success">
             Nouveau produit
