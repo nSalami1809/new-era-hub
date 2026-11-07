@@ -11,9 +11,9 @@ import {
   Tag,
   TrendingUp,
   Wallet,
-  type LucideIcon,
 } from "lucide-react";
-import { TrendChart } from "@/components/TrendChart";
+import { KpiCard } from "@/components/KpiCard";
+import { TrendAreaChart } from "@/components/TrendAreaChart";
 import { PeriodPicker } from "@/components/PeriodPicker";
 import { formatDate, formatPrice } from "@/lib/format";
 import { PAID_STATUSES, buildTrend } from "@/lib/accounting";
@@ -22,43 +22,6 @@ import { useAdminProducts } from "@/lib/api/products";
 import { useAdminOrders } from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
 import { effectivePrice, stockStatus, type Order } from "@/lib/types";
-
-/** KPI tile shared by every stat below — icon + value + label, linking to
- * where that number actually lives. `to`/`search` are typed loosely here
- * (TanStack Router's route-literal typing doesn't survive being threaded
- * through a generic prop) — every call site below still passes a real,
- * existing route path. */
-function KpiTile({
-  to,
-  search,
-  icon: Icon,
-  label,
-  value,
-  valueClassName,
-}: {
-  to: string;
-  search?: Record<string, string>;
-  icon: LucideIcon;
-  label: string;
-  value: React.ReactNode;
-  valueClassName?: string;
-}) {
-  return (
-    <Link
-      to={to}
-      search={search}
-      className="flex items-start gap-3 border border-border p-4 text-left transition-colors hover:bg-muted"
-    >
-      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-        <Icon size={16} aria-hidden="true" />
-      </span>
-      <span className="min-w-0">
-        <span className={`block text-xl font-bold ${valueClassName ?? ""}`}>{value}</span>
-        <span className="block text-xs uppercase tracking-wide text-muted-foreground">{label}</span>
-      </span>
-    </Link>
-  );
-}
 
 /** Rounded +/-% badge comparing a period's total to the immediately
  * preceding period of equal length — null (hidden) when there's no prior
@@ -69,7 +32,7 @@ function TrendBadge({ current, previous }: { current: number; previous: number }
   const positive = pct >= 0;
   return (
     <span
-      className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
+      className={`inline-flex items-center gap-0.5 px-2 py-0.5 text-xs font-semibold ${
         positive ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
       }`}
     >
@@ -138,15 +101,15 @@ function Dashboard() {
     <div>
       <h1 className="text-2xl">Tableau de bord</h1>
 
-      <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <KpiTile
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard
           to="/nehub-53ff1f11/produits"
           icon={Package}
           label="Produits"
           value={products.length}
         />
-        <KpiTile to="/nehub-53ff1f11/stocks" icon={PackageCheck} label="En stock" value={inStock} />
-        <KpiTile
+        <KpiCard to="/nehub-53ff1f11/stocks" icon={PackageCheck} label="En stock" value={inStock} />
+        <KpiCard
           to="/nehub-53ff1f11/stocks"
           search={{ stock: "out" }}
           icon={AlertTriangle}
@@ -154,25 +117,26 @@ function Dashboard() {
           value={outOfStock}
           valueClassName={outOfStock > 0 ? "text-destructive" : ""}
         />
-        <KpiTile to="/nehub-53ff1f11/promotions" icon={Tag} label="En promotion" value={promos} />
-        <KpiTile
+        <KpiCard to="/nehub-53ff1f11/promotions" icon={Tag} label="En promotion" value={promos} />
+        <KpiCard
           to="/nehub-53ff1f11/commandes"
           icon={ShoppingCart}
           label="Commandes"
           value={orders.length}
         />
-        <KpiTile
+        <KpiCard
           to="/nehub-53ff1f11/commandes"
           search={{ status: "Nouvelle" }}
           icon={Clock}
           label="Nouvelles commandes"
           value={pending}
         />
-        <KpiTile
+        <KpiCard
           to="/nehub-53ff1f11/comptabilite"
           icon={Wallet}
           label="Chiffre d'affaires encaissé"
           value={formatPrice(revenue, currency)}
+          hint="Depuis le début"
         />
       </div>
 
@@ -180,23 +144,23 @@ function Dashboard() {
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Répartition du stock
         </h2>
-        <div className="mt-3 flex h-2.5 gap-0.5 overflow-hidden rounded-sm bg-muted">
+        <div className="mt-3 flex h-2.5 gap-0.5 overflow-hidden bg-muted">
           <div
-            className="h-full rounded-sm bg-success"
+            className="h-full bg-success"
             style={{ width: `${(healthyStock / Math.max(1, products.length)) * 100}%` }}
           />
           <div
-            className="h-full rounded-sm bg-warning"
+            className="h-full bg-warning"
             style={{ width: `${(lowStock / Math.max(1, products.length)) * 100}%` }}
           />
           <div
-            className="h-full rounded-sm bg-destructive"
+            className="h-full bg-destructive"
             style={{ width: `${(outOfStock / Math.max(1, products.length)) * 100}%` }}
           />
         </div>
         <div className="mt-3 flex flex-wrap gap-4 text-xs">
           <Link to="/nehub-53ff1f11/stocks" className="flex items-center gap-1.5 hover:underline">
-            <span className="size-2 rounded-full bg-success" aria-hidden="true" />
+            <span className="size-2 bg-success" aria-hidden="true" />
             {healthyStock} en stock
           </Link>
           <Link
@@ -204,7 +168,7 @@ function Dashboard() {
             search={{ stock: "low" }}
             className="flex items-center gap-1.5 hover:underline"
           >
-            <span className="size-2 rounded-full bg-warning" aria-hidden="true" />
+            <span className="size-2 bg-warning" aria-hidden="true" />
             {lowStock} stock faible
           </Link>
           <Link
@@ -212,9 +176,48 @@ function Dashboard() {
             search={{ stock: "out" }}
             className="flex items-center gap-1.5 hover:underline"
           >
-            <span className="size-2 rounded-full bg-destructive" aria-hidden="true" />
+            <span className="size-2 bg-destructive" aria-hidden="true" />
             {outOfStock} en rupture
           </Link>
+        </div>
+      </section>
+
+      <section className="mt-8 border border-border p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold">Chiffre d'affaires</h2>
+            <p className="text-xs text-muted-foreground">
+              Tendance des ventes payées sur la période choisie
+            </p>
+          </div>
+          <PeriodPicker
+            value={periodKey}
+            onChange={setPeriodKey}
+            from={from}
+            to={to}
+            onFromChange={setFrom}
+            onToChange={setTo}
+          />
+        </div>
+        <div className="mt-4 flex flex-wrap items-baseline gap-2">
+          <span className="text-2xl font-semibold tabular-nums">
+            {formatPrice(periodRevenue, currency)}
+          </span>
+          <span className="text-sm text-muted-foreground">sur la période</span>
+          <TrendBadge current={periodRevenue} previous={previousRevenue} />
+        </div>
+        <div className="mt-4">
+          {trend.length === 0 ? (
+            <p className="p-4 text-center text-sm text-muted-foreground">
+              Aucune vente sur la période.
+            </p>
+          ) : (
+            <TrendAreaChart
+              data={trend.map((t) => ({ label: t.label, primary: t.revenue }))}
+              primaryLabel="CA"
+              valueFormatter={(v) => formatPrice(v, currency)}
+            />
+          )}
         </div>
       </section>
 
@@ -227,28 +230,28 @@ function Dashboard() {
           Voir le détail complet →
         </Link>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <KpiTile
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard
           to="/nehub-53ff1f11/comptabilite"
           icon={TrendingUp}
           label="Bénéfice encaissé"
           value={formatPrice(profit, currency)}
           valueClassName={profit >= 0 ? "text-success" : "text-destructive"}
         />
-        <KpiTile
+        <KpiCard
           to="/nehub-53ff1f11/comptabilite"
           icon={Percent}
           label="Marge nette"
           value={`${margin}%`}
           valueClassName={margin >= 0 ? "text-success" : "text-destructive"}
         />
-        <KpiTile
+        <KpiCard
           to="/nehub-53ff1f11/stocks"
           icon={Archive}
           label="Valeur du stock (achat)"
           value={formatPrice(stockValue, currency)}
         />
-        <KpiTile
+        <KpiCard
           to="/nehub-53ff1f11/stocks"
           icon={TrendingUp}
           label="Bénéfice potentiel (stock actuel)"
@@ -256,37 +259,6 @@ function Dashboard() {
           valueClassName={potentialProfit >= 0 ? "text-success" : "text-destructive"}
         />
       </div>
-
-      <section className="mt-8 border border-border p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-base">Chiffre d'affaires</h2>
-          <PeriodPicker
-            value={periodKey}
-            onChange={setPeriodKey}
-            from={from}
-            to={to}
-            onFromChange={setFrom}
-            onToChange={setTo}
-          />
-        </div>
-        <div className="mt-4 flex flex-wrap items-baseline gap-2">
-          <span className="text-2xl font-bold">{formatPrice(periodRevenue, currency)}</span>
-          <span className="text-sm text-muted-foreground">sur la période</span>
-          <TrendBadge current={periodRevenue} previous={previousRevenue} />
-        </div>
-        <div className="mt-4">
-          {trend.length === 0 ? (
-            <p className="p-4 text-center text-sm text-muted-foreground">
-              Aucune vente sur la période.
-            </p>
-          ) : (
-            <TrendChart
-              data={trend.map((t) => ({ label: t.label, value: t.revenue }))}
-              valueFormatter={(v) => formatPrice(v, currency)}
-            />
-          )}
-        </div>
-      </section>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <section className="border border-border">
@@ -307,9 +279,9 @@ function Dashboard() {
                     </Link>
                     <span className="shrink-0 text-muted-foreground">{p.sold} vendus</span>
                   </div>
-                  <div className="mt-2 h-1.5 rounded-sm bg-muted">
+                  <div className="mt-2 h-1.5 bg-muted">
                     <div
-                      className="h-1.5 rounded-sm bg-foreground"
+                      className="h-1.5 bg-foreground"
                       style={{ width: `${Math.max(4, (p.sold / bestSellersMax) * 100)}%` }}
                     />
                   </div>

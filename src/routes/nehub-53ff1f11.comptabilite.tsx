@@ -5,6 +5,7 @@ import { formatPrice } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
 import { brandedPdfHeader } from "@/lib/pdf-report";
 import { PeriodPicker } from "@/components/PeriodPicker";
+import { TrendAreaChart } from "@/components/TrendAreaChart";
 import { periodRange, parseDateOnly, PERIODS, type PeriodKey } from "@/lib/period";
 import { Spinner } from "@/components/Spinner";
 import {
@@ -229,7 +230,6 @@ function Accounting() {
   }, [paidOrders]);
 
   const trend = useMemo(() => buildTrend(paidOrders, start, end), [paidOrders, start, end]);
-  const trendMax = Math.max(1, ...trend.map((t) => Math.max(t.revenue, 0)));
 
   function exportCategoryCsv() {
     downloadCsv(
@@ -492,27 +492,18 @@ function Accounting() {
             {trend.length === 0 ? (
               <p className="p-4 text-sm text-muted-foreground">Aucune donnée sur la période.</p>
             ) : (
-              <ul className="divide-y divide-border">
-                {trend.map((t) => (
-                  <li key={t.label} className="flex items-center gap-3 p-3 text-sm">
-                    <span className="w-20 shrink-0 text-xs text-muted-foreground">{t.label}</span>
-                    <div className="h-5 flex-1 bg-muted">
-                      <div
-                        className="h-5 bg-foreground"
-                        style={{ width: `${Math.max(2, (t.revenue / trendMax) * 100)}%` }}
-                      />
-                    </div>
-                    <span className="w-28 shrink-0 text-right font-medium">
-                      {formatPrice(t.revenue, currency)}
-                    </span>
-                    <span
-                      className={`w-24 shrink-0 text-right text-xs ${t.profit >= 0 ? "text-success" : "text-destructive"}`}
-                    >
-                      {formatPrice(t.profit, currency)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <div className="p-4">
+                <TrendAreaChart
+                  data={trend.map((t) => ({
+                    label: t.label,
+                    primary: t.revenue,
+                    secondary: t.profit,
+                  }))}
+                  primaryLabel="CA"
+                  secondaryLabel="Bénéfice"
+                  valueFormatter={(v) => formatPrice(v, currency)}
+                />
+              </div>
             )}
           </section>
 
