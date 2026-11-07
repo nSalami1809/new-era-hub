@@ -1,14 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Download } from "lucide-react";
+import { Download, FileDown } from "lucide-react";
 import { ViewToggle } from "@/components/ViewToggle";
 import { AdminCardGridSkeleton, AdminTableSkeleton } from "@/components/Skeleton";
+import { Spinner } from "@/components/Spinner";
 import { formatDate } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
+import { brandedPdfHeader } from "@/lib/pdf-report";
 import { useProducts } from "@/lib/api/products";
 import { useAdjustStock, useStockMovements } from "@/lib/api/stock";
 import { useAdjustVariantStock } from "@/lib/api/stock-variants";
 import { useStockAlerts, useDeleteStockAlert } from "@/lib/api/stock-alerts";
+import { useSettings } from "@/lib/api/settings";
 import { useViewMode } from "@/lib/use-view-mode";
 import { usePersistedState } from "@/lib/use-persisted-state";
 import { useCategories } from "@/lib/api/categories";
@@ -75,6 +78,7 @@ function AdminStocks() {
   const { data: categories = [] } = useCategories();
   const { data: movements = [] } = useStockMovements();
   const { data: stockAlerts = [] } = useStockAlerts();
+  const { data: settings } = useSettings();
   const deleteStockAlert = useDeleteStockAlert();
   const adjustStock = useAdjustStock();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -82,6 +86,7 @@ function AdminStocks() {
   const [view, setView] = useViewMode("admin-stocks-view");
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = usePersistedState("admin-stocks-category-filter");
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const outOfStock = products.filter((p) => stockStatus(p) === "out").length;
   const lowStock = products.filter((p) => stockStatus(p) === "low").length;
@@ -386,27 +391,70 @@ function AdminStocks() {
       <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg">Historique des mouvements</h2>
         {movements.length > 0 && (
-          <button
-            type="button"
-            onClick={() =>
-              downloadCsv(
-                `mouvements-stock-${new Date().toISOString().slice(0, 10)}.csv`,
-                ["Date", "Produit", "Ancien stock", "Nouveau stock", "Différence", "Raison"],
-                movements.map((m) => [
-                  formatDate(m.createdAt),
-                  m.productName,
-                  m.previousStock,
-                  m.newStock,
-                  m.difference,
-                  m.reason,
-                ]),
-              )
-            }
-            className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
-          >
-            <Download size={14} />
-            Exporter CSV
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                downloadCsv(
+                  `mouvements-stock-${new Date().toISOString().slice(0, 10)}.csv`,
+                  ["Date", "Produit", "Ancien stock", "Nouveau stock", "Différence", "Raison"],
+                  movements.map((m) => [
+                    formatDate(m.createdAt),
+                    m.productName,
+                    m.previousStock,
+                    m.newStock,
+                    m.difference,
+                    m.reason,
+                  ]),
+                )
+              }
+              className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+            >
+              <Download size={14} />
+              Exporter CSV
+            </button>
+            <button
+              type="button"
+              disabled={exportingPdf}
+              onClick={async () => {
+                setExportingPdf(true);
+                try {
+                  const [{ default: JsPDF }, { autoTable }] = await Promise.all([
+                    import("jspdf"),
+                    import("jspdf-autotable"),
+                  ]);
+                  const doc = new JsPDF();
+                  const startY = await brandedPdfHeader(
+                    doc,
+                    settings,
+                    "Mouvements de stock",
+                    `${movements.length} mouvement${movements.length > 1 ? "s" : ""} · ${new Date().toLocaleDateString("fr-FR")}`,
+                  );
+                  autoTable(doc, {
+                    startY,
+                    head: [["Date", "Produit", "Ancien", "Nouveau", "Différence", "Raison"]],
+                    body: movements.map((m) => [
+                      formatDate(m.createdAt),
+                      m.productName,
+                      String(m.previousStock),
+                      String(m.newStock),
+                      String(m.difference),
+                      m.reason,
+                    ]),
+                    styles: { fontSize: 9 },
+                    headStyles: { fillColor: [23, 23, 23] },
+                  });
+                  doc.save(`mouvements-stock-${new Date().toISOString().slice(0, 10)}.pdf`);
+                } finally {
+                  setExportingPdf(false);
+                }
+              }}
+              className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+            >
+              {exportingPdf ? <Spinner size={14} /> : <FileDown size={14} />}
+              {exportingPdf ? "Export..." : "Exporter PDF"}
+            </button>
+          </div>
         )}
       </div>
 

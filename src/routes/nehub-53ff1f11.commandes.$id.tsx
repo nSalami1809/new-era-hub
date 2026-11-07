@@ -19,8 +19,11 @@ import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
 import {
   effectivePrice,
+  formatPaymentMethod,
+  MOBILE_MONEY_OPERATORS,
   OFFLINE_PAYMENT_METHODS,
   ORDER_STATUSES,
+  parsePaymentMethod,
   variantLabel,
   type Order,
   type OrderStatus,
@@ -42,7 +45,9 @@ function EditOfflineCustomer({ order, onDone }: { order: Order; onDone: () => vo
   const [phone, setPhone] = useState(order.customer.phone === "—" ? "" : order.customer.phone);
   const [note, setNote] = useState(order.customer.note ?? "");
   const [proofImageUrl, setProofImageUrl] = useState(order.proofImageUrl);
-  const [paymentMethod, setPaymentMethod] = useState(order.paymentMethod ?? "");
+  const initialPayment = parsePaymentMethod(order.paymentMethod);
+  const [paymentMethod, setPaymentMethod] = useState(initialPayment.method);
+  const [mobileMoneyOperator, setMobileMoneyOperator] = useState(initialPayment.operator);
   const [transactionReference, setTransactionReference] = useState(
     order.transactionReference ?? "",
   );
@@ -57,7 +62,9 @@ function EditOfflineCustomer({ order, onDone }: { order: Order; onDone: () => vo
         phone,
         note,
         proofImageUrl,
-        paymentMethod: paymentMethod || null,
+        paymentMethod: paymentMethod
+          ? formatPaymentMethod(paymentMethod, mobileMoneyOperator)
+          : null,
         transactionReference: transactionReference.trim() || null,
       },
       {
@@ -132,7 +139,10 @@ function EditOfflineCustomer({ order, onDone }: { order: Order; onDone: () => vo
             id="edit-payment-method"
             className="field !min-h-9 text-sm"
             value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value)}
+            onChange={(e) => {
+              setPaymentMethod(e.target.value);
+              setMobileMoneyOperator("");
+            }}
           >
             <option value="">Non précisé</option>
             {OFFLINE_PAYMENT_METHODS.map((m) => (
@@ -142,6 +152,26 @@ function EditOfflineCustomer({ order, onDone }: { order: Order; onDone: () => vo
             ))}
           </select>
         </div>
+        {paymentMethod === "Mobile Money" && (
+          <div>
+            <label htmlFor="edit-mobile-money-operator" className="mb-1 block text-xs font-medium">
+              Opérateur
+            </label>
+            <select
+              id="edit-mobile-money-operator"
+              className="field !min-h-9 text-sm"
+              value={mobileMoneyOperator}
+              onChange={(e) => setMobileMoneyOperator(e.target.value)}
+            >
+              <option value="">Sélectionner...</option>
+              {MOBILE_MONEY_OPERATORS.map((op) => (
+                <option key={op} value={op}>
+                  {op}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label htmlFor="edit-transaction-reference" className="mb-1 block text-xs font-medium">
             Référence de transaction

@@ -311,6 +311,25 @@ function Accounting() {
       let cursorY =
         (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
 
+      if (trend.length > 0) {
+        doc.setFontSize(11);
+        doc.text("Chiffre d'affaires par période", 14, cursorY);
+        autoTable(doc, {
+          startY: cursorY + 4,
+          head: [["Période", "CA", "Bénéfice", "Commandes"]],
+          body: trend.map((t) => [
+            t.label,
+            formatPrice(t.revenue, currency),
+            formatPrice(t.profit, currency),
+            String(t.orders),
+          ]),
+          styles: { fontSize: 9 },
+          headStyles: { fillColor: [23, 23, 23] },
+        });
+        cursorY =
+          (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
+      }
+
       if (categoryFinancials.length > 0) {
         doc.setFontSize(11);
         doc.text("Marges et stock par catégorie", 14, cursorY);

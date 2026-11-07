@@ -123,6 +123,23 @@ export const OFFLINE_PAYMENT_METHODS = [
   "Autre",
 ] as const;
 
+/** Opérateur précisant un paiement "Mobile Money" — combiné dans la même
+ * chaîne ("Mobile Money (Moov Money)") plutôt qu'une colonne séparée, pour
+ * que `orders.payment_method` reste le seul champ à afficher sur la
+ * facture, sans migration supplémentaire. */
+export const MOBILE_MONEY_OPERATORS = ["Moov Money", "Airtel Money"] as const;
+
+export function formatPaymentMethod(method: string, operator: string): string {
+  return method === "Mobile Money" && operator ? `${method} (${operator})` : method;
+}
+
+/** Inverse de formatPaymentMethod, pour pré-remplir le formulaire d'édition. */
+export function parsePaymentMethod(value: string | null): { method: string; operator: string } {
+  const match = value?.match(/^Mobile Money \((.+)\)$/);
+  if (match) return { method: "Mobile Money", operator: match[1] ?? "" };
+  return { method: value ?? "", operator: "" };
+}
+
 export type Order = {
   id: string;
   orderNumber: string;

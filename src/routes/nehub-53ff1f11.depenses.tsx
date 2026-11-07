@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Trash2, Download } from "lucide-react";
+import { Trash2, Download, FileDown } from "lucide-react";
+import { Spinner } from "@/components/Spinner";
 import { formatDateOnly, formatPrice } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
+import { brandedPdfHeader } from "@/lib/pdf-report";
 import { PeriodPicker } from "@/components/PeriodPicker";
 import { periodRange, parseDateOnly, type PeriodKey } from "@/lib/period";
 import { useSettings } from "@/lib/api/settings";
@@ -33,6 +35,7 @@ function AdminExpenses() {
   const [periodKey, setPeriodKey] = useState<PeriodKey>("mois");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const { start, end } = useMemo(() => periodRange(periodKey, from, to), [periodKey, from, to]);
 
@@ -80,6 +83,39 @@ function AdminExpenses() {
       ["Date", "Catégorie", "Libellé", "Montant", "Note"],
       filtered.map((e) => [e.expenseDate, e.category, e.label, e.amount, e.note]),
     );
+  }
+
+  async function exportPdf() {
+    setExportingPdf(true);
+    try {
+      const [{ default: JsPDF }, { autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
+      const doc = new JsPDF();
+      const startY = await brandedPdfHeader(
+        doc,
+        settings,
+        "Dépenses",
+        `${filtered.length} dépense${filtered.length > 1 ? "s" : ""} · total ${formatPrice(total, currency)} · ${new Date().toLocaleDateString("fr-FR")}`,
+      );
+      autoTable(doc, {
+        startY,
+        head: [["Date", "Catégorie", "Libellé", "Montant", "Note"]],
+        body: filtered.map((e) => [
+          formatDateOnly(e.expenseDate),
+          e.category,
+          e.label,
+          formatPrice(e.amount, currency),
+          e.note,
+        ]),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [23, 23, 23] },
+      });
+      doc.save(`depenses-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } finally {
+      setExportingPdf(false);
+    }
   }
 
   return (
@@ -185,14 +221,25 @@ function AdminExpenses() {
           </span>
         </div>
         {filtered.length > 0 && (
-          <button
-            type="button"
-            onClick={exportCsv}
-            className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
-          >
-            <Download size={14} />
-            Exporter CSV
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={exportCsv}
+              className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+            >
+              <Download size={14} />
+              Exporter CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => void exportPdf()}
+              disabled={exportingPdf}
+              className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+            >
+              {exportingPdf ? <Spinner size={14} /> : <FileDown size={14} />}
+              {exportingPdf ? "Export..." : "Exporter PDF"}
+            </button>
+          </div>
         )}
       </div>
 

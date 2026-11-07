@@ -9,6 +9,7 @@ import { Spinner } from "@/components/Spinner";
 import { formatPrice } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
 import { loadImage, fitInBox } from "@/lib/pdf-image";
+import { brandedPdfHeader } from "@/lib/pdf-report";
 import {
   ADMIN_PRODUCTS_PAGE_SIZE,
   fetchAllMatchingAdminProducts,
@@ -23,7 +24,6 @@ import { useViewMode } from "@/lib/use-view-mode";
 import { usePersistedState } from "@/lib/use-persisted-state";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { effectivePrice, stockStatus, unitProfit, profitMargin, type Product } from "@/lib/types";
-import logo from "@/assets/logo-new-era-hub-241.jpeg";
 
 export const Route = createFileRoute("/nehub-53ff1f11/produits/")({
   component: AdminProducts,
@@ -185,35 +185,18 @@ function AdminProducts() {
         import("jspdf-autotable"),
       ]);
       const all = await fetchAllMatchingAdminProducts(filters);
-      const [logoImg, ...productImages] = await Promise.all([
-        loadImage(logo, "JPEG"),
-        ...all.map((p) => loadImage(p.images[0] ?? "", "PNG")),
-      ]);
+      const productImages = await Promise.all(all.map((p) => loadImage(p.images[0] ?? "", "PNG")));
 
       const doc = new JsPDF();
-      let y = 16;
-
-      if (logoImg) {
-        const { w, h } = fitInBox(logoImg.width, logoImg.height, 16);
-        doc.addImage(logoImg.dataUrl, "JPEG", 14, y - 9, w, h);
-      }
-      doc.setFontSize(16);
-      doc.text(settings?.storeName ?? "New Era Hub 241", 34, y - 2);
-      doc.setFontSize(10);
-      doc.text("Catalogue produits", 34, y + 4);
-
-      y += 14;
-      doc.setFontSize(8);
-      doc.setTextColor(120);
-      doc.text(
+      const startY = await brandedPdfHeader(
+        doc,
+        settings,
+        "Catalogue produits",
         `${all.length} produit${all.length > 1 ? "s" : ""} · ${new Date().toLocaleDateString("fr-FR")}`,
-        14,
-        y,
       );
-      doc.setTextColor(0);
 
       autoTable(doc, {
-        startY: y + 4,
+        startY,
         head: [["Photo", "Produit", "Quantité", "Prix d'achat", "Prix de vente", "Marge"]],
         body: all.map((p) => [
           "",

@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Download, Trash2 } from "lucide-react";
+import { Download, FileDown, Trash2 } from "lucide-react";
 import { ViewToggle } from "@/components/ViewToggle";
 import { Pager } from "@/components/Pager";
 import { HoldToConfirm } from "@/components/HoldToConfirm";
 import { AdminCardGridSkeleton, AdminTableSkeleton } from "@/components/Skeleton";
+import { Spinner } from "@/components/Spinner";
 import { formatDate, formatPrice } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
+import { brandedPdfHeader } from "@/lib/pdf-report";
 import {
   ADMIN_ORDERS_PAGE_SIZE,
   fetchAllMatchingAdminOrders,
@@ -33,6 +35,7 @@ function AdminOrders() {
   const [view, setView] = useViewMode("admin-orders-view");
   const [page, setPage] = useState(0);
   const [exportingCsv, setExportingCsv] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectingAll, setSelectingAll] = useState(false);
   const [toDelete, setToDelete] = useState<{ ids: string[]; label: string } | null>(null);
@@ -112,6 +115,41 @@ function AdminOrders() {
     }
   }
 
+  async function exportPdf() {
+    setExportingPdf(true);
+    try {
+      const [{ default: JsPDF }, { autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
+      const all = await fetchAllMatchingAdminOrders(filters);
+      const doc = new JsPDF();
+      const startY = await brandedPdfHeader(
+        doc,
+        settings,
+        "Commandes",
+        `${all.length} commande${all.length > 1 ? "s" : ""} · ${new Date().toLocaleDateString("fr-FR")}`,
+      );
+      autoTable(doc, {
+        startY,
+        head: [["N°", "Date", "Client", "Téléphone", "Total", "Statut"]],
+        body: all.map((o) => [
+          o.orderNumber,
+          formatDate(o.createdAt),
+          `${o.customer.lastName} ${o.customer.firstName}`,
+          o.customer.phone,
+          formatPrice(o.total, currency),
+          o.status,
+        ]),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [23, 23, 23] },
+      });
+      doc.save(`commandes-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } finally {
+      setExportingPdf(false);
+    }
+  }
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -126,6 +164,15 @@ function AdminOrders() {
           >
             <Download size={14} />
             {exportingCsv ? "Export..." : "Exporter CSV"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void exportPdf()}
+            disabled={exportingPdf}
+            className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+          >
+            {exportingPdf ? <Spinner size={14} /> : <FileDown size={14} />}
+            {exportingPdf ? "Export..." : "Exporter PDF"}
           </button>
         </div>
       </div>

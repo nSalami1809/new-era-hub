@@ -4,8 +4,10 @@ import { Download, FileDown, Plus, Trash2 } from "lucide-react";
 import { HoldToConfirm } from "@/components/HoldToConfirm";
 import { ProductPicker } from "@/components/ProductPicker";
 import { ProofUploader } from "@/components/ProofUploader";
+import { Spinner } from "@/components/Spinner";
 import { formatDate, formatPrice } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
+import { brandedPdfHeader } from "@/lib/pdf-report";
 import { useProducts } from "@/lib/api/products";
 import { useCategories } from "@/lib/api/categories";
 import {
@@ -17,7 +19,14 @@ import {
 } from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
 import { toast } from "@/lib/toast";
-import { effectivePrice, OFFLINE_PAYMENT_METHODS, variantLabel, type Product } from "@/lib/types";
+import {
+  effectivePrice,
+  formatPaymentMethod,
+  MOBILE_MONEY_OPERATORS,
+  OFFLINE_PAYMENT_METHODS,
+  variantLabel,
+  type Product,
+} from "@/lib/types";
 
 export const Route = createFileRoute("/nehub-53ff1f11/ventes-hors-site")({
   component: AdminOfflineSales,
@@ -57,9 +66,11 @@ function AdminOfflineSales() {
   const [note, setNote] = useState("");
   const [proofImageUrl, setProofImageUrl] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("");
+  const [mobileMoneyOperator, setMobileMoneyOperator] = useState("");
   const [transactionReference, setTransactionReference] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [error, setError] = useState("");
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const sellableProducts = useMemo(
     () => products.filter((p) => p.isActive).sort((a, b) => a.name.localeCompare(b.name)),
@@ -168,7 +179,9 @@ function AdminOfflineSales() {
               phone: customerPhone,
               note,
               proofImageUrl,
-              paymentMethod: paymentMethod || null,
+              paymentMethod: paymentMethod
+                ? formatPaymentMethod(paymentMethod, mobileMoneyOperator)
+                : null,
               transactionReference: transactionReference.trim() || null,
             });
           }
@@ -176,6 +189,7 @@ function AdminOfflineSales() {
           setCart([]);
           setProofImageUrl(null);
           setPaymentMethod("");
+          setMobileMoneyOperator("");
           setTransactionReference("");
           setCustomerFirstName("");
           setCustomerLastName("");
@@ -212,6 +226,43 @@ function AdminOfflineSales() {
         ];
       }),
     );
+  }
+
+  async function exportPdf() {
+    setExportingPdf(true);
+    try {
+      const [{ default: JsPDF }, { autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
+      const doc = new JsPDF();
+      const startY = await brandedPdfHeader(
+        doc,
+        settings,
+        "Ventes hors site",
+        `${offlineSales.length} vente${offlineSales.length > 1 ? "s" : ""} · ${new Date().toLocaleDateString("fr-FR")}`,
+      );
+      autoTable(doc, {
+        startY,
+        head: [["N°", "Date", "Destinataire", "Téléphone", "Articles", "Total"]],
+        body: offlineSales.map((o) => {
+          const named = o.customer.firstName !== "Vente" || o.customer.lastName !== "hors site";
+          return [
+            o.orderNumber,
+            formatDate(o.createdAt),
+            named ? `${o.customer.lastName} ${o.customer.firstName}`.trim() : "—",
+            o.customer.phone === "—" ? "" : o.customer.phone,
+            o.items.map((i) => `${i.name} x${i.quantity}`).join(" + "),
+            formatPrice(o.total, currency),
+          ];
+        }),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [23, 23, 23] },
+      });
+      doc.save(`ventes-hors-site-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } finally {
+      setExportingPdf(false);
+    }
   }
 
   return (
@@ -404,7 +455,10 @@ function AdminOfflineSales() {
                   id="payment-method"
                   className="field"
                   value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  onChange={(e) => {
+                    setPaymentMethod(e.target.value);
+                    setMobileMoneyOperator("");
+                  }}
                 >
                   <option value="">Non précisé</option>
                   {OFFLINE_PAYMENT_METHODS.map((m) => (
@@ -414,6 +468,26 @@ function AdminOfflineSales() {
                   ))}
                 </select>
               </div>
+              {paymentMethod === "Mobile Money" && (
+                <div>
+                  <label htmlFor="mobile-money-operator" className="mb-1 block text-sm font-medium">
+                    Opérateur
+                  </label>
+                  <select
+                    id="mobile-money-operator"
+                    className="field"
+                    value={mobileMoneyOperator}
+                    onChange={(e) => setMobileMoneyOperator(e.target.value)}
+                  >
+                    <option value="">Sélectionner...</option>
+                    {MOBILE_MONEY_OPERATORS.map((op) => (
+                      <option key={op} value={op}>
+                        {op}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label htmlFor="transaction-reference" className="mb-1 block text-sm font-medium">
                   Référence de transaction
