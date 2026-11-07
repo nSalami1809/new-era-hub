@@ -255,6 +255,7 @@ export function useUpdateOfflineSaleInfo() {
       lastName,
       phone,
       note,
+      deliveryLocation,
       proofImageUrl,
       paymentMethod,
       transactionReference,
@@ -264,6 +265,7 @@ export function useUpdateOfflineSaleInfo() {
       lastName: string;
       phone: string;
       note: string;
+      deliveryLocation?: string;
       proofImageUrl?: string | null;
       paymentMethod?: string | null;
       transactionReference?: string | null;
@@ -275,6 +277,9 @@ export function useUpdateOfflineSaleInfo() {
           customer_last_name: lastName.trim() || "hors site",
           customer_phone: phone.trim() || "—",
           customer_note: note.trim() || null,
+          ...(deliveryLocation !== undefined
+            ? { delivery_location: deliveryLocation.trim() || "Vente hors site" }
+            : {}),
           ...(proofImageUrl !== undefined ? { proof_image_url: proofImageUrl } : {}),
           ...(paymentMethod !== undefined ? { payment_method: paymentMethod } : {}),
           ...(transactionReference !== undefined

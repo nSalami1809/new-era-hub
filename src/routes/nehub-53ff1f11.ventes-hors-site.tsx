@@ -63,6 +63,7 @@ function AdminOfflineSales() {
   const [customerFirstName, setCustomerFirstName] = useState("");
   const [customerLastName, setCustomerLastName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [deliveryLocation, setDeliveryLocation] = useState("");
   const [note, setNote] = useState("");
   const [proofImageUrl, setProofImageUrl] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("");
@@ -168,6 +169,7 @@ function AdminOfflineSales() {
             customerFirstName.trim() ||
             customerLastName.trim() ||
             customerPhone.trim() ||
+            deliveryLocation.trim() ||
             proofImageUrl ||
             paymentMethod ||
             transactionReference.trim()
@@ -178,6 +180,7 @@ function AdminOfflineSales() {
               lastName: customerLastName,
               phone: customerPhone,
               note,
+              deliveryLocation,
               proofImageUrl,
               paymentMethod: paymentMethod
                 ? formatPaymentMethod(paymentMethod, mobileMoneyOperator)
@@ -194,6 +197,7 @@ function AdminOfflineSales() {
           setCustomerFirstName("");
           setCustomerLastName("");
           setCustomerPhone("");
+          setDeliveryLocation("");
           setNote("");
           setError("");
         },
@@ -422,6 +426,18 @@ function AdminOfflineSales() {
                   className="field"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="delivery-location" className="mb-1 block text-sm font-medium">
+                  Lieu de livraison
+                </label>
+                <input
+                  id="delivery-location"
+                  className="field"
+                  placeholder="Ex. Cocody, remis en main propre..."
+                  value={deliveryLocation}
+                  onChange={(e) => setDeliveryLocation(e.target.value)}
                 />
               </div>
               <div>

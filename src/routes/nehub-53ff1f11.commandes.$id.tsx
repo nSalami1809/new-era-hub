@@ -43,6 +43,9 @@ function EditOfflineCustomer({ order, onDone }: { order: Order; onDone: () => vo
     order.customer.lastName === "hors site" ? "" : order.customer.lastName,
   );
   const [phone, setPhone] = useState(order.customer.phone === "—" ? "" : order.customer.phone);
+  const [deliveryLocation, setDeliveryLocation] = useState(
+    order.customer.deliveryLocation === "Vente hors site" ? "" : order.customer.deliveryLocation,
+  );
   const [note, setNote] = useState(order.customer.note ?? "");
   const [proofImageUrl, setProofImageUrl] = useState(order.proofImageUrl);
   const initialPayment = parsePaymentMethod(order.paymentMethod);
@@ -61,6 +64,7 @@ function EditOfflineCustomer({ order, onDone }: { order: Order; onDone: () => vo
         lastName,
         phone,
         note,
+        deliveryLocation,
         proofImageUrl,
         paymentMethod: paymentMethod
           ? formatPaymentMethod(paymentMethod, mobileMoneyOperator)
@@ -112,6 +116,18 @@ function EditOfflineCustomer({ order, onDone }: { order: Order; onDone: () => vo
           className="field !min-h-9 text-sm"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
+        />
+      </div>
+      <div>
+        <label htmlFor="edit-delivery-location" className="mb-1 block text-xs font-medium">
+          Lieu de livraison
+        </label>
+        <input
+          id="edit-delivery-location"
+          className="field !min-h-9 text-sm"
+          placeholder="Ex. Cocody, remis en main propre..."
+          value={deliveryLocation}
+          onChange={(e) => setDeliveryLocation(e.target.value)}
         />
       </div>
       <div>
