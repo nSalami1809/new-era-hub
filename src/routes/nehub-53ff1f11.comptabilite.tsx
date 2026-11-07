@@ -9,6 +9,7 @@ import { periodRange, parseDateOnly, PERIODS, type PeriodKey } from "@/lib/perio
 import { Spinner } from "@/components/Spinner";
 import {
   PAID_STATUSES,
+  buildTrend,
   itemProfit,
   itemRevenue,
   computeCategoryRows,
@@ -19,7 +20,6 @@ import { useAdminOrders } from "@/lib/api/orders";
 import { useAdminProducts } from "@/lib/api/products";
 import { useAdminExpenses } from "@/lib/api/expenses";
 import { useSettings } from "@/lib/api/settings";
-import type { Order } from "@/lib/types";
 
 export const Route = createFileRoute("/nehub-53ff1f11/comptabilite")({
   component: Accounting,
@@ -754,29 +754,4 @@ function Accounting() {
       )}
     </div>
   );
-}
-
-type TrendPoint = { label: string; revenue: number; profit: number; orders: number };
-
-/** Buckets paid orders by day if the range is short, otherwise by month — keeps the chart readable either way. */
-function buildTrend(paidOrders: Order[], start: Date, end: Date): TrendPoint[] {
-  const spanDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000));
-  const byMonth = spanDays > 62;
-
-  const buckets = new Map<string, TrendPoint>();
-  for (const o of paidOrders) {
-    const d = new Date(o.createdAt);
-    const key = byMonth
-      ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
-      : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    const label = byMonth
-      ? d.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" })
-      : d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
-    const point = buckets.get(key) ?? { label, revenue: 0, profit: 0, orders: 0 };
-    point.revenue += o.total;
-    point.profit += o.items.reduce((s, it) => s + itemProfit(it), 0);
-    point.orders += 1;
-    buckets.set(key, point);
-  }
-  return [...buckets.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, v]) => v);
 }
