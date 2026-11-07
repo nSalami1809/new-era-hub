@@ -130,6 +130,7 @@ function AdminProducts() {
       downloadCsv(
         `produits-${new Date().toISOString().slice(0, 10)}.csv`,
         [
+          "Photo",
           "Nom",
           "Marque",
           "Catégorie",
@@ -143,6 +144,7 @@ function AdminProducts() {
         all.map((p) => {
           const status = stockStatus(p);
           return [
+            p.images[0] ?? "",
             p.name,
             p.brand,
             p.category,

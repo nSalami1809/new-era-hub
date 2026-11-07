@@ -376,6 +376,44 @@ export function useCreateOfflineSale() {
   });
 }
 
+/** Ajoute un article à une vente hors site déjà enregistrée (le client
+ * revient prendre un deuxième article) plutôt que de créer une seconde
+ * commande séparée. Scopé côté serveur aux commandes channel="offline" —
+ * voir add_offline_sale_item. */
+export function useAddOfflineSaleItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      orderId,
+      productId,
+      variantId,
+      quantity,
+      unitPrice,
+    }: {
+      orderId: string;
+      productId: string;
+      variantId: string | null;
+      quantity: number;
+      unitPrice?: number | null;
+    }) => {
+      const { error } = await supabase.rpc("add_offline_sale_item", {
+        p_order_id: orderId,
+        p_product_id: productId,
+        p_variant_id: variantId,
+        p_quantity: quantity,
+        ...(unitPrice != null ? { p_unit_price: unitPrice } : {}),
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: ["orders"] });
+      qc.invalidateQueries({ queryKey: ["orders", variables.orderId] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["stock-movements"] });
+    },
+  });
+}
+
 async function fetchOrderReceipt(ref: string): Promise<Order | null> {
   const { data, error } = await supabase.rpc("get_order_receipt", { p_ref: ref });
   if (error) throw error;

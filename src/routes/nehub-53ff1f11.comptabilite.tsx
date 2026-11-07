@@ -28,6 +28,7 @@ type ProductRow = {
   key: string;
   name: string;
   brand: string;
+  image: string;
   revenue: number;
   profit: number;
   units: number;
@@ -173,6 +174,7 @@ function Accounting() {
           key,
           name: it.name,
           brand: it.brand,
+          image: it.image,
           revenue: 0,
           profit: 0,
           units: 0,
@@ -346,6 +348,45 @@ function Accounting() {
           ]),
           styles: { fontSize: 9 },
           headStyles: { fillColor: [23, 23, 23] },
+        });
+        cursorY =
+          (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
+      }
+
+      if (productRows.length > 0) {
+        const { loadImage, fitInBox } = await import("@/lib/pdf-image");
+        const productImages = await Promise.all(productRows.map((r) => loadImage(r.image, "PNG")));
+        doc.setFontSize(11);
+        doc.text("Détail par produit", 14, cursorY);
+        autoTable(doc, {
+          startY: cursorY + 4,
+          head: [["Photo", "Produit", "Unités", "CA", "Bénéfice", "Marge"]],
+          body: productRows.map((r) => [
+            "",
+            `${r.brand} ${r.name}`,
+            String(r.units),
+            formatPrice(r.revenue, currency),
+            formatPrice(r.profit, currency),
+            `${r.margin}%`,
+          ]),
+          styles: { fontSize: 9, minCellHeight: 14 },
+          headStyles: { fillColor: [23, 23, 23] },
+          columnStyles: { 0: { cellWidth: 16 } },
+          didDrawCell: (data) => {
+            if (data.section !== "body" || data.column.index !== 0) return;
+            const img = productImages[data.row.index];
+            if (!img) return;
+            const box = Math.min(data.cell.height - 2, 12);
+            const { w, h } = fitInBox(img.width, img.height, box);
+            doc.addImage(
+              img.dataUrl,
+              "PNG",
+              data.cell.x + (data.cell.width - w) / 2,
+              data.cell.y + (data.cell.height - h) / 2,
+              w,
+              h,
+            );
+          },
         });
       }
 

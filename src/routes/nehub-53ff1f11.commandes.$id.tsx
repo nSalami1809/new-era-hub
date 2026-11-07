@@ -1,15 +1,29 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Pencil } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, FileDown, Pencil, Plus } from "lucide-react";
+import { useMemo, useState } from "react";
 import { ProductImage } from "@/components/ProductImage";
 import { OrderStatusTimeline } from "@/components/OrderStatusTimeline";
+import { ProductPicker } from "@/components/ProductPicker";
 import { ProofUploader } from "@/components/ProofUploader";
 import { Skeleton } from "@/components/Skeleton";
 import { Spinner } from "@/components/Spinner";
 import { formatDate, formatPrice } from "@/lib/format";
-import { useAdminOrder, useUpdateOfflineSaleInfo, useUpdateOrderStatus } from "@/lib/api/orders";
+import { useCategories } from "@/lib/api/categories";
+import {
+  useAddOfflineSaleItem,
+  useAdminOrder,
+  useUpdateOfflineSaleInfo,
+  useUpdateOrderStatus,
+} from "@/lib/api/orders";
+import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
-import { ORDER_STATUSES, variantLabel, type Order, type OrderStatus } from "@/lib/types";
+import {
+  effectivePrice,
+  ORDER_STATUSES,
+  variantLabel,
+  type Order,
+  type OrderStatus,
+} from "@/lib/types";
 import { orderStatusWhatsappUrl } from "@/lib/whatsapp";
 import { toast } from "@/lib/toast";
 
@@ -118,6 +132,162 @@ function EditOfflineCustomer({ order, onDone }: { order: Order; onDone: () => vo
   );
 }
 
+/** Ajoute un article de plus à une vente hors site déjà enregistrée — le
+ * client revient prendre un deuxième article, ou l'admin avait oublié une
+ * ligne. Même recherche produit qu'à la création d'une vente hors site,
+ * mais chaque ajout part directement côté serveur (pas de panier local) :
+ * la commande existe déjà, inutile de ré-attendre un "Enregistrer" global. */
+function AddOfflineSaleItem({ order }: { order: Order }) {
+  const { data: products = [] } = useProducts();
+  const { data: categories = [] } = useCategories();
+  const addItem = useAddOfflineSaleItem();
+
+  const [productId, setProductId] = useState("");
+  const [variantId, setVariantId] = useState("");
+  const [quantity, setQuantity] = useState("1");
+  const [unitPrice, setUnitPrice] = useState("");
+  const [error, setError] = useState("");
+
+  const sellableProducts = useMemo(
+    () => products.filter((p) => p.isActive).sort((a, b) => a.name.localeCompare(b.name)),
+    [products],
+  );
+  const selectedProduct = sellableProducts.find((p) => p.id === productId) ?? null;
+
+  function selectProduct(id: string) {
+    setProductId(id);
+    const p = sellableProducts.find((x) => x.id === id);
+    setVariantId("");
+    setUnitPrice(p ? String(effectivePrice(p)) : "");
+  }
+
+  function submit() {
+    if (!selectedProduct) {
+      setError("Choisissez un produit.");
+      return;
+    }
+    const qty = Math.round(Number(quantity));
+    if (!Number.isFinite(qty) || qty <= 0) {
+      setError("Quantité invalide.");
+      return;
+    }
+    const price = unitPrice === "" ? null : Number(unitPrice);
+    if (price !== null && (!Number.isFinite(price) || price < 0)) {
+      setError("Prix invalide.");
+      return;
+    }
+    if (selectedProduct.variants.length > 0 && !variantId) {
+      setError("Choisissez une taille/couleur.");
+      return;
+    }
+    const available = variantId
+      ? (selectedProduct.variants.find((v) => v.id === variantId)?.stock ?? 0)
+      : selectedProduct.stock;
+    if (qty > available) {
+      setError(`Stock insuffisant : il ne reste que ${available} exemplaire(s).`);
+      return;
+    }
+
+    setError("");
+    addItem.mutate(
+      {
+        orderId: order.id,
+        productId: selectedProduct.id,
+        variantId: variantId || null,
+        quantity: qty,
+        unitPrice: price,
+      },
+      {
+        onSuccess: () => {
+          toast("Article ajouté à la vente.");
+          setProductId("");
+          setVariantId("");
+          setQuantity("1");
+          setUnitPrice("");
+        },
+        onError: (e) => setError(e instanceof Error ? e.message : "Erreur lors de l'ajout."),
+      },
+    );
+  }
+
+  return (
+    <div className="mt-4 border-t border-border pt-4">
+      <h3 className="text-sm font-bold uppercase tracking-wide">
+        Ajouter un article à cette vente
+      </h3>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <ProductPicker
+          products={sellableProducts}
+          selected={selectedProduct}
+          onSelect={selectProduct}
+        />
+        {selectedProduct && selectedProduct.variants.length > 0 && (
+          <div>
+            <label htmlFor="add-item-variant" className="mb-1 block text-sm font-medium">
+              Taille / couleur
+            </label>
+            <select
+              id="add-item-variant"
+              className="field"
+              value={variantId}
+              onChange={(e) => setVariantId(e.target.value)}
+            >
+              <option value="">Sélectionner...</option>
+              {selectedProduct.variants.map((v) => {
+                const colorName =
+                  selectedProduct.colors.find((c) => c.id === v.colorId)?.name ?? null;
+                const sizeType =
+                  categories.find((c) => c.name === selectedProduct.category)?.sizeType ?? "none";
+                return (
+                  <option key={v.id} value={v.id}>
+                    {variantLabel(colorName, v.size, sizeType) || "Variante"} — {v.stock} en stock
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
+        <div>
+          <label htmlFor="add-item-qty" className="mb-1 block text-sm font-medium">
+            Quantité
+          </label>
+          <input
+            id="add-item-qty"
+            type="number"
+            min={1}
+            className="field"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor="add-item-price" className="mb-1 block text-sm font-medium">
+            Prix unitaire
+          </label>
+          <input
+            id="add-item-price"
+            type="number"
+            min={0}
+            className="field"
+            value={unitPrice}
+            onChange={(e) => setUnitPrice(e.target.value)}
+          />
+        </div>
+      </div>
+      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!productId || addItem.isPending}
+        className="btn-base btn-outline mt-3"
+      >
+        {addItem.isPending ? <Spinner size={13} /> : <Plus size={14} />}
+        Ajouter à la vente
+      </button>
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/nehub-53ff1f11/commandes/$id")({
   component: AdminOrderDetail,
 });
@@ -174,6 +344,18 @@ function AdminOrderDetail() {
           )}
         </h1>
         <div className="flex items-center gap-2">
+          {order.channel === "offline" && (
+            <Link
+              to="/facture/$id"
+              params={{ id: order.id }}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-base btn-outline !min-h-9 !px-3 !py-1.5 text-xs"
+            >
+              <FileDown size={14} />
+              Reçu
+            </Link>
+          )}
           {updateStatus.isPending && <Spinner size={16} />}
           <select
             className="field !min-h-[38px] w-auto"
@@ -328,6 +510,8 @@ function AdminOrderDetail() {
           </tbody>
         </table>
       </div>
+
+      {order.channel === "offline" && <AddOfflineSaleItem order={order} />}
 
       <dl className="mt-4 ml-auto max-w-xs space-y-2 text-sm">
         <div className="flex justify-between">

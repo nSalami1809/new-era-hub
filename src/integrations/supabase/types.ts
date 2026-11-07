@@ -627,6 +627,16 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      add_offline_sale_item: {
+        Args: {
+          p_order_id: string;
+          p_product_id: string;
+          p_quantity?: number;
+          p_unit_price?: number | null;
+          p_variant_id?: string | null;
+        };
+        Returns: undefined;
+      };
       add_product_color: {
         Args: {
           // Nullable at the DB level (no NOT NULL on this function param) —
