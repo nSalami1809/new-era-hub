@@ -167,11 +167,13 @@ export type Database = {
           discount: number;
           id: string;
           order_number: string;
+          payment_method: string | null;
           promo_code: string | null;
           proof_image_url: string | null;
           status: Database["public"]["Enums"]["order_status"];
           subtotal: number;
           total: number;
+          transaction_reference: string | null;
           updated_at: string;
         };
         Insert: {
@@ -187,11 +189,13 @@ export type Database = {
           discount?: number;
           id?: string;
           order_number: string;
+          payment_method?: string | null;
           promo_code?: string | null;
           proof_image_url?: string | null;
           status?: Database["public"]["Enums"]["order_status"];
           subtotal: number;
           total: number;
+          transaction_reference?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -207,11 +211,13 @@ export type Database = {
           discount?: number;
           id?: string;
           order_number?: string;
+          payment_method?: string | null;
           promo_code?: string | null;
           proof_image_url?: string | null;
           status?: Database["public"]["Enums"]["order_status"];
           subtotal?: number;
           total?: number;
+          transaction_reference?: string | null;
           updated_at?: string;
         };
         Relationships: [];

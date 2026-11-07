@@ -34,6 +34,8 @@ type OrderRow = {
   status: OrderStatus;
   channel?: string | null;
   proof_image_url?: string | null;
+  payment_method?: string | null;
+  transaction_reference?: string | null;
   created_at: string;
   updated_at: string;
   order_items?: OrderItemRow[];
@@ -77,6 +79,8 @@ function mapOrder(row: OrderRow): Order {
     status: row.status,
     channel: (row.channel as OrderChannel | null | undefined) ?? "site",
     proofImageUrl: row.proof_image_url ?? null,
+    paymentMethod: row.payment_method ?? null,
+    transactionReference: row.transaction_reference ?? null,
     history: (row.order_status_history ?? [])
       .map((h) => ({ status: h.status, at: h.at }))
       .sort((a, b) => a.at.localeCompare(b.at)),
@@ -252,6 +256,8 @@ export function useUpdateOfflineSaleInfo() {
       phone,
       note,
       proofImageUrl,
+      paymentMethod,
+      transactionReference,
     }: {
       id: string;
       firstName: string;
@@ -259,6 +265,8 @@ export function useUpdateOfflineSaleInfo() {
       phone: string;
       note: string;
       proofImageUrl?: string | null;
+      paymentMethod?: string | null;
+      transactionReference?: string | null;
     }) => {
       const { error } = await supabase
         .from("orders")
@@ -268,6 +276,10 @@ export function useUpdateOfflineSaleInfo() {
           customer_phone: phone.trim() || "—",
           customer_note: note.trim() || null,
           ...(proofImageUrl !== undefined ? { proof_image_url: proofImageUrl } : {}),
+          ...(paymentMethod !== undefined ? { payment_method: paymentMethod } : {}),
+          ...(transactionReference !== undefined
+            ? { transaction_reference: transactionReference }
+            : {}),
         })
         .eq("id", id)
         .eq("channel", "offline");

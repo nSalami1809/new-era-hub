@@ -115,6 +115,8 @@ async function downloadInvoicePdf(order: Order, settings: StoreSettings) {
     order.customer.deliveryLocation,
     ...(order.customer.address ? [order.customer.address] : []),
     ...(order.customer.note ? [`Note : ${order.customer.note}`] : []),
+    ...(order.paymentMethod ? [`Paiement : ${order.paymentMethod}`] : []),
+    ...(order.transactionReference ? [`Réf. transaction : ${order.transactionReference}`] : []),
   ];
   doc.setFontSize(8);
   for (const line of customerLines) {
@@ -363,6 +365,14 @@ function InvoicePage() {
                   {order.customer.note ? (
                     <p className="mt-1 text-muted-foreground">Note : {order.customer.note}</p>
                   ) : null}
+                  {order.paymentMethod ? (
+                    <p className="mt-1 text-muted-foreground">Paiement : {order.paymentMethod}</p>
+                  ) : null}
+                  {order.transactionReference ? (
+                    <p className="mt-1 text-muted-foreground">
+                      Réf. transaction : {order.transactionReference}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="my-4 border-t border-dashed border-foreground/30" />
@@ -518,6 +528,16 @@ function InvoicePage() {
               {order.customer.note && (
                 <p className="mt-2 text-sm text-muted-foreground">
                   Précision : {order.customer.note}
+                </p>
+              )}
+              {order.paymentMethod && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Paiement : {order.paymentMethod}
+                </p>
+              )}
+              {order.transactionReference && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Réf. transaction : {order.transactionReference}
                 </p>
               )}
             </div>

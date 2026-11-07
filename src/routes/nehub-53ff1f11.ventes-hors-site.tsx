@@ -17,7 +17,7 @@ import {
 } from "@/lib/api/orders";
 import { useSettings } from "@/lib/api/settings";
 import { toast } from "@/lib/toast";
-import { effectivePrice, variantLabel, type Product } from "@/lib/types";
+import { effectivePrice, OFFLINE_PAYMENT_METHODS, variantLabel, type Product } from "@/lib/types";
 
 export const Route = createFileRoute("/nehub-53ff1f11/ventes-hors-site")({
   component: AdminOfflineSales,
@@ -56,6 +56,8 @@ function AdminOfflineSales() {
   const [customerPhone, setCustomerPhone] = useState("");
   const [note, setNote] = useState("");
   const [proofImageUrl, setProofImageUrl] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [transactionReference, setTransactionReference] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [error, setError] = useState("");
 
@@ -155,7 +157,9 @@ function AdminOfflineSales() {
             customerFirstName.trim() ||
             customerLastName.trim() ||
             customerPhone.trim() ||
-            proofImageUrl
+            proofImageUrl ||
+            paymentMethod ||
+            transactionReference.trim()
           ) {
             updateInfo.mutate({
               id: result.orderId,
@@ -164,11 +168,15 @@ function AdminOfflineSales() {
               phone: customerPhone,
               note,
               proofImageUrl,
+              paymentMethod: paymentMethod || null,
+              transactionReference: transactionReference.trim() || null,
             });
           }
           toast(`Vente hors site #${result.orderNumber} enregistrée.`);
           setCart([]);
           setProofImageUrl(null);
+          setPaymentMethod("");
+          setTransactionReference("");
           setCustomerFirstName("");
           setCustomerLastName("");
           setCustomerPhone("");
@@ -383,6 +391,42 @@ function AdminOfflineSales() {
               Justificatif de transaction (facultatif)
             </h3>
             <ProofUploader value={proofImageUrl} onChange={setProofImageUrl} />
+
+            <h3 className="mb-1 mt-4 text-sm font-bold uppercase tracking-wide">
+              Paiement (facultatif)
+            </h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="payment-method" className="mb-1 block text-sm font-medium">
+                  Moyen de paiement
+                </label>
+                <select
+                  id="payment-method"
+                  className="field"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                >
+                  <option value="">Non précisé</option>
+                  {OFFLINE_PAYMENT_METHODS.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="transaction-reference" className="mb-1 block text-sm font-medium">
+                  Référence de transaction
+                </label>
+                <input
+                  id="transaction-reference"
+                  className="field"
+                  placeholder="Ex. code Mobile Money"
+                  value={transactionReference}
+                  onChange={(e) => setTransactionReference(e.target.value)}
+                />
+              </div>
+            </div>
 
             {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
             <button

@@ -19,6 +19,7 @@ import { useProducts } from "@/lib/api/products";
 import { useSettings } from "@/lib/api/settings";
 import {
   effectivePrice,
+  OFFLINE_PAYMENT_METHODS,
   ORDER_STATUSES,
   variantLabel,
   type Order,
@@ -41,11 +42,24 @@ function EditOfflineCustomer({ order, onDone }: { order: Order; onDone: () => vo
   const [phone, setPhone] = useState(order.customer.phone === "—" ? "" : order.customer.phone);
   const [note, setNote] = useState(order.customer.note ?? "");
   const [proofImageUrl, setProofImageUrl] = useState(order.proofImageUrl);
+  const [paymentMethod, setPaymentMethod] = useState(order.paymentMethod ?? "");
+  const [transactionReference, setTransactionReference] = useState(
+    order.transactionReference ?? "",
+  );
   const update = useUpdateOfflineSaleInfo();
 
   function save() {
     update.mutate(
-      { id: order.id, firstName, lastName, phone, note, proofImageUrl },
+      {
+        id: order.id,
+        firstName,
+        lastName,
+        phone,
+        note,
+        proofImageUrl,
+        paymentMethod: paymentMethod || null,
+        transactionReference: transactionReference.trim() || null,
+      },
       {
         onSuccess: () => {
           toast("Informations mises à jour.");
@@ -108,6 +122,38 @@ function EditOfflineCustomer({ order, onDone }: { order: Order; onDone: () => vo
       <div>
         <label className="mb-1 block text-xs font-medium">Justificatif de transaction</label>
         <ProofUploader value={proofImageUrl} onChange={setProofImageUrl} />
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div>
+          <label htmlFor="edit-payment-method" className="mb-1 block text-xs font-medium">
+            Moyen de paiement
+          </label>
+          <select
+            id="edit-payment-method"
+            className="field !min-h-9 text-sm"
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+          >
+            <option value="">Non précisé</option>
+            {OFFLINE_PAYMENT_METHODS.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="edit-transaction-reference" className="mb-1 block text-xs font-medium">
+            Référence de transaction
+          </label>
+          <input
+            id="edit-transaction-reference"
+            className="field !min-h-9 text-sm"
+            placeholder="Ex. code Mobile Money"
+            value={transactionReference}
+            onChange={(e) => setTransactionReference(e.target.value)}
+          />
+        </div>
       </div>
       <div className="flex gap-2">
         <button
@@ -452,6 +498,13 @@ function AdminOrderDetail() {
                   />
                   Voir le justificatif de transaction
                 </a>
+              )}
+              {(order.paymentMethod || order.transactionReference) && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {order.paymentMethod && <>Paiement : {order.paymentMethod}</>}
+                  {order.paymentMethod && order.transactionReference && " · "}
+                  {order.transactionReference && <>Réf. {order.transactionReference}</>}
+                </p>
               )}
             </>
           )}

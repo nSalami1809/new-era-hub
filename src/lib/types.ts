@@ -112,6 +112,17 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
  * (WhatsApp, in person...), never through checkout. */
 export type OrderChannel = "site" | "offline";
 
+/** Moyens de paiement d'une vente hors site — l'admin choisit dans cette
+ * liste plutôt que de taper du texte libre, pour que le champ reste
+ * exploitable (regroupable) si besoin plus tard. */
+export const OFFLINE_PAYMENT_METHODS = [
+  "Espèces",
+  "Mobile Money",
+  "Virement bancaire",
+  "Chèque",
+  "Autre",
+] as const;
+
 export type Order = {
   id: string;
   orderNumber: string;
@@ -126,6 +137,11 @@ export type Order = {
   /** Justificatif de transaction (vente hors site) : capture d'écran de
    * transfert, photo de reçu... null si aucun n'a été ajouté. */
   proofImageUrl: string | null;
+  /** Moyen de paiement et référence de transaction (vente hors site,
+   * facultatifs) — ex. "Mobile Money" + le code de transaction donné par
+   * l'opérateur. Apparaissent sur la facture quand renseignés. */
+  paymentMethod: string | null;
+  transactionReference: string | null;
   history: { status: OrderStatus; at: string }[];
   createdAt: string;
   updatedAt: string;
