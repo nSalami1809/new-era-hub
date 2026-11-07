@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Download, FileDown } from "lucide-react";
 import { formatPrice } from "@/lib/format";
 import { downloadCsv } from "@/lib/csv";
+import { brandedPdfHeader } from "@/lib/pdf-report";
 import { PeriodPicker } from "@/components/PeriodPicker";
 import { periodRange, parseDateOnly, PERIODS, type PeriodKey } from "@/lib/period";
 import { Spinner } from "@/components/Spinner";
@@ -292,16 +293,15 @@ function Accounting() {
       const doc = new JsPDF();
       const periodLabel = PERIODS.find((p) => p.key === periodKey)?.label ?? "";
       const rangeLabel = `${start.toLocaleDateString("fr-FR")} — ${end.toLocaleDateString("fr-FR")}`;
-
-      doc.setFontSize(16);
-      doc.text(settings?.storeName ?? "New Era Hub 241", 14, 18);
-      doc.setFontSize(11);
-      doc.text("Rapport comptable", 14, 26);
-      doc.setFontSize(9);
-      doc.text(`Période : ${periodLabel} (${rangeLabel})`, 14, 32);
+      const startY = await brandedPdfHeader(
+        doc,
+        settings,
+        "Rapport comptable",
+        `Période : ${periodLabel} (${rangeLabel})`,
+      );
 
       autoTable(doc, {
-        startY: 38,
+        startY,
         head: [["Indicateur", "Valeur"]],
         body: kpis.map((k) => [k.label, k.value]),
         styles: { fontSize: 9 },

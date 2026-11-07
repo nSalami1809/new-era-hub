@@ -35,46 +35,49 @@ function Dashboard() {
   const pending = orders.filter((o) => o.status === "Nouvelle").length;
   const bestSellers = [...products].sort((a, b) => b.sold - a.sold).slice(0, 5);
 
-  const stats = [
-    { label: "Produits", value: String(products.length) },
-    { label: "En stock", value: String(inStock) },
-    { label: "En rupture", value: String(outOfStock) },
-    { label: "En promotion", value: String(promos) },
-    { label: "Commandes", value: String(orders.length) },
-    { label: "Nouvelles commandes", value: String(pending) },
-    { label: "Chiffre d'affaires encaissé", value: formatPrice(revenue, currency) },
-  ];
-
-  const profitStats = [
-    {
-      label: "Bénéfice encaissé",
-      value: formatPrice(profit, currency),
-      className: profit >= 0 ? "text-success" : "text-destructive",
-    },
-    {
-      label: "Marge nette",
-      value: `${margin}%`,
-      className: margin >= 0 ? "text-success" : "text-destructive",
-    },
-    { label: "Valeur du stock (achat)", value: formatPrice(stockValue, currency) },
-    {
-      label: "Bénéfice potentiel (stock actuel)",
-      value: formatPrice(potentialProfit, currency),
-      className: potentialProfit >= 0 ? "text-success" : "text-destructive",
-    },
-  ];
+  const tileClassName = "border border-border p-4 text-left transition-colors hover:bg-muted";
 
   return (
     <div>
       <h1 className="text-2xl">Tableau de bord</h1>
 
       <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.label} className="border border-border p-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">{s.label}</div>
-            <div className="mt-1 text-xl font-bold">{s.value}</div>
+        <Link to="/nehub-53ff1f11/produits" className={tileClassName}>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">Produits</div>
+          <div className="mt-1 text-xl font-bold">{products.length}</div>
+        </Link>
+        <Link to="/nehub-53ff1f11/stocks" className={tileClassName}>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">En stock</div>
+          <div className="mt-1 text-xl font-bold">{inStock}</div>
+        </Link>
+        <Link to="/nehub-53ff1f11/stocks" search={{ stock: "out" }} className={tileClassName}>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">En rupture</div>
+          <div className="mt-1 text-xl font-bold">{outOfStock}</div>
+        </Link>
+        <Link to="/nehub-53ff1f11/promotions" className={tileClassName}>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">En promotion</div>
+          <div className="mt-1 text-xl font-bold">{promos}</div>
+        </Link>
+        <Link to="/nehub-53ff1f11/commandes" className={tileClassName}>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">Commandes</div>
+          <div className="mt-1 text-xl font-bold">{orders.length}</div>
+        </Link>
+        <Link
+          to="/nehub-53ff1f11/commandes"
+          search={{ status: "Nouvelle" }}
+          className={tileClassName}
+        >
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            Nouvelles commandes
           </div>
-        ))}
+          <div className="mt-1 text-xl font-bold">{pending}</div>
+        </Link>
+        <Link to="/nehub-53ff1f11/comptabilite" className={tileClassName}>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            Chiffre d'affaires encaissé
+          </div>
+          <div className="mt-1 text-xl font-bold">{formatPrice(revenue, currency)}</div>
+        </Link>
       </div>
 
       <div className="mt-8 flex items-center justify-between gap-3">
@@ -87,12 +90,40 @@ function Dashboard() {
         </Link>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {profitStats.map((s) => (
-          <div key={s.label} className="border border-border p-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">{s.label}</div>
-            <div className={`mt-1 text-xl font-bold ${s.className ?? ""}`}>{s.value}</div>
+        <Link to="/nehub-53ff1f11/comptabilite" className={tileClassName}>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            Bénéfice encaissé
           </div>
-        ))}
+          <div
+            className={`mt-1 text-xl font-bold ${profit >= 0 ? "text-success" : "text-destructive"}`}
+          >
+            {formatPrice(profit, currency)}
+          </div>
+        </Link>
+        <Link to="/nehub-53ff1f11/comptabilite" className={tileClassName}>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">Marge nette</div>
+          <div
+            className={`mt-1 text-xl font-bold ${margin >= 0 ? "text-success" : "text-destructive"}`}
+          >
+            {margin}%
+          </div>
+        </Link>
+        <Link to="/nehub-53ff1f11/stocks" className={tileClassName}>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            Valeur du stock (achat)
+          </div>
+          <div className="mt-1 text-xl font-bold">{formatPrice(stockValue, currency)}</div>
+        </Link>
+        <Link to="/nehub-53ff1f11/stocks" className={tileClassName}>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+            Bénéfice potentiel (stock actuel)
+          </div>
+          <div
+            className={`mt-1 text-xl font-bold ${potentialProfit >= 0 ? "text-success" : "text-destructive"}`}
+          >
+            {formatPrice(potentialProfit, currency)}
+          </div>
+        </Link>
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">

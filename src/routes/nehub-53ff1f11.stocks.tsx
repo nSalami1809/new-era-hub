@@ -17,7 +17,12 @@ import { usePersistedState } from "@/lib/use-persisted-state";
 import { useCategories } from "@/lib/api/categories";
 import { stockStatus, variantLabel, type ProductVariant, type SizeType } from "@/lib/types";
 
+type StocksSearch = { stock?: "out" | "low" | undefined };
+
 export const Route = createFileRoute("/nehub-53ff1f11/stocks")({
+  validateSearch: (search: Record<string, unknown>): StocksSearch => ({
+    stock: search["stock"] === "out" || search["stock"] === "low" ? search["stock"] : undefined,
+  }),
   component: AdminStocks,
 });
 
@@ -74,6 +79,7 @@ function VariantStockRow({
 }
 
 function AdminStocks() {
+  const search = Route.useSearch();
   const { data: products = [], isLoading } = useProducts();
   const { data: categories = [] } = useCategories();
   const { data: movements = [] } = useStockMovements();
@@ -86,6 +92,7 @@ function AdminStocks() {
   const [view, setView] = useViewMode("admin-stocks-view");
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = usePersistedState("admin-stocks-category-filter");
+  const [stockFilter, setStockFilter] = useState<"out" | "low" | "">(search.stock ?? "");
   const [exportingPdf, setExportingPdf] = useState(false);
 
   const outOfStock = products.filter((p) => stockStatus(p) === "out").length;
@@ -93,6 +100,7 @@ function AdminStocks() {
 
   const filteredProducts = products.filter((p) => {
     if (categoryFilter && p.category !== categoryFilter) return false;
+    if (stockFilter && stockStatus(p) !== stockFilter) return false;
     const q = query.trim().toLowerCase();
     if (!q) return true;
     return [p.name, p.brand, p.sku].some((v) => v.toLowerCase().includes(q));
@@ -149,21 +157,46 @@ function AdminStocks() {
             </option>
           ))}
         </select>
+        <label htmlFor="admin-stock-status" className="sr-only">
+          Filtrer par statut de stock
+        </label>
+        <select
+          id="admin-stock-status"
+          className="field !min-h-[42px] w-full sm:w-auto"
+          value={stockFilter}
+          onChange={(e) => setStockFilter(e.target.value as "out" | "low" | "")}
+        >
+          <option value="">Tous les statuts</option>
+          <option value="low">Stock faible</option>
+          <option value="out">En rupture</option>
+        </select>
       </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="border border-border p-4">
+        <button
+          type="button"
+          onClick={() => setStockFilter("")}
+          className="border border-border p-4 text-left transition-colors hover:bg-muted"
+        >
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Produits</div>
           <div className="mt-1 text-xl font-bold">{products.length}</div>
-        </div>
-        <div className="border border-border p-4">
+        </button>
+        <button
+          type="button"
+          onClick={() => setStockFilter("low")}
+          className="border border-border p-4 text-left transition-colors hover:bg-muted"
+        >
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Stock faible</div>
           <div className="mt-1 text-xl font-bold text-warning">{lowStock}</div>
-        </div>
-        <div className="border border-border p-4">
+        </button>
+        <button
+          type="button"
+          onClick={() => setStockFilter("out")}
+          className="border border-border p-4 text-left transition-colors hover:bg-muted"
+        >
           <div className="text-xs uppercase tracking-wide text-muted-foreground">En rupture</div>
           <div className="mt-1 text-xl font-bold text-destructive">{outOfStock}</div>
-        </div>
+        </button>
       </div>
 
       {isLoading ? (

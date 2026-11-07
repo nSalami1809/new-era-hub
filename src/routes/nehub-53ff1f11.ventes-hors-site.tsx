@@ -435,7 +435,7 @@ function AdminOfflineSales() {
                 <input
                   id="delivery-location"
                   className="field"
-                  placeholder="Ex. Cocody, remis en main propre..."
+                  placeholder="Ex. Mindoubé 2, remis en main propre..."
                   value={deliveryLocation}
                   onChange={(e) => setDeliveryLocation(e.target.value)}
                 />

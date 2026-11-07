@@ -21,15 +21,23 @@ import { useViewMode } from "@/lib/use-view-mode";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
 import { ORDER_STATUSES, type OrderStatus } from "@/lib/types";
 
+type CommandesSearch = { status?: OrderStatus | undefined };
+
 export const Route = createFileRoute("/nehub-53ff1f11/commandes/")({
+  validateSearch: (search: Record<string, unknown>): CommandesSearch => ({
+    status: ORDER_STATUSES.includes(search["status"] as OrderStatus)
+      ? (search["status"] as OrderStatus)
+      : undefined,
+  }),
   component: AdminOrders,
 });
 
 function AdminOrders() {
+  const search = Route.useSearch();
   const { data: settings } = useSettings();
   const currency = settings?.currency ?? "FCFA";
   const deleteOrder = useDeleteOrder();
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | "">("");
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | "">(search.status ?? "");
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebouncedValue(query, 300);
   const [view, setView] = useViewMode("admin-orders-view");

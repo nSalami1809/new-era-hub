@@ -125,7 +125,7 @@ function EditOfflineCustomer({ order, onDone }: { order: Order; onDone: () => vo
         <input
           id="edit-delivery-location"
           className="field !min-h-9 text-sm"
-          placeholder="Ex. Cocody, remis en main propre..."
+          placeholder="Ex. Mindoubé 2, remis en main propre..."
           value={deliveryLocation}
           onChange={(e) => setDeliveryLocation(e.target.value)}
         />

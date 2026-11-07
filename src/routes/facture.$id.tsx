@@ -94,8 +94,8 @@ async function downloadInvoicePdf(order: Order, settings: StoreSettings) {
     doc.text(settings.address, centerX, y, { align: "center" });
     y += 4;
   }
-  if (settings.phone || settings.whatsappNumber) {
-    doc.text(settings.phone || settings.whatsappNumber || "", centerX, y, { align: "center" });
+  for (const phoneLine of [...new Set([settings.phone, settings.whatsappNumber].filter(Boolean))]) {
+    doc.text(phoneLine, centerX, y, { align: "center" });
     y += 4;
   }
 
@@ -330,10 +330,12 @@ function InvoicePage() {
                   {settings.address && (
                     <p className="mt-1 text-[11px] text-muted-foreground">{settings.address}</p>
                   )}
-                  {(settings.phone || settings.whatsappNumber) && (
-                    <p className="text-[11px] text-muted-foreground">
-                      {settings.phone || settings.whatsappNumber}
-                    </p>
+                  {[...new Set([settings.phone, settings.whatsappNumber].filter(Boolean))].map(
+                    (phoneLine) => (
+                      <p key={phoneLine} className="text-[11px] text-muted-foreground">
+                        {phoneLine}
+                      </p>
+                    ),
                   )}
                 </div>
 
@@ -477,6 +479,14 @@ function InvoicePage() {
               <p className="mt-2 text-sm text-muted-foreground">
                 {settings.address}
                 <br />
+                {settings.phone &&
+                  settings.whatsappNumber &&
+                  settings.phone !== settings.whatsappNumber && (
+                    <>
+                      {settings.phone}
+                      <br />
+                    </>
+                  )}
                 {settings.whatsappNumber ? (
                   <a
                     href={`https://wa.me/${settings.whatsappNumber.replace(/\D/g, "")}`}
@@ -484,7 +494,7 @@ function InvoicePage() {
                     rel="noopener noreferrer"
                     className="hover:text-foreground hover:underline"
                   >
-                    {settings.phone || settings.whatsappNumber}
+                    {settings.whatsappNumber}
                   </a>
                 ) : (
                   settings.phone
